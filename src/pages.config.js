@@ -56,6 +56,7 @@ import Financial from './pages/Financial';
 import MedicalRecords from './pages/MedicalRecords';
 import Protocols from './pages/Protocols';
 import Pricing from './pages/Pricing';
+import Settings from './pages/Settings';
 import __Layout from './Layout.jsx';
 
 
@@ -69,6 +70,7 @@ export const PAGES = {
     "MedicalRecords": MedicalRecords,
     "Protocols": Protocols,
     "Pricing": Pricing,
+    "Settings": Settings,
 }
 
 export const pagesConfig = {
