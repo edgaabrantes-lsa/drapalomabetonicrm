@@ -47,29 +47,29 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Dashboard from './pages/Dashboard';
-import CRM from './pages/CRM';
-import Patients from './pages/Patients';
 import Agenda from './pages/Agenda';
-import Inventory from './pages/Inventory';
+import CRM from './pages/CRM';
+import Dashboard from './pages/Dashboard';
 import Financial from './pages/Financial';
+import Inventory from './pages/Inventory';
 import MedicalRecords from './pages/MedicalRecords';
-import Protocols from './pages/Protocols';
+import Patients from './pages/Patients';
 import Pricing from './pages/Pricing';
+import Protocols from './pages/Protocols';
 import Settings from './pages/Settings';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Dashboard": Dashboard,
-    "CRM": CRM,
-    "Patients": Patients,
     "Agenda": Agenda,
-    "Inventory": Inventory,
+    "CRM": CRM,
+    "Dashboard": Dashboard,
     "Financial": Financial,
+    "Inventory": Inventory,
     "MedicalRecords": MedicalRecords,
-    "Protocols": Protocols,
+    "Patients": Patients,
     "Pricing": Pricing,
+    "Protocols": Protocols,
     "Settings": Settings,
 }
 
