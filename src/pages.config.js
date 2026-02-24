@@ -52,6 +52,10 @@ import CRM from './pages/CRM';
 import Patients from './pages/Patients';
 import Agenda from './pages/Agenda';
 import Inventory from './pages/Inventory';
+import Financial from './pages/Financial';
+import MedicalRecords from './pages/MedicalRecords';
+import Protocols from './pages/Protocols';
+import Pricing from './pages/Pricing';
 import __Layout from './Layout.jsx';
 
 
@@ -61,6 +65,10 @@ export const PAGES = {
     "Patients": Patients,
     "Agenda": Agenda,
     "Inventory": Inventory,
+    "Financial": Financial,
+    "MedicalRecords": MedicalRecords,
+    "Protocols": Protocols,
+    "Pricing": Pricing,
 }
 
 export const pagesConfig = {
