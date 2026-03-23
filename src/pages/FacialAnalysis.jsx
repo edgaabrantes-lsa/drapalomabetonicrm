@@ -816,7 +816,15 @@ export default function FacialAnalysis() {
 
           {/* Tabs: Structured vs Raw */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-[#1a1a25] border border-[#1e1e2a]">
+            <TabsList className="bg-[#1a1a25] border border-[#1e1e2a] flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="map"
+                className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
+                <Map className="mr-2 h-4 w-4" />
+                Mapa Facial
+                {(facialMaps || mapData) && (
+                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-[#c9a55c] inline-block" />
+                )}
+              </TabsTrigger>
               <TabsTrigger value="structured"
                 className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
                 <Layers className="mr-2 h-4 w-4" />
@@ -825,16 +833,16 @@ export default function FacialAnalysis() {
               <TabsTrigger value="patient"
                 className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
                 <User className="mr-2 h-4 w-4" />
-                Versão para Paciente
+                Versão Paciente
               </TabsTrigger>
               <TabsTrigger value="technical"
                 className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
                 <FileText className="mr-2 h-4 w-4" />
-                Versão Técnica
+                Técnico
               </TabsTrigger>
               <TabsTrigger value="raw"
                 className="data-[state=active]:bg-gray-500/20 data-[state=active]:text-gray-300">
-                Laudo Completo
+                Completo
               </TabsTrigger>
             </TabsList>
 
