@@ -420,6 +420,74 @@ export default function FacialAnalysis() {
         />
       )}
 
+      {/* ─── Premium Loading Overlay ─── */}
+      {isAnalyzing && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="w-full max-w-sm bg-[#12121a] border border-[#c9a55c]/20 rounded-3xl p-8 shadow-2xl">
+            {/* Animated logo */}
+            <div className="flex justify-center mb-6">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 rounded-full border-2 border-[#c9a55c]/20 animate-ping" />
+                <div className="absolute inset-2 rounded-full border-2 border-[#c9a55c]/40 animate-pulse" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#c9a55c] to-[#a17f3f] flex items-center justify-center">
+                    <Brain className="h-8 w-8 text-black" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-[#c9a55c] uppercase tracking-widest mb-2">
+              Clínica Premium · Dra. Paloma Betoni
+            </p>
+            <h3 className="text-center text-white font-semibold text-lg mb-1">
+              {ANALYSIS_STEPS[analysisStep]?.label}
+            </h3>
+            <p className="text-center text-gray-500 text-sm mb-8">
+              {ANALYSIS_STEPS[analysisStep]?.detail}
+            </p>
+
+            {/* Step list */}
+            <div className="space-y-2.5">
+              {ANALYSIS_STEPS.map((s, i) => {
+                const done = i < analysisStep;
+                const active = i === analysisStep;
+                return (
+                  <div key={s.id} className={`flex items-center gap-3 transition-all ${active ? "opacity-100" : done ? "opacity-60" : "opacity-25"}`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                      done ? "bg-emerald-500" : active ? "bg-[#c9a55c]" : "bg-[#1e1e2a]"
+                    }`}>
+                      {done ? (
+                        <Check className="h-3 w-3 text-white" />
+                      ) : active ? (
+                        <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-gray-600" />
+                      )}
+                    </div>
+                    <span className={`text-xs ${active ? "text-white font-medium" : done ? "text-gray-400" : "text-gray-700"}`}>
+                      {s.label}
+                    </span>
+                    {active && (
+                      <div className="ml-auto flex gap-0.5">
+                        {[0,1,2].map(j => (
+                          <div key={j} className="w-1 h-1 rounded-full bg-[#c9a55c] animate-bounce"
+                            style={{ animationDelay: `${j * 200}ms` }} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-center text-[10px] text-gray-700 mt-6">
+              Análise gerada por IA avançada · Pode levar até 60 segundos
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
