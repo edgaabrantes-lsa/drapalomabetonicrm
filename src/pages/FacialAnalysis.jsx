@@ -187,19 +187,53 @@ const parseAnalysis = (text) => {
   return sections;
 };
 
+// Compress a base64 dataUrl to max 800px wide at given quality
+const compressImage = (dataUrl, quality = 0.75, maxWidth = 800) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.src = dataUrl;
+  });
+
+const dataUrlToFile = (dataUrl, filename) => {
+  const arr = dataUrl.split(",");
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  const u8arr = new Uint8Array(bstr.length);
+  for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+  return new File([u8arr], filename, { type: mime });
+};
+
+const ANALYSIS_STEPS = [
+  { id: "compress",   label: "Preparando imagens",               detail: "Otimizando qualidade para análise" },
+  { id: "upload",     label: "Enviando para o servidor",         detail: "Upload seguro das imagens" },
+  { id: "structure",  label: "Processando estrutura facial",     detail: "Mapeando proporções e simetria" },
+  { id: "protocols",  label: "Analisando proporções e ângulos",  detail: "Calculando terços e eixos faciais" },
+  { id: "plan",       label: "Gerando plano de harmonização",    detail: "Estruturando protocolos HOF" },
+  { id: "report",     label: "Elaborando laudo completo",        detail: "Preparando versões técnica e para paciente" },
+];
+
 export default function FacialAnalysis() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  // Multi-angle captures: [{type, dataUrl, label}]
   const [capturedAngles, setCapturedAngles] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisStep, setAnalysisStep] = useState(0); // current step index during loading
   const [analysis, setAnalysis] = useState(null);
   const [parsedSections, setParsedSections] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("structured");
   const [showCamera, setShowCamera] = useState(false);
-  const [inputMode, setInputMode] = useState(null); // null | 'upload' | 'camera'
+  const [inputMode, setInputMode] = useState(null);
   const fileInputRef = useRef(null);
+  const stepTimerRef = useRef(null);
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
@@ -223,7 +257,6 @@ export default function FacialAnalysis() {
     if (file) handleImageSelect({ target: { files: [file] } });
   };
 
-  // Called when GuidedCamera finishes capturing
   const handleCameraComplete = (captures) => {
     setShowCamera(false);
     if (!captures || captures.length === 0) return;
@@ -242,14 +275,23 @@ export default function FacialAnalysis() {
     else { setImagePreview(null); setInputMode(null); }
   };
 
-  // Convert base64 dataUrl → File blob for upload
-  const dataUrlToFile = (dataUrl, filename) => {
-    const arr = dataUrl.split(",");
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    const u8arr = new Uint8Array(bstr.length);
-    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
-    return new File([u8arr], filename, { type: mime });
+  // Advance step indicator every ~4s to simulate progress
+  const startStepProgress = () => {
+    setAnalysisStep(0);
+    let current = 0;
+    stepTimerRef.current = setInterval(() => {
+      current += 1;
+      if (current < ANALYSIS_STEPS.length - 1) {
+        setAnalysisStep(current);
+      } else {
+        clearInterval(stepTimerRef.current);
+      }
+    }, 4000);
+  };
+
+  const stopStepProgress = () => {
+    clearInterval(stepTimerRef.current);
+    setAnalysisStep(ANALYSIS_STEPS.length - 1);
   };
 
   const runAnalysis = async () => {
@@ -261,37 +303,57 @@ export default function FacialAnalysis() {
     setError(null);
     setAnalysis(null);
     setParsedSections(null);
+    startStepProgress();
 
-    let fileUrls = [];
+    try {
+      let fileUrls = [];
 
-    if (hasUpload) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
-      fileUrls = [file_url];
-    } else {
-      // Upload all captured angles in parallel
-      const uploads = await Promise.all(
-        capturedAngles.map((c, i) => {
-          const file = dataUrlToFile(c.dataUrl, `facial_${c.type}_${i}.jpg`);
-          return base44.integrations.Core.UploadFile({ file });
-        })
-      );
-      fileUrls = uploads.map(u => u.file_url);
+      if (hasUpload) {
+        // Compress file → dataUrl → compress → back to File
+        const dataUrl = await new Promise((res) => {
+          const reader = new FileReader();
+          reader.onload = (e) => res(e.target.result);
+          reader.readAsDataURL(imageFile);
+        });
+        const compressed = await compressImage(dataUrl);
+        const compressedFile = dataUrlToFile(compressed, "facial.jpg");
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: compressedFile });
+        fileUrls = [file_url];
+      } else {
+        // Compress all angles then upload in parallel
+        const compressedAngles = await Promise.all(
+          capturedAngles.map(c => compressImage(c.dataUrl))
+        );
+        const uploads = await Promise.all(
+          compressedAngles.map((dataUrl, i) => {
+            const file = dataUrlToFile(dataUrl, `facial_${capturedAngles[i].type}_${i}.jpg`);
+            return base44.integrations.Core.UploadFile({ file });
+          })
+        );
+        fileUrls = uploads.map(u => u.file_url);
+      }
+
+      const angleContext = hasCamera && capturedAngles.length > 1
+        ? `\n\nIMPORTANTE: Foram fornecidas ${capturedAngles.length} imagens: ${capturedAngles.map(c => c.label).join(", ")}. Cruze as informações de todos os ângulos para uma análise mais precisa.`
+        : "";
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: HOF_SYSTEM_PROMPT + angleContext + "\n\nAnalise as imagens faciais fornecidas e gere o laudo completo seguindo exatamente a estrutura solicitada.",
+        file_urls: fileUrls,
+        model: "claude_sonnet_4_6",
+      });
+
+      const text = typeof result === "string" ? result : JSON.stringify(result);
+      stopStepProgress();
+      setAnalysis(text);
+      setParsedSections(parseAnalysis(text));
+    } catch (err) {
+      setError("Erro ao gerar análise. Tente novamente.");
+      console.error(err);
+    } finally {
+      stopStepProgress();
+      setIsAnalyzing(false);
     }
-
-    const angleContext = hasCamera && capturedAngles.length > 1
-      ? `\n\nIMPORTANTE: Foram fornecidas ${capturedAngles.length} imagens: ${capturedAngles.map(c => c.label).join(", ")}. Cruze as informações de todos os ângulos para uma análise mais precisa. Identifique cada ângulo e use-os de forma complementar.`
-      : "";
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: HOF_SYSTEM_PROMPT + angleContext + "\n\nAnalise as imagens faciais fornecidas e gere o laudo completo seguindo exatamente a estrutura solicitada.",
-      file_urls: fileUrls,
-      model: "claude_sonnet_4_6",
-    });
-
-    const text = typeof result === "string" ? result : JSON.stringify(result);
-    setAnalysis(text);
-    setParsedSections(parseAnalysis(text));
-    setIsAnalyzing(false);
   };
 
   const resetAnalysis = () => {
@@ -302,6 +364,8 @@ export default function FacialAnalysis() {
     setParsedSections(null);
     setError(null);
     setInputMode(null);
+    setIsAnalyzing(false);
+    clearInterval(stepTimerRef.current);
   };
 
   const canAnalyze = (inputMode === "upload" && imageFile) || (inputMode === "camera" && capturedAngles.length > 0);
