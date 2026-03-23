@@ -102,7 +102,30 @@ REGRAS IMPORTANTES:
 - Sempre valorize pontos positivos
 - Trabalhe com análise visual e probabilidade (não afirme com 100% de certeza)
 - Mantenha postura de especialista premium
-- Não invente diagnósticos médicos`;
+- Não invente diagnósticos médicos
+
+---
+
+## 7. MAPA FACIAL ESTRATÉGICO (JSON)
+
+OBRIGATÓRIO: ao final do laudo, retorne um bloco JSON com a seguinte estrutura EXATA para geração do mapa visual:
+
+\`\`\`json
+{
+  "main_protocol": "Nome do Protocolo Principal",
+  "complementary_protocols": ["Protocolo 2", "Protocolo 3"],
+  "primary_issue": "falta_de_estrutura | desproporcao | envelhecimento | flacidez | qualidade_de_pele",
+  "regions": [
+    { "area": "Malar", "intervention": "Preenchimento", "protocol": "Sculpt Full Face", "priority": "alto" },
+    { "area": "Lábios", "intervention": "Preenchimento labial", "protocol": "Lip Design Atelier", "priority": "médio" }
+  ],
+  "image_prompt_technical": "Descrição detalhada em inglês para gerar a versão técnica do mapa facial com todos os pontos, linhas, vetores e labels clínicos sobre a foto da paciente",
+  "image_prompt_client": "Descrição em inglês para versão clean do mapa facial com protocolo principal visível, menos técnico, mais clean e elegante",
+  "image_prompt_result": "Descrição em inglês focando em vetores e direção de lifting/transformação esperada, antes→depois visual"
+}
+\`\`\`
+
+IMPORTANTE: os image_prompts devem ser descrições detalhadas em inglês para geração de imagem por IA, descrevendo EXATAMENTE o que deve aparecer desenhado SOBRE a foto da paciente, com estética inspirada na Prada: linhas ultra finas, tipografia elegante, preto/branco/cinza, luxo silencioso.`;
 
 const SectionCard = ({ icon: Icon, title, color, children, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
