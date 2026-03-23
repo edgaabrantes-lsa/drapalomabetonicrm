@@ -242,7 +242,19 @@ const ANALYSIS_STEPS = [
   { id: "protocols",  label: "Analisando proporções e ângulos",  detail: "Calculando terços e eixos faciais" },
   { id: "plan",       label: "Gerando plano de harmonização",    detail: "Estruturando protocolos HOF" },
   { id: "report",     label: "Elaborando laudo completo",        detail: "Preparando versões técnica e para paciente" },
+  { id: "map",        label: "Criando mapa facial estratégico",  detail: "Gerando 3 versões do overlay visual" },
 ];
+
+// Extract JSON map block from LLM response
+const extractMapData = (text) => {
+  try {
+    const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (!match) return null;
+    return JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+};
 
 export default function FacialAnalysis() {
   const [imageFile, setImageFile] = useState(null);
