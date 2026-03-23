@@ -617,39 +617,14 @@ export default function FacialAnalysis() {
               disabled={!canAnalyze || isAnalyzing}
               className="w-full h-14 bg-gradient-to-r from-[#c9a55c] to-[#a17f3f] hover:from-[#a17f3f] hover:to-[#8a6a30] text-black font-semibold text-base rounded-xl disabled:opacity-40"
             >
-              {isAnalyzing ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  Analisando face com IA...
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-5 w-5" />
-                  Gerar Análise Facial
-                  {capturedAngles.length > 1 && (
-                    <Badge className="bg-black/20 text-black text-xs">
-                      {capturedAngles.length} ângulos
-                    </Badge>
-                  )}
-                </div>
+              <Sparkles className="h-5 w-5" />
+              Gerar Análise Facial
+              {capturedAngles.length > 1 && (
+                <Badge className="bg-black/20 text-black text-xs ml-1">
+                  {capturedAngles.length} ângulos
+                </Badge>
               )}
             </Button>
-
-            {isAnalyzing && (
-              <div className="text-center space-y-2">
-                <p className="text-xs text-gray-500">
-                  {capturedAngles.length > 1
-                    ? `Processando ${capturedAngles.length} ângulos com modelo avançado de visão...`
-                    : "Processando com modelo avançado de visão..."}
-                </p>
-                <div className="flex justify-center gap-1">
-                  {[0, 1, 2, 3].map(i => (
-                    <div key={i} className="w-1.5 h-1.5 bg-[#c9a55c] rounded-full animate-bounce"
-                      style={{ animationDelay: `${i * 150}ms` }} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
