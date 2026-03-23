@@ -881,29 +881,92 @@ export default function FacialAnalysis() {
                 <div className="space-y-6">
                   <FacialMapDisplay maps={facialMaps} mapData={mapData} />
 
-                  {/* Strategic reading */}
-                  {mapData?.primary_issue && (
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <Card className="bg-[#0d0d14] border-[#1e1e2a]">
-                        <CardContent className="p-4">
-                          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Problema Principal</p>
-                          <p className="text-sm font-medium text-white capitalize">
-                            {mapData.primary_issue.replace(/_/g, " ")}
-                          </p>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-[#0d0d14] border-[#1e1e2a]">
-                        <CardContent className="p-4">
-                          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Protocolo Escolhido</p>
-                          <p className="text-sm font-medium text-[#c9a55c]">{mapData.main_protocol}</p>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-[#0d0d14] border-[#1e1e2a]">
-                        <CardContent className="p-4">
-                          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Regiões Mapeadas</p>
-                          <p className="text-sm font-medium text-white">{mapData.regions?.length || 0} áreas identificadas</p>
-                        </CardContent>
-                      </Card>
+                  {/* Strategic summary cards */}
+                  {mapData && (
+                    <div className="space-y-4">
+                      {/* Top row: scoring */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <Card className="bg-[#0d0d14] border-[#1e1e2a]">
+                          <CardContent className="p-4">
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Protocolo Principal</p>
+                            <p className="text-sm font-medium text-[#c9a55c]">{mapData.main_protocol}</p>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-[#0d0d14] border-red-900/30 border">
+                          <CardContent className="p-4">
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Pontos Prioritários 🔴</p>
+                            <p className="text-2xl font-bold text-red-400">{mapData.scoring_summary?.red_dots ?? mapData.regions?.filter(r => r.marker === "red" || r.priority === "alto").length ?? "—"}</p>
+                            <p className="text-[10px] text-gray-600">melhorias estruturais</p>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-[#0d0d14] border-amber-900/30 border">
+                          <CardContent className="p-4">
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Potencial de Refinamento 🔶</p>
+                            <p className="text-2xl font-bold text-amber-400">{mapData.scoring_summary?.yellow_dots ?? mapData.regions?.filter(r => r.marker === "yellow" || r.priority === "médio").length ?? "—"}</p>
+                            <p className="text-[10px] text-gray-600">melhorias moderadas</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Regions list with markers */}
+                      {mapData.regions?.length > 0 && (
+                        <Card className="bg-[#0d0d14] border-[#1e1e2a]">
+                          <CardContent className="p-4">
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Regiões Mapeadas</p>
+                            <div className="space-y-2">
+                              {mapData.regions.map((r, i) => (
+                                <div key={i} className="flex items-start gap-3 py-2 border-b border-[#1e1e2a] last:border-0">
+                                  <span className="text-base mt-0.5 flex-shrink-0">
+                                    {r.marker === "red" || r.priority === "alto" ? "🔴" : "🔶"}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-sm font-medium text-white">{r.area}</span>
+                                      <span className="text-[10px] text-gray-500 bg-[#1a1a25] px-2 py-0.5 rounded-full">{r.intervention}</span>
+                                    </div>
+                                    {r.note && <p className="text-xs text-gray-500 mt-0.5 italic">{r.note}</p>}
+                                  </div>
+                                  <span className="text-[10px] text-[#c9a55c] flex-shrink-0">{r.protocol}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Continuity + Entry */}
+                      {(mapData.continuity_plan || mapData.entry_experience || mapData.complementary_protocols?.length > 0) && (
+                        <div className="grid md:grid-cols-2 gap-3">
+                          {mapData.entry_experience && (
+                            <Card className="bg-[#c9a55c]/5 border-[#c9a55c]/20">
+                              <CardContent className="p-4">
+                                <p className="text-[10px] uppercase tracking-widest text-[#c9a55c]/70 mb-1">🪶 Porta de Entrada</p>
+                                <p className="text-sm font-medium text-white">{mapData.entry_experience}</p>
+                              </CardContent>
+                            </Card>
+                          )}
+                          {mapData.continuity_plan && (
+                            <Card className="bg-[#0d0d14] border-[#1e1e2a]">
+                              <CardContent className="p-4">
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Plano de Continuidade</p>
+                                <p className="text-sm font-medium text-white">{mapData.continuity_plan}</p>
+                              </CardContent>
+                            </Card>
+                          )}
+                          {mapData.complementary_protocols?.length > 0 && (
+                            <Card className="bg-[#0d0d14] border-[#1e1e2a] md:col-span-2">
+                              <CardContent className="p-4">
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Protocolos Complementares</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {mapData.complementary_protocols.map((p, i) => (
+                                    <span key={i} className="text-xs bg-[#1a1a25] text-gray-300 px-3 py-1 rounded-full border border-[#1e1e2a]">{p}</span>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
