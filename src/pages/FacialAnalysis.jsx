@@ -348,6 +348,14 @@ export default function FacialAnalysis() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Guided camera fullscreen */}
+      {showCamera && (
+        <GuidedCamera
+          onComplete={handleCameraComplete}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -370,48 +378,125 @@ export default function FacialAnalysis() {
         )}
       </div>
 
-      {/* Upload + Preview Area */}
+      {/* Input area — only show before analysis */}
       {!analysis && (
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Upload Zone */}
-          <div
-            onDrop={handleDrop}
-            onDragOver={e => e.preventDefault()}
-            onClick={() => fileInputRef.current?.click()}
-            className={`relative flex flex-col items-center justify-center min-h-[320px] rounded-2xl border-2 border-dashed cursor-pointer transition-all ${
-              imagePreview
-                ? "border-[#c9a55c]/50 bg-[#c9a55c]/5"
-                : "border-[#1e1e2a] hover:border-[#c9a55c]/30 hover:bg-[#c9a55c]/5 bg-[#12121a]"
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageSelect}
-            />
-            {imagePreview ? (
-              <img
-                src={imagePreview}
-                alt="Prévia"
-                className="max-h-[300px] max-w-full object-contain rounded-xl"
-              />
-            ) : (
-              <div className="text-center px-8">
-                <div className="w-16 h-16 rounded-2xl bg-[#c9a55c]/10 flex items-center justify-center mx-auto mb-4">
-                  <Camera className="h-8 w-8 text-[#c9a55c]" />
-                </div>
-                <p className="text-white font-medium mb-2">Arraste ou clique para enviar</p>
-                <p className="text-gray-500 text-sm">JPG, PNG, WEBP — máx. 10MB</p>
-                <p className="text-gray-600 text-xs mt-3">
-                  Para melhor análise: foto de frente, boa iluminação, sem óculos
-                </p>
+          {/* Left: Image input */}
+          <div className="space-y-3">
+            {/* Mode selector */}
+            {!inputMode && (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => { setInputMode("upload"); setTimeout(() => fileInputRef.current?.click(), 50); }}
+                  className="flex flex-col items-center gap-3 p-6 bg-[#12121a] hover:bg-[#1a1a25] border border-[#1e1e2a] hover:border-[#c9a55c]/30 rounded-2xl transition-all group"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-[#c9a55c]/10 flex items-center justify-center group-hover:bg-[#c9a55c]/20 transition-all">
+                    <Upload className="h-7 w-7 text-[#c9a55c]" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white font-medium text-sm">Enviar Foto</p>
+                    <p className="text-gray-500 text-xs mt-0.5">JPG, PNG, WEBP</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setShowCamera(true)}
+                  className="flex flex-col items-center gap-3 p-6 bg-[#12121a] hover:bg-[#1a1a25] border border-[#1e1e2a] hover:border-[#c9a55c]/30 rounded-2xl transition-all group"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-[#c9a55c]/10 flex items-center justify-center group-hover:bg-[#c9a55c]/20 transition-all">
+                    <Camera className="h-7 w-7 text-[#c9a55c]" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white font-medium text-sm">Câmera Guiada</p>
+                    <p className="text-gray-500 text-xs mt-0.5">Multi-ângulo · Premium</p>
+                  </div>
+                  <Badge className="bg-[#c9a55c]/20 text-[#c9a55c] text-[10px] px-2 py-0">
+                    Recomendado
+                  </Badge>
+                </button>
               </div>
+            )}
+
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+
+            {/* Upload drop zone */}
+            {inputMode === "upload" && (
+              <div
+                onDrop={handleDrop}
+                onDragOver={e => e.preventDefault()}
+                onClick={() => fileInputRef.current?.click()}
+                className={`relative flex flex-col items-center justify-center min-h-[260px] rounded-2xl border-2 border-dashed cursor-pointer transition-all ${
+                  imagePreview ? "border-[#c9a55c]/50 bg-[#c9a55c]/5" : "border-[#1e1e2a] hover:border-[#c9a55c]/30 hover:bg-[#c9a55c]/5 bg-[#12121a]"
+                }`}
+              >
+                {imagePreview ? (
+                  <>
+                    <img src={imagePreview} alt="Prévia" className="max-h-[240px] max-w-full object-contain rounded-xl" />
+                    <button onClick={(e) => { e.stopPropagation(); resetAnalysis(); }}
+                      className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-gray-400 hover:text-white">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <div className="text-center px-8">
+                    <Upload className="h-10 w-10 text-gray-600 mx-auto mb-3" />
+                    <p className="text-white font-medium mb-1">Arraste ou clique para enviar</p>
+                    <p className="text-gray-500 text-sm">JPG, PNG, WEBP — máx. 10MB</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Camera multi-angle result */}
+            {inputMode === "camera" && capturedAngles.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-400 font-medium">{capturedAngles.length} ângulo{capturedAngles.length > 1 ? "s" : ""} capturado{capturedAngles.length > 1 ? "s" : ""}</p>
+                  <button onClick={() => setShowCamera(true)}
+                    className="text-xs text-[#c9a55c] hover:underline flex items-center gap-1">
+                    <Camera className="h-3.5 w-3.5" />
+                    Recapturar
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {capturedAngles.map((c, i) => (
+                    <div key={i} className="relative group rounded-xl overflow-hidden border border-[#c9a55c]/20">
+                      <img src={c.dataUrl} alt={c.label} className="w-full aspect-square object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                        <button onClick={() => removeAngle(i)}
+                          className="w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center">
+                          <X className="h-4 w-4 text-white" />
+                        </button>
+                      </div>
+                      <div className="absolute bottom-0 inset-x-0 bg-black/60 py-1 px-2">
+                        <p className="text-[10px] text-[#c9a55c] font-medium">{c.label}</p>
+                      </div>
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    </div>
+                  ))}
+                  {/* Add more button */}
+                  {capturedAngles.length < 3 && (
+                    <button onClick={() => setShowCamera(true)}
+                      className="aspect-square rounded-xl border-2 border-dashed border-[#1e1e2a] hover:border-[#c9a55c]/30 flex flex-col items-center justify-center gap-1 text-gray-600 hover:text-[#c9a55c] transition-all">
+                      <ImagePlus className="h-6 w-6" />
+                      <span className="text-xs">Adicionar</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Change mode link */}
+            {inputMode && !analysis && (
+              <button onClick={resetAnalysis} className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
+                ← Alterar modo de captura
+              </button>
             )}
           </div>
 
-          {/* Instructions / Tips */}
+          {/* Right: Info + CTA */}
           <div className="space-y-4">
             <Card className="bg-[#12121a] border-[#1e1e2a]">
               <CardContent className="p-5">
@@ -447,8 +532,8 @@ export default function FacialAnalysis() {
                   <div>
                     <p className="text-sm font-medium text-white mb-1">Aviso de uso profissional</p>
                     <p className="text-xs text-gray-400 leading-relaxed">
-                      Esta análise é gerada por IA com fins de apoio clínico. 
-                      Deve ser revisada e validada por profissional habilitado. 
+                      Esta análise é gerada por IA com fins de apoio clínico.
+                      Deve ser revisada e validada por profissional habilitado.
                       Não substitui consulta médica ou odontológica.
                     </p>
                   </div>
@@ -465,7 +550,7 @@ export default function FacialAnalysis() {
 
             <Button
               onClick={runAnalysis}
-              disabled={!imageFile || isAnalyzing}
+              disabled={!canAnalyze || isAnalyzing}
               className="w-full h-14 bg-gradient-to-r from-[#c9a55c] to-[#a17f3f] hover:from-[#a17f3f] hover:to-[#8a6a30] text-black font-semibold text-base rounded-xl disabled:opacity-40"
             >
               {isAnalyzing ? (
@@ -477,13 +562,22 @@ export default function FacialAnalysis() {
                 <div className="flex items-center gap-3">
                   <Sparkles className="h-5 w-5" />
                   Gerar Análise Facial
+                  {capturedAngles.length > 1 && (
+                    <Badge className="bg-black/20 text-black text-xs">
+                      {capturedAngles.length} ângulos
+                    </Badge>
+                  )}
                 </div>
               )}
             </Button>
 
             {isAnalyzing && (
               <div className="text-center space-y-2">
-                <p className="text-xs text-gray-500">Processando com modelo avançado de visão...</p>
+                <p className="text-xs text-gray-500">
+                  {capturedAngles.length > 1
+                    ? `Processando ${capturedAngles.length} ângulos com modelo avançado de visão...`
+                    : "Processando com modelo avançado de visão..."}
+                </p>
                 <div className="flex justify-center gap-1">
                   {[0, 1, 2, 3].map(i => (
                     <div key={i} className="w-1.5 h-1.5 bg-[#c9a55c] rounded-full animate-bounce"
