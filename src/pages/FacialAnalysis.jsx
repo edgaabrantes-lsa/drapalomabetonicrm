@@ -500,7 +500,7 @@ export default function FacialAnalysis() {
     {
       key: "protocols",
       icon: Zap,
-      title: "5. Sugestão de Protocolos HOF",
+      title: "5. Protocolos HOF Indicados",
       color: "bg-[#c9a55c]/20 text-[#c9a55c]",
     },
     {
