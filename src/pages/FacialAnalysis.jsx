@@ -382,9 +382,41 @@ export default function FacialAnalysis() {
       });
 
       const text = typeof result === "string" ? result : JSON.stringify(result);
-      stopStepProgress();
       setAnalysis(text);
       setParsedSections(parseAnalysis(text));
+
+      // Extract map data from JSON block
+      const extracted = extractMapData(text);
+      if (extracted) {
+        setMapData(extracted);
+        setAnalysisStep(6); // "Criando mapa facial"
+
+        // Generate 3 map images in parallel using the original photo as reference
+        const basePromptSuffix = ` The image must look like a premium clinical facial mapping overlay with ultra-thin lines, elegant serif typography, black/white/gray (#000, #FFF, #7A7A7A) color palette inspired by Prada's visual identity. Silent luxury aesthetic. Protocol name displayed elegantly at bottom. Clean and authoritative.`;
+
+        const [techMap, clientMap, resultMap] = await Promise.all([
+          base44.integrations.Core.GenerateImage({
+            prompt: (extracted.image_prompt_technical || `Facial strategic map overlay on the patient photo with detailed clinical annotation points on malar, lips, chin, mandible, temples, under-eye areas. Thin connecting lines with elegant serif labels for each region. Show protocol name "${extracted.main_protocol}" at bottom.`) + basePromptSuffix,
+            existing_image_urls: fileUrls.slice(0, 1),
+          }),
+          base44.integrations.Core.GenerateImage({
+            prompt: (extracted.image_prompt_client || `Clean elegant facial map overlay on patient photo showing only key improvement areas with soft highlights. Protocol name "${extracted.main_protocol}" in elegant typography at top. Minimal clean aesthetic.`) + basePromptSuffix,
+            existing_image_urls: fileUrls.slice(0, 1),
+          }),
+          base44.integrations.Core.GenerateImage({
+            prompt: (extracted.image_prompt_result || `Facial transformation direction overlay on patient photo showing subtle lifting vectors and volumetric projection arrows. Shows before-to-after directional transformation. Elegant and sophisticated.`) + basePromptSuffix,
+            existing_image_urls: fileUrls.slice(0, 1),
+          }),
+        ]);
+
+        setFacialMaps({
+          technical: techMap?.url,
+          client: clientMap?.url,
+          result: resultMap?.url,
+        });
+      }
+
+      stopStepProgress();
     } catch (err) {
       setError("Erro ao gerar análise. Tente novamente.");
       console.error(err);
