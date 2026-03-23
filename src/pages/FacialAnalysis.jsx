@@ -384,6 +384,7 @@ export default function FacialAnalysis() {
       const text = typeof result === "string" ? result : JSON.stringify(result);
       setAnalysis(text);
       setParsedSections(parseAnalysis(text));
+      setActiveTab("map");
 
       // Extract map data from JSON block
       const extracted = extractMapData(text);
