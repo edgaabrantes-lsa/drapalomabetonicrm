@@ -261,9 +261,11 @@ export default function FacialAnalysis() {
   const [imagePreview, setImagePreview] = useState(null);
   const [capturedAngles, setCapturedAngles] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState(0); // current step index during loading
+  const [analysisStep, setAnalysisStep] = useState(0);
   const [analysis, setAnalysis] = useState(null);
   const [parsedSections, setParsedSections] = useState(null);
+  const [mapData, setMapData] = useState(null);
+  const [facialMaps, setFacialMaps] = useState(null); // { technical, client, result }
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("structured");
   const [showCamera, setShowCamera] = useState(false);
