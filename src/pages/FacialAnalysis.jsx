@@ -223,7 +223,7 @@ const parseAnalysis = (text) => {
     { key: "asymmetries",  start: "## 2. IDENTIFICAÇÃO",            end: "## 3." },
     { key: "improvements", start: "## 3. MAPEAMENTO",               end: "## 4." },
     { key: "diagnostic",   start: "## 4. DIAGNÓSTICO",              end: "## 5." },
-    { key: "protocols",    start: "## 5. SUGESTÃO",                 end: "## 6." },
+    { key: "protocols",    start: "## 5. PROTOCOLOS HOF",            end: "## 6." },
     { key: "plan",         start: "## 6. PLANO",                    end: "## 🔬" },
     { key: "technical",    start: "## 🔬 VERSÃO TÉCNICA",           end: "## 💬" },
     { key: "patient",      start: "## 💬 VERSÃO PARA",              end: null },
