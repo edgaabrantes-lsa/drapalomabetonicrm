@@ -846,6 +846,55 @@ export default function FacialAnalysis() {
               </TabsTrigger>
             </TabsList>
 
+            {/* Facial Map Tab */}
+            <TabsContent value="map" className="mt-5">
+              {mapData || facialMaps ? (
+                <div className="space-y-6">
+                  <FacialMapDisplay maps={facialMaps} mapData={mapData} />
+
+                  {/* Strategic reading */}
+                  {mapData?.primary_issue && (
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <Card className="bg-[#0d0d14] border-[#1e1e2a]">
+                        <CardContent className="p-4">
+                          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Problema Principal</p>
+                          <p className="text-sm font-medium text-white capitalize">
+                            {mapData.primary_issue.replace(/_/g, " ")}
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#0d0d14] border-[#1e1e2a]">
+                        <CardContent className="p-4">
+                          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Protocolo Escolhido</p>
+                          <p className="text-sm font-medium text-[#c9a55c]">{mapData.main_protocol}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#0d0d14] border-[#1e1e2a]">
+                        <CardContent className="p-4">
+                          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Regiões Mapeadas</p>
+                          <p className="text-sm font-medium text-white">{mapData.regions?.length || 0} áreas identificadas</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {!facialMaps && (
+                    <div className="flex items-center gap-3 p-4 bg-[#0d0d14] border border-[#c9a55c]/10 rounded-xl">
+                      <div className="w-4 h-4 border-2 border-[#c9a55c]/40 border-t-[#c9a55c] rounded-full animate-spin flex-shrink-0" />
+                      <p className="text-sm text-gray-400">Gerando imagens do mapa facial estratégico...</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Card className="bg-[#0d0d14] border-[#1e1e2a]">
+                  <CardContent className="p-8 text-center">
+                    <Map className="h-10 w-10 text-gray-700 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">O mapa facial será gerado após a análise</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
             {/* Structured Tab */}
             <TabsContent value="structured" className="mt-5 space-y-3">
               {sections.map(sec => (
