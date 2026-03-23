@@ -421,7 +421,7 @@ export default function FacialAnalysis() {
         setAnalysisStep(6); // "Criando mapa facial"
 
         // Generate 3 map images in parallel using the original photo as reference
-        const basePromptSuffix = ` The image must look like a premium clinical facial mapping overlay with ultra-thin lines, elegant serif typography, black/white/gray (#000, #FFF, #7A7A7A) color palette inspired by Prada's visual identity. Silent luxury aesthetic. Protocol name displayed elegantly at bottom. Clean and authoritative.`;
+        const basePromptSuffix = ` STYLE: Premium clinical facial mapping overlay inspired by Prada's silent luxury aesthetic. Ultra-thin lines (0.5px), elegant serif typography, restrained color palette — only black (#000), white (#FFF), gray (#7A7A7A), plus RED (#CC2200) and AMBER (#E8A020) for the dot markers. The dots MUST be clearly visible filled circles placed directly on the patient's face at the specified anatomical points. Protocol name displayed elegantly. Clean, authoritative, high-end medical aesthetic. DO NOT alter or retouch the patient's face — only add overlay graphics on top.`;
 
         const [techMap, clientMap, resultMap] = await Promise.all([
           base44.integrations.Core.GenerateImage({
