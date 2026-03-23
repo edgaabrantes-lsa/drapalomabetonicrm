@@ -432,6 +432,8 @@ export default function FacialAnalysis() {
     setCapturedAngles([]);
     setAnalysis(null);
     setParsedSections(null);
+    setMapData(null);
+    setFacialMaps(null);
     setError(null);
     setInputMode(null);
     setIsAnalyzing(false);
