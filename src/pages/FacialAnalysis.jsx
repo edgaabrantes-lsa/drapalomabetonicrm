@@ -190,56 +190,101 @@ const parseAnalysis = (text) => {
 export default function FacialAnalysis() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  // Multi-angle captures: [{type, dataUrl, label}]
+  const [capturedAngles, setCapturedAngles] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [parsedSections, setParsedSections] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("structured");
+  const [showCamera, setShowCamera] = useState(false);
+  const [inputMode, setInputMode] = useState(null); // null | 'upload' | 'camera'
   const fileInputRef = useRef(null);
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Por favor, selecione um arquivo de imagem.");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Imagem muito grande. Máximo 10MB.");
-      return;
-    }
+    if (!file.type.startsWith("image/")) { setError("Por favor, selecione um arquivo de imagem."); return; }
+    if (file.size > 10 * 1024 * 1024) { setError("Imagem muito grande. Máximo 10MB."); return; }
     setError(null);
     setImageFile(file);
+    setCapturedAngles([]);
     setAnalysis(null);
     setParsedSections(null);
     const reader = new FileReader();
     reader.onload = (ev) => setImagePreview(ev.target.result);
     reader.readAsDataURL(file);
+    setInputMode("upload");
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      const fakeEvent = { target: { files: [file] } };
-      handleImageSelect(fakeEvent);
-    }
+    if (file) handleImageSelect({ target: { files: [file] } });
+  };
+
+  // Called when GuidedCamera finishes capturing
+  const handleCameraComplete = (captures) => {
+    setShowCamera(false);
+    if (!captures || captures.length === 0) return;
+    setCapturedAngles(captures);
+    setImagePreview(captures[0].dataUrl);
+    setImageFile(null);
+    setAnalysis(null);
+    setParsedSections(null);
+    setInputMode("camera");
+  };
+
+  const removeAngle = (idx) => {
+    const updated = capturedAngles.filter((_, i) => i !== idx);
+    setCapturedAngles(updated);
+    if (updated.length > 0) setImagePreview(updated[0].dataUrl);
+    else { setImagePreview(null); setInputMode(null); }
+  };
+
+  // Convert base64 dataUrl → File blob for upload
+  const dataUrlToFile = (dataUrl, filename) => {
+    const arr = dataUrl.split(",");
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    return new File([u8arr], filename, { type: mime });
   };
 
   const runAnalysis = async () => {
-    if (!imageFile) return;
+    const hasUpload = inputMode === "upload" && imageFile;
+    const hasCamera = inputMode === "camera" && capturedAngles.length > 0;
+    if (!hasUpload && !hasCamera) return;
+
     setIsAnalyzing(true);
     setError(null);
     setAnalysis(null);
     setParsedSections(null);
 
-    // Upload the image first
-    const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
+    let fileUrls = [];
 
-    // Call LLM with vision
+    if (hasUpload) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
+      fileUrls = [file_url];
+    } else {
+      // Upload all captured angles in parallel
+      const uploads = await Promise.all(
+        capturedAngles.map((c, i) => {
+          const file = dataUrlToFile(c.dataUrl, `facial_${c.type}_${i}.jpg`);
+          return base44.integrations.Core.UploadFile({ file });
+        })
+      );
+      fileUrls = uploads.map(u => u.file_url);
+    }
+
+    const angleContext = hasCamera && capturedAngles.length > 1
+      ? `\n\nIMPORTANTE: Foram fornecidas ${capturedAngles.length} imagens: ${capturedAngles.map(c => c.label).join(", ")}. Cruze as informações de todos os ângulos para uma análise mais precisa. Identifique cada ângulo e use-os de forma complementar.`
+      : "";
+
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: HOF_SYSTEM_PROMPT + "\n\nAnalise a imagem facial fornecida e gere o laudo completo seguindo exatamente a estrutura solicitada.",
-      file_urls: [file_url],
+      prompt: HOF_SYSTEM_PROMPT + angleContext + "\n\nAnalise as imagens faciais fornecidas e gere o laudo completo seguindo exatamente a estrutura solicitada.",
+      file_urls: fileUrls,
       model: "claude_sonnet_4_6",
     });
 
@@ -252,10 +297,14 @@ export default function FacialAnalysis() {
   const resetAnalysis = () => {
     setImageFile(null);
     setImagePreview(null);
+    setCapturedAngles([]);
     setAnalysis(null);
     setParsedSections(null);
     setError(null);
+    setInputMode(null);
   };
+
+  const canAnalyze = (inputMode === "upload" && imageFile) || (inputMode === "camera" && capturedAngles.length > 0);
 
   const sections = [
     {
