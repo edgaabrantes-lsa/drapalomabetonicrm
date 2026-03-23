@@ -595,13 +595,24 @@ export default function FacialAnalysis() {
         <div className="space-y-6">
           {/* Image + Quick Summary Row */}
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Thumbnail */}
+            {/* Thumbnail(s) */}
             <div className="flex flex-col items-center gap-3">
-              <img src={imagePreview} alt="Analisada"
-                className="w-full max-h-60 object-contain rounded-2xl border border-[#c9a55c]/20" />
+              {capturedAngles.length > 1 ? (
+                <div className="grid grid-cols-3 gap-2 w-full">
+                  {capturedAngles.map((c, i) => (
+                    <div key={i} className="rounded-xl overflow-hidden border border-[#c9a55c]/20">
+                      <img src={c.dataUrl} alt={c.label} className="w-full aspect-square object-cover" />
+                      <p className="text-[10px] text-[#c9a55c] text-center bg-[#12121a] py-1">{c.label}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <img src={imagePreview} alt="Analisada"
+                  className="w-full max-h-60 object-contain rounded-2xl border border-[#c9a55c]/20" />
+              )}
               <Badge className="bg-emerald-500/20 text-emerald-400 gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Análise concluída
+                {capturedAngles.length > 1 ? `${capturedAngles.length} ângulos analisados` : "Análise concluída"}
               </Badge>
             </div>
 
