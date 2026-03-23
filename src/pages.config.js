@@ -48,6 +48,7 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import Agenda from './pages/Agenda';
+import FacialAnalysis from './pages/FacialAnalysis';
 import CRM from './pages/CRM';
 import Dashboard from './pages/Dashboard';
 import Financial from './pages/Financial';
