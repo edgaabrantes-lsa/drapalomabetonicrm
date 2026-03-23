@@ -4,7 +4,7 @@ import {
   Upload, Sparkles, Brain, ChevronDown, ChevronUp,
   FileText, Star, Target, Zap, Eye, User, Shield,
   Download, RefreshCw, Camera, AlertCircle, CheckCircle2,
-  TrendingUp, Layers, Clipboard, ImagePlus, X, Check
+  TrendingUp, Layers, Clipboard, ImagePlus, X, Check, Map
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
 import GuidedCamera from "@/components/facial/GuidedCamera";
+import FacialMapDisplay from "@/components/facial/FacialMapDisplay";
 
 const HOF_SYSTEM_PROMPT = `Você é um especialista em harmonização orofacial (HOF), estética avançada e análise estrutural da face humana, trabalhando para a Clínica Premium da Dra. Paloma Betoni.
 
