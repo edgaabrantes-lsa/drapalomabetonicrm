@@ -46,6 +46,7 @@ const navigation = [
   { name: "Estoque", href: "Inventory", icon: Package },
   { name: "Financeiro", href: "Financial", icon: DollarSign },
   { name: "Precificação", href: "Pricing", icon: Calculator },
+  { name: "Análise Facial IA", href: "FacialAnalysis", icon: Sparkles },
   { name: "Configurações", href: "Settings", icon: Settings },
 ];
 

@@ -63,6 +63,7 @@ import __Layout from './Layout.jsx';
 
 export const PAGES = {
     "Agenda": Agenda,
+    "FacialAnalysis": FacialAnalysis,
     "CRM": CRM,
     "Dashboard": Dashboard,
     "Financial": Financial,
