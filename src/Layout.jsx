@@ -140,7 +140,6 @@ export default function Layout({ children, currentPageName }) {
             <Menu className="h-6 w-6" />
           </Button>
           <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-[#c9a55c]" />
             <span className="font-serif text-lg tracking-wide gold-text">Dra. Paloma Betoni</span>
           </div>
           <Avatar className="h-8 w-8 border border-[#c9a55c]/30">
@@ -171,18 +170,10 @@ export default function Layout({ children, currentPageName }) {
         <div className="h-20 flex items-center justify-between px-6 border-b border-[#1e1e2a]">
           {!collapsed && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full gold-gradient flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-[#0a0a0f]" />
-              </div>
               <div>
                 <h1 className="font-serif text-lg tracking-wide gold-text">Dra. Paloma</h1>
                 <p className="text-xs text-gray-500 tracking-widest uppercase">Clínica Premium</p>
               </div>
-            </div>
-          )}
-          {collapsed && (
-            <div className="w-10 h-10 rounded-full gold-gradient flex items-center justify-center mx-auto">
-              <Sparkles className="h-5 w-5 text-[#0a0a0f]" />
             </div>
           )}
           <Button
