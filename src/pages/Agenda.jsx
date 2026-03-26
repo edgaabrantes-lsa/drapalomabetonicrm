@@ -252,6 +252,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot }) =
               <p className={cn("text-xl font-light mt-0.5", isToday(day) ? "text-[#c9a55c]" : "text-white")}>
                 {format(day, "d")}
               </p>
+              <p className="text-[10px] text-gray-600 capitalize">{format(day, "MMM", { locale: ptBR })}</p>
             </div>
           ))}
         </div>
@@ -577,7 +578,7 @@ export default function Agenda() {
 
   const getViewTitle = () => {
     if (viewMode === "day") return format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
-    if (viewMode === "week") return `${format(weekStart, "d MMM", { locale: ptBR })} — ${format(weekEnd, "d MMM yyyy", { locale: ptBR })}`;
+    if (viewMode === "week") return `${format(weekStart, "d 'de' MMMM", { locale: ptBR })} — ${format(weekEnd, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
     if (viewMode === "month") return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
     return "Lista de Consultas";
   };
