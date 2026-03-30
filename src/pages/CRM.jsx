@@ -495,7 +495,7 @@ export default function CRM() {
   const totalPipeline = leads.reduce((sum, l) => sum + (l.estimated_value || 0), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-[#0d0d14] min-h-screen -m-4 lg:-m-8 p-4 lg:p-8">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
