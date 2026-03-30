@@ -94,17 +94,17 @@ export default function Layout({ children, currentPageName }) {
       )}>
 
         {/* Logo */}
-        <div className="h-[80px] flex items-center justify-between px-5 border-b border-[#222] flex-shrink-0">
+        <div className="h-[140px] flex items-center justify-between px-5 border-b border-[#222] flex-shrink-0">
           {!collapsed && (
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
               alt="Paloma Betoni"
               style={{
-                height: 52,
+                height: 110,
                 objectFit: "contain",
                 objectPosition: "left center",
                 filter: "brightness(0) invert(1)",
-                maxWidth: 200,
+                maxWidth: 220,
               }}
             />
           )}
