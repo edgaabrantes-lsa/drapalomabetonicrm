@@ -192,12 +192,19 @@ export default function Layout({ children, currentPageName }) {
       )}>
 
         {/* Top Bar */}
-        <header className="hidden lg:flex h-[72px] items-center justify-between px-8 border-b border-[#EEEEEE] bg-white sticky top-0 z-40">
+        <header className="hidden lg:flex h-[100px] items-center justify-between px-8 border-b border-[#EEEEEE] bg-white sticky top-0 z-40">
           <div className="relative max-w-sm w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#BBBBBB]" />
             <Input
               placeholder="Buscar pacientes, procedimentos..."
               className="pl-10 bg-[#F9F9F7] border-[#EEEEEE] text-[#121212] placeholder:text-[#BBBBBB] text-sm h-9 rounded-sm focus:border-[#121212]"
+            />
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <img
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
+              alt="Paloma Betoni"
+              style={{ height: 80, objectFit: "contain" }}
             />
           </div>
           <div className="flex items-center gap-5">
