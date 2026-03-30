@@ -58,6 +58,7 @@ import Patients from './pages/Patients';
 import Pricing from './pages/Pricing';
 import Protocols from './pages/Protocols';
 import Settings from './pages/Settings';
+import Intake from './pages/Intake';
 import __Layout from './Layout.jsx';
 
 
@@ -73,6 +74,7 @@ export const PAGES = {
     "Pricing": Pricing,
     "Protocols": Protocols,
     "Settings": Settings,
+    "Intake": Intake,
 }
 
 export const pagesConfig = {

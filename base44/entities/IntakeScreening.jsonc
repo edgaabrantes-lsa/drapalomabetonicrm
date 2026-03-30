@@ -1,0 +1,74 @@
+{
+  "name": "IntakeScreening",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "ID do paciente"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "raw_complaint": {
+      "type": "string",
+      "description": "Texto bruto enviado pelo paciente (WhatsApp/formul\u00e1rio)"
+    },
+    "ai_output": {
+      "type": "object",
+      "description": "JSON bruto retornado pela IA",
+      "properties": {
+        "queixa_principal": {
+          "type": "string"
+        },
+        "hipotese_triagem": {
+          "type": "string"
+        },
+        "alerta_saude": {
+          "type": "string"
+        },
+        "tom_emocional": {
+          "type": "string"
+        },
+        "urgencia": {
+          "type": "string"
+        },
+        "comercial_priority": {
+          "type": "boolean"
+        },
+        "area_tratamento": {
+          "type": "string"
+        }
+      }
+    },
+    "validation_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Status de valida\u00e7\u00e3o pela Dra. Paloma"
+    },
+    "validated_by": {
+      "type": "string",
+      "description": "Email de quem validou"
+    },
+    "validated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "medical_record_id": {
+      "type": "string",
+      "description": "ID do prontu\u00e1rio criado ap\u00f3s aprova\u00e7\u00e3o"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es adicionais da Dra."
+    }
+  },
+  "required": [
+    "patient_id",
+    "raw_complaint"
+  ]
+}

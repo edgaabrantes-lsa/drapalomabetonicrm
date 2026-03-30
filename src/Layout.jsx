@@ -47,6 +47,7 @@ const navigation = [
   { name: "Financeiro", href: "Financial", icon: DollarSign },
   { name: "Precificação", href: "Pricing", icon: Calculator },
   { name: "Análise Facial IA", href: "FacialAnalysis", icon: Sparkles },
+  { name: "Triagem IA", href: "Intake", icon: ClipboardList },
   { name: "Configurações", href: "Settings", icon: Settings },
 ];
 
