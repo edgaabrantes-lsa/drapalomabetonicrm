@@ -1,48 +1,57 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval,
   addDays, addWeeks, subWeeks, addMonths, subMonths,
   isSameDay, isToday, setHours, setMinutes,
-  startOfMonth, endOfMonth, eachWeekOfInterval, getDay
+  startOfMonth, endOfMonth, eachDayOfInterval as eachDay
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Plus, ChevronLeft, ChevronRight, Clock, User, Calendar as CalendarIcon,
-  CheckCircle, List, Grid3X3, LayoutGrid, MoreHorizontal, MapPin, Sparkles
+  Plus, ChevronLeft, ChevronRight, Clock, User,
+  Calendar as CalendarIcon, List, Grid3X3, LayoutGrid
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const timeSlots = Array.from({ length: 24 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 8;
-  const minutes = (i % 2) * 30;
-  return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-}).filter(t => parseInt(t.split(":")[0]) >= 8 && parseInt(t.split(":")[0]) < 20);
-
-const statusConfig = {
-  scheduled:   { label: "Agendado",      color: "bg-blue-500/20 text-blue-400",     dot: "bg-blue-500" },
-  confirmed:   { label: "Confirmado",    color: "bg-emerald-500/20 text-emerald-400", dot: "bg-emerald-500" },
-  in_progress: { label: "Em Andamento",  color: "bg-[#c9a55c]/20 text-[#c9a55c]",  dot: "bg-[#c9a55c]" },
-  completed:   { label: "Concluído",     color: "bg-gray-500/20 text-gray-400",      dot: "bg-gray-500" },
-  cancelled:   { label: "Cancelado",     color: "bg-red-500/20 text-red-400",        dot: "bg-red-500" },
-  no_show:     { label: "Não Compareceu", color: "bg-orange-500/20 text-orange-400", dot: "bg-orange-500" }
+// ── Tokens LSA ──────────────────────────────────────────────
+const T = {
+  pearl: "#F9F9F7",
+  white: "#FFFFFF",
+  onyx: "#121212",
+  charcoal: "#757575",
+  subtle: "#EEEEEE",
+  gold: "#C5A059",
 };
 
-const HOUR_HEIGHT = 64; // px per hour
+// Status config LSA — dots only, no big badges
+const statusDot = {
+  scheduled:   { dot: T.gold,    label: "Agendado" },
+  confirmed:   { dot: T.onyx,    label: "Confirmado" },
+  in_progress: { dot: T.gold,    label: "Em Andamento" },
+  completed:   { dot: "#CCCCCC", label: "Concluído" },
+  cancelled:   { dot: "#E53935", label: "Cancelado" },
+  no_show:     { dot: "#E53935", label: "Não Compareceu" },
+};
+
+const HOUR_HEIGHT = 64;
 const DAY_START = 8;
 const DAY_END = 20;
 
+const timeSlots = Array.from({ length: (DAY_END - DAY_START) * 2 }, (_, i) => {
+  const hour = DAY_START + Math.floor(i / 2);
+  const mins = (i % 2) * 30;
+  return `${String(hour).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+});
+
+// ── Appointment Form ─────────────────────────────────────────
 const AppointmentForm = ({ appointment, patients, procedures, professionals, rooms, onSave, onClose }) => {
   const [formData, setFormData] = useState(appointment || {
     patient_id: "", patient_name: "", professional_id: "", professional_name: "",
@@ -64,164 +73,179 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
     onSave({ ...formData, start_time: startTime.toISOString(), end_time: endTime.toISOString() });
   };
 
+  const inputStyle = {
+    background: T.pearl, border: `1px solid ${T.subtle}`,
+    borderRadius: 2, color: T.onyx, fontFamily: "Inter",
+    fontSize: 13, padding: "8px 12px", width: "100%",
+  };
+  const labelStyle = {
+    fontFamily: "Inter", fontSize: 10, letterSpacing: "0.12em",
+    textTransform: "uppercase", color: T.charcoal, display: "block", marginBottom: 6,
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <Label className="text-gray-300">Paciente *</Label>
+          <label style={labelStyle}>Paciente *</label>
           <Select value={formData.patient_id} onValueChange={v => {
             const p = patients.find(x => x.id === v);
             setFormData(prev => ({ ...prev, patient_id: v, patient_name: p?.full_name || "" }));
           }}>
-            <SelectTrigger className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1">
+            <SelectTrigger style={{ ...inputStyle, height: 38 }}>
               <SelectValue placeholder="Selecione o paciente" />
             </SelectTrigger>
-            <SelectContent className="bg-[#12121a] border-[#1e1e2a] max-h-52">
-              {patients.map(p => <SelectItem key={p.id} value={p.id} className="text-white">{p.full_name}</SelectItem>)}
+            <SelectContent>
+              {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="col-span-2">
-          <Label className="text-gray-300">Procedimento *</Label>
+          <label style={labelStyle}>Procedimento *</label>
           <Select value={formData.procedure_id} onValueChange={v => {
             const proc = procedures.find(x => x.id === v);
             setFormData(prev => ({ ...prev, procedure_id: v, procedure_name: proc?.name || "", duration_minutes: proc?.duration_minutes || 60, price: proc?.price || 0 }));
           }}>
-            <SelectTrigger className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1">
+            <SelectTrigger style={{ ...inputStyle, height: 38 }}>
               <SelectValue placeholder="Selecione o procedimento" />
             </SelectTrigger>
-            <SelectContent className="bg-[#12121a] border-[#1e1e2a] max-h-52">
-              {procedures.map(p => <SelectItem key={p.id} value={p.id} className="text-white">{p.name} ({p.duration_minutes}min)</SelectItem>)}
+            <SelectContent>
+              {procedures.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.duration_minutes}min)</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label className="text-gray-300">Data *</Label>
+          <label style={labelStyle}>Data *</label>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full mt-1 justify-start bg-[#1a1a25] border-[#1e1e2a] text-white hover:bg-[#1e1e2a]">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-              </Button>
+              <button type="button" style={{ ...inputStyle, display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <CalendarIcon size={14} color={T.charcoal} />
+                {format(selectedDate, "dd/MM/yyyy")}
+              </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-[#12121a] border-[#1e1e2a]">
-              <Calendar mode="single" selected={selectedDate} onSelect={d => d && setSelectedDate(d)} locale={ptBR} className="text-white" />
+            <PopoverContent className="w-auto p-0">
+              <Calendar mode="single" selected={selectedDate} onSelect={d => d && setSelectedDate(d)} locale={ptBR} />
             </PopoverContent>
           </Popover>
         </div>
         <div>
-          <Label className="text-gray-300">Horário *</Label>
+          <label style={labelStyle}>Horário *</label>
           <Select value={selectedTime} onValueChange={setSelectedTime}>
-            <SelectTrigger className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent className="bg-[#12121a] border-[#1e1e2a] max-h-52">
-              {timeSlots.map(t => <SelectItem key={t} value={t} className="text-white">{t}</SelectItem>)}
+            <SelectTrigger style={{ ...inputStyle, height: 38 }}><SelectValue /></SelectTrigger>
+            <SelectContent className="max-h-52">
+              {timeSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label className="text-gray-300">Profissional</Label>
+          <label style={labelStyle}>Profissional</label>
           <Select value={formData.professional_id} onValueChange={v => {
             const prof = professionals.find(x => x.id === v);
             setFormData(prev => ({ ...prev, professional_id: v, professional_name: prof?.name || "" }));
           }}>
-            <SelectTrigger className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1">
+            <SelectTrigger style={{ ...inputStyle, height: 38 }}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
-            <SelectContent className="bg-[#12121a] border-[#1e1e2a]">
-              {professionals.map(p => <SelectItem key={p.id} value={p.id} className="text-white">{p.name}</SelectItem>)}
+            <SelectContent>
+              {professionals.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label className="text-gray-300">Sala</Label>
+          <label style={labelStyle}>Sala</label>
           <Select value={formData.room_id} onValueChange={v => setFormData(prev => ({ ...prev, room_id: v }))}>
-            <SelectTrigger className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1">
+            <SelectTrigger style={{ ...inputStyle, height: 38 }}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
-            <SelectContent className="bg-[#12121a] border-[#1e1e2a]">
-              {rooms.map(r => <SelectItem key={r.id} value={r.id} className="text-white">{r.name}</SelectItem>)}
+            <SelectContent>
+              {rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label className="text-gray-300">Duração (min)</Label>
-          <Input type="number" value={formData.duration_minutes}
+          <label style={labelStyle}>Duração (min)</label>
+          <input type="number" value={formData.duration_minutes}
             onChange={e => setFormData(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) }))}
-            className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1" />
+            style={inputStyle} />
         </div>
         <div>
-          <Label className="text-gray-300">Valor (R$)</Label>
-          <Input type="number" value={formData.price}
+          <label style={labelStyle}>Valor (R$)</label>
+          <input type="number" value={formData.price}
             onChange={e => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
-            className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1" />
+            style={inputStyle} />
         </div>
         <div className="col-span-2">
-          <Label className="text-gray-300">Observações</Label>
-          <Textarea value={formData.notes} onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1" rows={2} />
+          <label style={labelStyle}>Observações</label>
+          <textarea value={formData.notes}
+            onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            rows={2} style={{ ...inputStyle, resize: "vertical" }} />
         </div>
       </div>
-      <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="ghost" onClick={onClose} className="text-gray-400">Cancelar</Button>
-        <Button type="submit" className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black">
-          {appointment ? "Salvar" : "Agendar"}
-        </Button>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8 }}>
+        <button type="button" onClick={onClose} style={{
+          background: "none", border: `1px solid ${T.subtle}`, borderRadius: 2,
+          fontFamily: "Inter", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase",
+          color: T.charcoal, padding: "10px 20px", cursor: "pointer",
+        }}>Cancelar</button>
+        <button type="submit" style={{
+          background: T.onyx, color: "#fff", border: "none", borderRadius: 2,
+          fontFamily: "Inter", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase",
+          padding: "10px 20px", cursor: "pointer",
+        }}>
+          {appointment?.id ? "Salvar Alterações" : "Confirmar Agendamento"}
+        </button>
       </div>
     </form>
   );
 };
 
-// ---- Day View with time grid ----
+// ── Day View ─────────────────────────────────────────────────
 const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
   const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
   const dayAppts = appointments
     .filter(a => a.start_time && isSameDay(parseISO(a.start_time), date))
     .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
-  const getTopOffset = (appt) => {
-    const start = parseISO(appt.start_time);
-    const hourFraction = (start.getHours() - DAY_START) + start.getMinutes() / 60;
-    return hourFraction * HOUR_HEIGHT;
-  };
-
-  const getHeight = (appt) => {
-    const dur = appt.duration_minutes || 60;
-    return Math.max((dur / 60) * HOUR_HEIGHT, 24);
-  };
-
   return (
-    <div className="flex overflow-auto max-h-[600px]">
-      {/* Time Labels */}
-      <div className="flex-shrink-0 w-16">
+    <div style={{ display: "flex", overflow: "auto", maxHeight: 600 }}>
+      {/* Time axis */}
+      <div style={{ width: 56, flexShrink: 0 }}>
         {hours.map(h => (
-          <div key={h} className="flex items-start justify-end pr-3 text-xs text-gray-600" style={{ height: HOUR_HEIGHT }}>
-            {h}:00
+          <div key={h} style={{ height: HOUR_HEIGHT, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingRight: 12, paddingTop: 4 }}>
+            <span style={{ fontFamily: "Inter", fontSize: 11, color: "#BCBCBC" }}>{h}:00</span>
           </div>
         ))}
       </div>
       {/* Grid */}
-      <div className="flex-1 relative border-l border-[#1e1e2a]">
+      <div style={{ flex: 1, position: "relative", borderLeft: `0.5px solid ${T.subtle}` }}>
         {hours.map(h => (
-          <div key={h} className="border-b border-[#1e1e2a]/50 cursor-pointer hover:bg-[#c9a55c]/5 transition-colors"
-            style={{ height: HOUR_HEIGHT }}
-            onClick={() => onClickSlot(date, h)}
+          <div key={h} onClick={() => onClickSlot(date, h)}
+            style={{ height: HOUR_HEIGHT, borderBottom: `1px solid ${T.subtle}`, cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(197,160,89,0.03)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
           />
         ))}
-        {/* Appointments overlaid */}
         {dayAppts.map(appt => {
-          const cfg = statusConfig[appt.status] || statusConfig.scheduled;
+          const start = parseISO(appt.start_time);
+          const top = ((start.getHours() - DAY_START) + start.getMinutes() / 60) * HOUR_HEIGHT;
+          const height = Math.max(((appt.duration_minutes || 60) / 60) * HOUR_HEIGHT, 28);
+          const cfg = statusDot[appt.status] || statusDot.scheduled;
           return (
-            <div
-              key={appt.id}
-              onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
-              className={`absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer overflow-hidden ${cfg.color} border border-current/30 hover:brightness-110 transition-all`}
-              style={{ top: getTopOffset(appt), height: getHeight(appt) }}
-            >
-              <p className="text-xs font-semibold truncate">{appt.patient_name}</p>
-              <p className="text-xs opacity-70 truncate">{appt.procedure_name}</p>
-              {getHeight(appt) > 50 && (
-                <p className="text-xs opacity-60">
-                  {format(parseISO(appt.start_time), "HH:mm")} • {appt.duration_minutes}min
+            <div key={appt.id} onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
+              style={{
+                position: "absolute", left: 4, right: 4,
+                top, height, borderRadius: 2,
+                background: T.white, borderLeft: `3px solid ${cfg.dot}`,
+                border: `1px solid ${T.subtle}`, borderLeftColor: cfg.dot,
+                padding: "4px 8px", cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              }}>
+              <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 12, color: T.onyx, margin: 0 }}>
+                {appt.patient_name}
+              </p>
+              {height > 40 && (
+                <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: T.charcoal, margin: "2px 0 0" }}>
+                  {appt.procedure_name}
                 </p>
               )}
             </div>
@@ -232,72 +256,83 @@ const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
   );
 };
 
-// ---- Week View ----
+// ── Week View ─────────────────────────────────────────────────
 const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot }) => {
-  const getAppointmentsForDay = (date) =>
-    appointments.filter(a => a.start_time && isSameDay(parseISO(a.start_time), date));
+  const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[700px]">
-        {/* Day Headers */}
-        <div className="grid border-b border-[#1e1e2a]" style={{ gridTemplateColumns: "4rem repeat(7, 1fr)" }}>
+    <div style={{ overflowX: "auto" }}>
+      <div style={{ minWidth: 700 }}>
+        {/* Header */}
+        <div style={{ display: "grid", gridTemplateColumns: "56px repeat(7, 1fr)", borderBottom: `1px solid ${T.subtle}` }}>
           <div />
           {weekDays.map(day => (
-            <div key={day.toISOString()} className={cn(
-              "p-3 text-center border-l border-[#1e1e2a]",
-              isToday(day) && "bg-[#c9a55c]/10"
-            )}>
-              <p className="text-xs text-gray-500 uppercase">{format(day, "EEE", { locale: ptBR })}</p>
-              <p className={cn("text-xl font-light mt-0.5", isToday(day) ? "text-[#c9a55c]" : "text-white")}>
+            <div key={day.toISOString()} style={{
+              padding: "12px 8px", textAlign: "center",
+              borderLeft: `1px solid ${T.subtle}`,
+              background: isToday(day) ? "rgba(197,160,89,0.05)" : "transparent",
+            }}>
+              <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: T.charcoal }}>
+                {format(day, "EEE", { locale: ptBR })}
+              </p>
+              <p style={{
+                fontFamily: isToday(day) ? "'Playfair Display', serif" : "Inter",
+                fontSize: isToday(day) ? 20 : 18, fontWeight: 300,
+                color: isToday(day) ? T.gold : T.onyx, marginTop: 2,
+              }}>
                 {format(day, "d")}
               </p>
-              <p className="text-[10px] text-gray-600 capitalize">{format(day, "MMM", { locale: ptBR })}</p>
+              <p style={{ fontFamily: "Inter", fontSize: 9, color: T.charcoal, marginTop: 1 }}>
+                {format(day, "MMM", { locale: ptBR })}
+              </p>
             </div>
           ))}
         </div>
-        {/* Time Grid */}
-        <div className="flex overflow-auto max-h-[560px]">
-          {/* Hours */}
-          <div className="flex-shrink-0 w-16">
-            {Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i).map(h => (
-              <div key={h} className="flex items-start justify-end pr-3 text-xs text-gray-600" style={{ height: HOUR_HEIGHT }}>
-                {h}:00
+        {/* Time grid */}
+        <div style={{ display: "flex", overflow: "auto", maxHeight: 560 }}>
+          <div style={{ width: 56, flexShrink: 0 }}>
+            {hours.map(h => (
+              <div key={h} style={{ height: HOUR_HEIGHT, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingRight: 10, paddingTop: 4 }}>
+                <span style={{ fontFamily: "Inter", fontSize: 11, color: "#BCBCBC" }}>{h}:00</span>
               </div>
             ))}
           </div>
-          {/* Day Columns */}
           {weekDays.map(day => {
-            const dayAppts = getAppointmentsForDay(day)
+            const dayAppts = appointments
+              .filter(a => a.start_time && isSameDay(parseISO(a.start_time), day))
               .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-
             return (
-              <div key={day.toISOString()} className={cn(
-                "flex-1 relative border-l border-[#1e1e2a]",
-                isToday(day) && "bg-[#c9a55c]/5"
-              )}>
-                {Array.from({ length: DAY_END - DAY_START }, (_, i) => i).map(i => (
-                  <div key={i} className="border-b border-[#1e1e2a]/40 hover:bg-[#c9a55c]/5 cursor-pointer transition-colors"
-                    style={{ height: HOUR_HEIGHT }}
-                    onClick={() => onClickSlot(day, DAY_START + i)}
-                  />
+              <div key={day.toISOString()} style={{
+                flex: 1, position: "relative",
+                borderLeft: `0.5px solid ${T.subtle}`,
+                background: isToday(day) ? "rgba(197,160,89,0.02)" : "transparent",
+              }}>
+                {hours.map(h => (
+                  <div key={h} onClick={() => onClickSlot(day, h)}
+                    style={{ height: HOUR_HEIGHT, borderBottom: `1px solid ${T.subtle}`, cursor: "pointer" }} />
                 ))}
                 {dayAppts.map(appt => {
                   const start = parseISO(appt.start_time);
-                  const hourFraction = (start.getHours() - DAY_START) + start.getMinutes() / 60;
-                  const top = hourFraction * HOUR_HEIGHT;
+                  const top = ((start.getHours() - DAY_START) + start.getMinutes() / 60) * HOUR_HEIGHT;
                   const height = Math.max(((appt.duration_minutes || 60) / 60) * HOUR_HEIGHT, 24);
-                  const cfg = statusConfig[appt.status] || statusConfig.scheduled;
-
+                  const cfg = statusDot[appt.status] || statusDot.scheduled;
                   return (
-                    <div
-                      key={appt.id}
-                      onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
-                      className={`absolute inset-x-0.5 rounded-md px-1.5 py-1 cursor-pointer overflow-hidden ${cfg.color} border border-current/20 hover:brightness-110 transition-all text-xs`}
-                      style={{ top, height }}
-                    >
-                      <p className="font-semibold truncate">{appt.patient_name}</p>
-                      {height > 32 && <p className="opacity-70 truncate">{appt.procedure_name}</p>}
+                    <div key={appt.id} onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
+                      style={{
+                        position: "absolute", left: 2, right: 2, top, height,
+                        background: T.white, borderLeft: `2px solid ${cfg.dot}`,
+                        border: `1px solid ${T.subtle}`, borderLeftColor: cfg.dot,
+                        borderRadius: 2, padding: "3px 6px", cursor: "pointer",
+                        overflow: "hidden",
+                      }}>
+                      <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 11, color: T.onyx, margin: 0 }}>
+                        {appt.patient_name}
+                      </p>
+                      {height > 36 && (
+                        <p style={{ fontFamily: "Inter", fontSize: 8, letterSpacing: "0.06em", textTransform: "uppercase", color: T.charcoal }}>
+                          {appt.procedure_name}
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -310,7 +345,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot }) =
   );
 };
 
-// ---- Month View ----
+// ── Month View ────────────────────────────────────────────────
 const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot }) => {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -318,51 +353,53 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot 
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calDays = eachDayOfInterval({ start: calStart, end: calEnd });
 
-  const getApptsForDay = (date) =>
-    appointments.filter(a => a.start_time && isSameDay(parseISO(a.start_time), date));
-
   return (
     <div>
-      <div className="grid grid-cols-7 border-b border-[#1e1e2a] mb-1">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${T.subtle}` }}>
         {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(d => (
-          <div key={d} className="p-3 text-center text-xs text-gray-500 uppercase font-medium">{d}</div>
+          <div key={d} style={{ padding: "10px 0", textAlign: "center", fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: T.charcoal }}>
+            {d}
+          </div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
         {calDays.map(day => {
-          const dayAppts = getApptsForDay(day);
+          const dayAppts = appointments.filter(a => a.start_time && isSameDay(parseISO(a.start_time), day));
           const isCurrentMonth = day.getMonth() === currentDate.getMonth();
           return (
-            <div
-              key={day.toISOString()}
-              onClick={() => onClickSlot(day, 9)}
-              className={cn(
-                "min-h-[100px] p-2 border-b border-r border-[#1e1e2a] cursor-pointer hover:bg-[#c9a55c]/5 transition-colors",
-                !isCurrentMonth && "opacity-30",
-                isToday(day) && "bg-[#c9a55c]/10"
-              )}
-            >
-              <p className={cn(
-                "text-sm font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full",
-                isToday(day) ? "bg-[#c9a55c] text-black" : "text-gray-400"
-              )}>
+            <div key={day.toISOString()} onClick={() => onClickSlot(day, 9)}
+              style={{
+                minHeight: 90, padding: 8,
+                borderBottom: `1px solid ${T.subtle}`, borderRight: `1px solid ${T.subtle}`,
+                cursor: "pointer",
+                background: isToday(day) ? "rgba(197,160,89,0.04)" : "transparent",
+                opacity: isCurrentMonth ? 1 : 0.3,
+              }}>
+              <p style={{
+                fontFamily: isToday(day) ? "'Playfair Display', serif" : "Inter",
+                fontSize: 12, fontWeight: isToday(day) ? 500 : 300,
+                color: isToday(day) ? T.gold : T.onyx, marginBottom: 4,
+              }}>
                 {format(day, "d")}
               </p>
-              <div className="space-y-0.5">
-                {dayAppts.slice(0, 2).map(appt => {
-                  const cfg = statusConfig[appt.status] || statusConfig.scheduled;
-                  return (
-                    <div key={appt.id}
-                      onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
-                      className={`text-xs px-1.5 py-0.5 rounded truncate ${cfg.color}`}>
+              {dayAppts.slice(0, 2).map(appt => {
+                const cfg = statusDot[appt.status] || statusDot.scheduled;
+                return (
+                  <div key={appt.id} onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      marginBottom: 2, cursor: "pointer",
+                    }}>
+                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
+                    <span style={{ fontFamily: "Inter", fontSize: 9, color: T.charcoal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {format(parseISO(appt.start_time), "HH:mm")} {appt.patient_name}
-                    </div>
-                  );
-                })}
-                {dayAppts.length > 2 && (
-                  <p className="text-xs text-gray-500">+{dayAppts.length - 2} mais</p>
-                )}
-              </div>
+                    </span>
+                  </div>
+                );
+              })}
+              {dayAppts.length > 2 && (
+                <p style={{ fontFamily: "Inter", fontSize: 9, color: T.charcoal }}>+{dayAppts.length - 2}</p>
+              )}
             </div>
           );
         })}
@@ -371,134 +408,212 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot 
   );
 };
 
-// ---- List View ----
+// ── List View — "The Exclusive Timeline" ─────────────────────
 const ListView = ({ appointments, onClickAppointment }) => {
   const sorted = [...appointments].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-
   const grouped = sorted.reduce((acc, apt) => {
     if (!apt.start_time) return acc;
-    const dateKey = format(parseISO(apt.start_time), "yyyy-MM-dd");
-    if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(apt);
+    const key = format(parseISO(apt.start_time), "yyyy-MM-dd");
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(apt);
     return acc;
   }, {});
 
+  if (Object.keys(grouped).length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 0", color: T.charcoal }}>
+        <CalendarIcon size={32} style={{ margin: "0 auto 16px", opacity: 0.2 }} />
+        <p style={{ fontFamily: "Inter", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          Nenhuma consulta agendada
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
       {Object.entries(grouped).map(([dateKey, appts]) => (
-        <div key={dateKey}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className={cn(
-              "px-3 py-1 rounded-full text-sm font-medium",
-              isToday(parseISO(dateKey)) ? "bg-[#c9a55c] text-black" : "bg-[#1a1a25] text-gray-300"
-            )}>
-              {format(parseISO(dateKey), "EEEE, d 'de' MMMM", { locale: ptBR })}
-            </div>
+        <div key={dateKey} style={{ marginBottom: 32 }}>
+          {/* Date heading */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <p style={{
+              fontFamily: isToday(parseISO(dateKey)) ? "'Playfair Display', serif" : "Inter",
+              fontSize: isToday(parseISO(dateKey)) ? 16 : 11,
+              fontStyle: isToday(parseISO(dateKey)) ? "normal" : "normal",
+              letterSpacing: isToday(parseISO(dateKey)) ? "0.02em" : "0.12em",
+              textTransform: isToday(parseISO(dateKey)) ? "none" : "uppercase",
+              color: isToday(parseISO(dateKey)) ? T.onyx : T.charcoal,
+              fontWeight: 400,
+            }}>
+              {isToday(parseISO(dateKey)) ? "Hoje" : format(parseISO(dateKey), "EEEE, d 'de' MMMM", { locale: ptBR })}
+            </p>
             {isToday(parseISO(dateKey)) && (
-              <Badge className="bg-[#c9a55c]/20 text-[#c9a55c]">Hoje</Badge>
+              <span style={{
+                fontFamily: "Inter", fontSize: 9, letterSpacing: "0.15em",
+                textTransform: "uppercase", color: T.gold,
+              }}>
+                {format(parseISO(dateKey), "d 'de' MMMM", { locale: ptBR })}
+              </span>
             )}
           </div>
-          <div className="space-y-2">
-            {appts.map(appt => {
-              const cfg = statusConfig[appt.status] || statusConfig.scheduled;
-              return (
-                <div key={appt.id} onClick={() => onClickAppointment(appt)}
-                  className="flex items-center gap-4 p-4 bg-[#12121a] border border-[#1e1e2a] rounded-xl hover:border-[#c9a55c]/30 cursor-pointer transition-all">
-                  <div className="text-center w-14 flex-shrink-0">
-                    <p className="text-lg font-light text-white">
-                      {format(parseISO(appt.start_time), "HH:mm")}
-                    </p>
-                    <p className="text-xs text-gray-500">{appt.duration_minutes}min</p>
+
+          {/* Timeline */}
+          <div style={{ display: "flex", gap: 0 }}>
+            {/* Vertical line */}
+            <div style={{ width: 56, flexShrink: 0, position: "relative" }}>
+              <div style={{ position: "absolute", left: 28, top: 0, bottom: 0, width: "0.5px", background: T.subtle }} />
+            </div>
+            {/* Cards */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+              {appts.map(appt => {
+                const cfg = statusDot[appt.status] || statusDot.scheduled;
+                return (
+                  <div key={appt.id} style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                    {/* Time to the left of the line */}
+                    <div style={{ width: 56, flexShrink: 0, textAlign: "right", paddingRight: 16, paddingTop: 14 }}>
+                      <span style={{ fontFamily: "Inter", fontSize: 11, color: "#BCBCBC" }}>
+                        {format(parseISO(appt.start_time), "HH:mm")}
+                      </span>
+                    </div>
+                    {/* "Invite" card */}
+                    <div onClick={() => onClickAppointment(appt)}
+                      style={{
+                        flex: 1, background: T.white,
+                        border: `1px solid ${T.subtle}`, borderRadius: 4,
+                        padding: "16px 20px", cursor: "pointer",
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+                        transition: "box-shadow 0.2s",
+                        display: "flex", alignItems: "center", gap: 16,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.06)"}
+                      onMouseLeave={e => e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.03)"}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontStyle: "italic",
+                          fontSize: 18, color: T.onyx,
+                          margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        }}>
+                          {appt.patient_name}
+                        </p>
+                        <p style={{
+                          fontFamily: "Inter", fontSize: 10,
+                          letterSpacing: "0.1em", textTransform: "uppercase",
+                          color: T.charcoal, marginTop: 4,
+                        }}>
+                          {appt.procedure_name}{appt.professional_name ? ` — ${appt.professional_name}` : ""}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
+                        {appt.duration_minutes && (
+                          <span style={{ fontFamily: "Inter", fontSize: 10, color: T.charcoal }}>
+                            {appt.duration_minutes}min
+                          </span>
+                        )}
+                        {appt.price > 0 && (
+                          <span style={{ fontFamily: "Inter", fontSize: 13, fontWeight: 500, color: T.onyx }}>
+                            R$ {appt.price.toLocaleString("pt-BR")}
+                          </span>
+                        )}
+                        {/* Status dot */}
+                        <span style={{
+                          width: 8, height: 8, borderRadius: "50%",
+                          background: cfg.dot, flexShrink: 0,
+                        }} title={cfg.label} />
+                      </div>
+                    </div>
                   </div>
-                  <div className={`w-1 h-10 rounded-full ${cfg.dot}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white">{appt.patient_name}</p>
-                    <p className="text-sm text-gray-400 truncate">{appt.procedure_name}</p>
-                  </div>
-                  {appt.professional_name && (
-                    <p className="text-xs text-gray-500 hidden lg:block">{appt.professional_name}</p>
-                  )}
-                  <Badge className={cfg.color}>{cfg.label}</Badge>
-                  <p className="text-sm text-[#c9a55c] hidden lg:block">
-                    {appt.price > 0 ? `R$ ${appt.price.toLocaleString("pt-BR")}` : ""}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       ))}
-      {Object.keys(grouped).length === 0 && (
-        <div className="text-center py-16">
-          <CalendarIcon className="h-12 w-12 text-gray-700 mx-auto mb-4" />
-          <p className="text-gray-500">Nenhuma consulta agendada</p>
-        </div>
-      )}
     </div>
   );
 };
 
-// ---- Appointment Detail Modal ----
+// ── Appointment Detail ────────────────────────────────────────
 const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit }) => {
   if (!appointment) return null;
-  const cfg = statusConfig[appointment.status] || statusConfig.scheduled;
+  const cfg = statusDot[appointment.status] || statusDot.scheduled;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-start gap-4">
-        <div className="w-14 h-14 rounded-full bg-[#c9a55c]/20 flex items-center justify-center">
-          <User className="h-6 w-6 text-[#c9a55c]" />
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 2, background: T.pearl, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <User size={18} color={T.charcoal} />
         </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-white">{appointment.patient_name}</h3>
-          <p className="text-gray-400">{appointment.procedure_name}</p>
-          <Badge className={`mt-1 ${cfg.color}`}>{cfg.label}</Badge>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 20, color: T.onyx, margin: 0 }}>
+            {appointment.patient_name}
+          </p>
+          <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal, marginTop: 4 }}>
+            {appointment.procedure_name}
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: cfg.dot }} />
+            <span style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal }}>
+              {cfg.label}
+            </span>
+          </div>
         </div>
-        <Button size="sm" variant="ghost" onClick={onEdit} className="text-[#c9a55c]">Editar</Button>
+        <button onClick={onEdit} style={{
+          background: "none", border: `1px solid ${T.subtle}`, borderRadius: 2,
+          fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
+          color: T.charcoal, padding: "6px 14px", cursor: "pointer",
+        }}>Editar</button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="p-3 bg-[#1a1a25] rounded-xl">
-          <p className="text-xs text-gray-500">Horário</p>
-          <p className="text-white font-medium">
-            {appointment.start_time && format(parseISO(appointment.start_time), "dd/MM/yyyy HH:mm")}
-          </p>
-        </div>
-        <div className="p-3 bg-[#1a1a25] rounded-xl">
-          <p className="text-xs text-gray-500">Duração</p>
-          <p className="text-white font-medium">{appointment.duration_minutes} min</p>
-        </div>
-        {appointment.professional_name && (
-          <div className="p-3 bg-[#1a1a25] rounded-xl">
-            <p className="text-xs text-gray-500">Profissional</p>
-            <p className="text-white font-medium">{appointment.professional_name}</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        {[
+          { label: "Horário", value: appointment.start_time && format(parseISO(appointment.start_time), "dd/MM/yyyy HH:mm") },
+          { label: "Duração", value: `${appointment.duration_minutes} min` },
+          appointment.professional_name && { label: "Profissional", value: appointment.professional_name },
+          appointment.price > 0 && { label: "Valor", value: `R$ ${appointment.price?.toLocaleString("pt-BR")}`, gold: true },
+        ].filter(Boolean).map(item => (
+          <div key={item.label} style={{
+            background: T.pearl, borderRadius: 2, padding: "12px 14px",
+            borderBottom: item.gold ? `2px solid ${T.gold}` : `1px solid ${T.subtle}`,
+          }}>
+            <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: T.charcoal, marginBottom: 6 }}>
+              {item.label}
+            </p>
+            <p style={{ fontFamily: "Inter", fontSize: 13, fontWeight: 500, color: item.gold ? T.gold : T.onyx }}>
+              {item.value}
+            </p>
           </div>
-        )}
-        {appointment.price > 0 && (
-          <div className="p-3 bg-[#c9a55c]/10 border border-[#c9a55c]/20 rounded-xl">
-            <p className="text-xs text-gray-500">Valor</p>
-            <p className="text-[#c9a55c] font-semibold">R$ {appointment.price.toLocaleString("pt-BR")}</p>
-          </div>
-        )}
+        ))}
       </div>
 
       {appointment.notes && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Observações</p>
-          <p className="text-gray-300 text-sm bg-[#1a1a25] p-3 rounded-xl">{appointment.notes}</p>
+        <div style={{ background: T.pearl, borderRadius: 2, padding: "12px 14px", marginBottom: 20 }}>
+          <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: T.charcoal, marginBottom: 6 }}>Observações</p>
+          <p style={{ fontFamily: "Inter", fontSize: 12, color: T.onyx }}>{appointment.notes}</p>
         </div>
       )}
 
       <div>
-        <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Atualizar status</p>
-        <div className="grid grid-cols-3 gap-2">
+        <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: T.charcoal, marginBottom: 10 }}>
+          Atualizar Status
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {["confirmed", "in_progress", "completed", "no_show", "cancelled"].map(status => {
-            const s = statusConfig[status];
+            const s = statusDot[status];
+            const isActive = appointment.status === status;
             return (
               <button key={status} onClick={() => onStatusChange(appointment.id, status)}
-                className={`p-2 rounded-lg text-xs font-medium transition-all ${
-                  appointment.status === status ? s.color : "bg-[#1a1a25] text-gray-500 hover:text-white"
-                }`}>
+                style={{
+                  background: isActive ? T.onyx : T.pearl,
+                  color: isActive ? "#fff" : T.charcoal,
+                  border: `1px solid ${isActive ? T.onyx : T.subtle}`,
+                  borderRadius: 2, padding: "8px 4px", cursor: "pointer",
+                  fontFamily: "Inter", fontSize: 9,
+                  letterSpacing: "0.1em", textTransform: "uppercase",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
                 {s.label}
               </button>
             );
@@ -509,10 +624,11 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit }) => 
   );
 };
 
+// ── Main Page ─────────────────────────────────────────────────
 export default function Agenda() {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState("week");
+  const [viewMode, setViewMode] = useState("list");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -522,26 +638,11 @@ export default function Agenda() {
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const { data: appointments = [] } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: () => base44.entities.Appointment.list("-start_time", 500),
-  });
-  const { data: patients = [] } = useQuery({
-    queryKey: ["patients"],
-    queryFn: () => base44.entities.Patient.list("-created_date", 1000),
-  });
-  const { data: procedures = [] } = useQuery({
-    queryKey: ["procedures"],
-    queryFn: () => base44.entities.Procedure.list(),
-  });
-  const { data: professionals = [] } = useQuery({
-    queryKey: ["professionals"],
-    queryFn: () => base44.entities.Professional.list(),
-  });
-  const { data: rooms = [] } = useQuery({
-    queryKey: ["rooms"],
-    queryFn: () => base44.entities.Room.list(),
-  });
+  const { data: appointments = [] } = useQuery({ queryKey: ["appointments"], queryFn: () => base44.entities.Appointment.list("-start_time", 500) });
+  const { data: patients = [] } = useQuery({ queryKey: ["patients"], queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
+  const { data: procedures = [] } = useQuery({ queryKey: ["procedures"], queryFn: () => base44.entities.Procedure.list() });
+  const { data: professionals = [] } = useQuery({ queryKey: ["professionals"], queryFn: () => base44.entities.Professional.list() });
+  const { data: rooms = [] } = useQuery({ queryKey: ["rooms"], queryFn: () => base44.entities.Room.list() });
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Appointment.create(data),
@@ -553,17 +654,13 @@ export default function Agenda() {
   });
 
   const handleSave = (data) => {
-    if (editingAppointment) {
-      updateMutation.mutate({ id: editingAppointment.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
+    if (editingAppointment) updateMutation.mutate({ id: editingAppointment.id, data });
+    else createMutation.mutate(data);
   };
 
   const handleClickSlot = (date, hour) => {
-    const slotDate = setHours(date, hour);
     setEditingAppointment(null);
-    setPrefilledTime(slotDate);
+    setPrefilledTime(setHours(date, hour));
     setIsFormOpen(true);
   };
 
@@ -580,133 +677,139 @@ export default function Agenda() {
     if (viewMode === "day") return format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
     if (viewMode === "week") return `${format(weekStart, "d 'de' MMMM", { locale: ptBR })} — ${format(weekEnd, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
     if (viewMode === "month") return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
-    return "Lista de Consultas";
+    return "Todos os agendamentos";
   };
 
-  const prefilledAppt = prefilledTime ? {
-    start_time: prefilledTime.toISOString()
-  } : null;
+  const views = [
+    { id: "day", icon: <Clock size={14} />, label: "Dia" },
+    { id: "week", icon: <Grid3X3 size={14} />, label: "Semana" },
+    { id: "month", icon: <LayoutGrid size={14} />, label: "Mês" },
+    { id: "list", icon: <List size={14} />, label: "Lista" },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div style={{ fontFamily: "Inter, sans-serif", maxWidth: 1400, position: "relative", minHeight: "80vh" }}>
+
+      {/* ── Header ───────────────────────────────────────── */}
+      <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h1 className="text-2xl font-serif text-white flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-[#c9a55c]" />
-            Agenda Dra. Paloma Betoni
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 500, letterSpacing: "0.02em", color: T.onyx, margin: 0 }}>
+            Agenda Clínica
           </h1>
-          <p className="text-gray-400 capitalize">{getViewTitle()}</p>
+          <p style={{ fontFamily: "Inter", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal, marginTop: 6 }}>
+            {getViewTitle()}
+          </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* View Mode */}
-          <div className="flex bg-[#1a1a25] border border-[#1e1e2a] rounded-lg p-1">
-            {[
-              { id: "day",   icon: <Clock className="h-4 w-4" />, label: "Dia" },
-              { id: "week",  icon: <Grid3X3 className="h-4 w-4" />, label: "Semana" },
-              { id: "month", icon: <LayoutGrid className="h-4 w-4" />, label: "Mês" },
-              { id: "list",  icon: <List className="h-4 w-4" />, label: "Lista" },
-            ].map(v => (
-              <button
-                key={v.id}
-                onClick={() => setViewMode(v.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  viewMode === v.id ? "bg-[#c9a55c]/20 text-[#c9a55c]" : "text-gray-500 hover:text-white"
-                }`}
-              >
-                {v.icon}
-                <span className="hidden sm:inline">{v.label}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {/* View toggle */}
+          <div style={{ display: "flex", border: `1px solid ${T.subtle}`, borderRadius: 2, overflow: "hidden" }}>
+            {views.map(v => (
+              <button key={v.id} onClick={() => setViewMode(v.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", background: viewMode === v.id ? T.onyx : "transparent",
+                  color: viewMode === v.id ? "#fff" : T.charcoal,
+                  border: "none", cursor: "pointer",
+                  fontFamily: "Inter", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
+                  borderRight: `1px solid ${T.subtle}`,
+                }}>
+                {v.icon} <span>{v.label}</span>
               </button>
             ))}
           </div>
-
           {/* Navigation */}
           {viewMode !== "list" && (
-            <>
-              <Button variant="outline" size="icon" onClick={() => handleNav(-1)}
-                className="border-[#1e1e2a] text-gray-400 hover:text-white hover:bg-[#1a1a25]">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" onClick={() => setCurrentDate(new Date())}
-                className="border-[#1e1e2a] text-gray-400 hover:text-white hover:bg-[#1a1a25] text-sm">
-                Hoje
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => handleNav(1)}
-                className="border-[#1e1e2a] text-gray-400 hover:text-white hover:bg-[#1a1a25]">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={() => handleNav(-1)} style={{ border: `1px solid ${T.subtle}`, background: "transparent", borderRadius: 2, padding: "7px 10px", cursor: "pointer", color: T.onyx }}>
+                <ChevronLeft size={14} />
+              </button>
+              <button onClick={() => setCurrentDate(new Date())} style={{
+                border: `1px solid ${T.subtle}`, background: "transparent", borderRadius: 2,
+                padding: "7px 16px", cursor: "pointer", fontFamily: "Inter", fontSize: 9,
+                letterSpacing: "0.1em", textTransform: "uppercase", color: T.onyx,
+              }}>Hoje</button>
+              <button onClick={() => handleNav(1)} style={{ border: `1px solid ${T.subtle}`, background: "transparent", borderRadius: 2, padding: "7px 10px", cursor: "pointer", color: T.onyx }}>
+                <ChevronRight size={14} />
+              </button>
+            </div>
           )}
-
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black">
-                <Plus className="mr-2 h-4 w-4" /> Nova Consulta
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-serif">
-                  {editingAppointment ? "Editar Consulta" : "Nova Consulta"}
-                </DialogTitle>
-              </DialogHeader>
-              <AppointmentForm
-                appointment={editingAppointment || prefilledAppt}
-                patients={patients} procedures={procedures}
-                professionals={professionals} rooms={rooms}
-                onSave={handleSave}
-                onClose={() => { setIsFormOpen(false); setEditingAppointment(null); setPrefilledTime(null); }}
-              />
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Mini KPIs ──────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
         {[
-          { label: "Consultas Hoje", value: todayAppts.length, color: "text-white" },
-          { label: "Confirmadas", value: todayAppts.filter(a => a.status === "confirmed").length, color: "text-emerald-400" },
-          { label: "Em Andamento", value: todayAppts.filter(a => a.status === "in_progress").length, color: "text-[#c9a55c]" },
-          { label: "Receita Hoje", value: `R$ ${todayRevenue.toLocaleString("pt-BR")}`, color: "text-[#c9a55c]" },
+          { label: "Consultas Hoje", value: todayAppts.length },
+          { label: "Confirmadas", value: todayAppts.filter(a => a.status === "confirmed").length },
+          { label: "Em Andamento", value: todayAppts.filter(a => a.status === "in_progress").length },
+          { label: "Receita Hoje", value: `R$ ${todayRevenue.toLocaleString("pt-BR")}`, gold: true },
         ].map(stat => (
-          <Card key={stat.label} className="bg-[#12121a] border-[#1e1e2a]">
-            <CardContent className="p-4">
-              <p className="text-xs text-gray-500">{stat.label}</p>
-              <p className={`text-2xl font-light mt-1 ${stat.color}`}>{stat.value}</p>
-            </CardContent>
-          </Card>
+          <div key={stat.label} style={{
+            background: T.white, border: `1px solid ${T.subtle}`,
+            borderBottom: stat.gold ? `2px solid ${T.gold}` : `1px solid ${T.subtle}`,
+            borderRadius: 4, padding: "16px 20px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+          }}>
+            <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 8 }}>
+              {stat.label}
+            </p>
+            <p style={{ fontFamily: "Inter", fontSize: 22, fontWeight: 300, color: stat.gold ? T.gold : T.onyx }}>
+              {stat.value}
+            </p>
+          </div>
         ))}
       </div>
 
-      {/* Calendar Views */}
-      <Card className="bg-[#12121a] border-[#1e1e2a] overflow-hidden">
-        <CardContent className="p-0">
-          {viewMode === "day" && (
-            <DayView date={currentDate} appointments={appointments}
-              onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />
-          )}
-          {viewMode === "week" && (
-            <WeekView weekDays={weekDays} appointments={appointments}
-              onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />
-          )}
-          {viewMode === "month" && (
-            <MonthView currentDate={currentDate} appointments={appointments}
-              onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />
-          )}
-          {viewMode === "list" && (
-            <div className="p-6">
-              <ListView appointments={appointments} onClickAppointment={setSelectedAppointment} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* ── Calendar ──────────────────────────────────── */}
+      <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+        {viewMode === "day" && <DayView date={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
+        {viewMode === "week" && <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
+        {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
+        {viewMode === "list" && <div style={{ padding: "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} /></div>}
+      </div>
 
-      {/* Appointment Detail Dialog */}
-      <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
-        <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-md">
+      {/* ── FAB: Novo Agendamento ─────────────────────── */}
+      <button
+        onClick={() => { setEditingAppointment(null); setPrefilledTime(null); setIsFormOpen(true); }}
+        style={{
+          position: "fixed", bottom: 32, right: 32,
+          width: 52, height: 52,
+          background: T.onyx, color: "#fff",
+          border: "none", borderRadius: 4,
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.16)",
+          zIndex: 100,
+        }}
+        title="Novo Agendamento"
+      >
+        <Plus size={20} strokeWidth={1.5} />
+      </button>
+
+      {/* ── Form Dialog ──────────────────────────────── */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent style={{ maxWidth: 520 }}>
           <DialogHeader>
-            <DialogTitle className="text-xl font-serif">Detalhes da Consulta</DialogTitle>
+            <DialogTitle style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: T.onyx }}>
+              {editingAppointment ? "Editar Consulta" : "Nova Consulta"}
+            </DialogTitle>
+          </DialogHeader>
+          <AppointmentForm
+            appointment={editingAppointment || (prefilledTime ? { start_time: prefilledTime.toISOString() } : null)}
+            patients={patients} procedures={procedures}
+            professionals={professionals} rooms={rooms}
+            onSave={handleSave}
+            onClose={() => { setIsFormOpen(false); setEditingAppointment(null); setPrefilledTime(null); }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Detail Dialog ─────────────────────────────── */}
+      <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
+        <DialogContent style={{ maxWidth: 440 }}>
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: T.onyx }}>
+              Detalhes da Consulta
+            </DialogTitle>
           </DialogHeader>
           <AppointmentDetail
             appointment={selectedAppointment}

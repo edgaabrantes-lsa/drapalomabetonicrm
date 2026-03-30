@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -6,92 +6,127 @@ import { createPageUrl } from "@/utils";
 import { format, startOfMonth, endOfMonth, isToday, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Users,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  ArrowRight,
-  Package,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  MessageSquare,
-  Sparkles,
-  Activity
+  Users, Calendar, DollarSign, TrendingUp, TrendingDown,
+  Clock, ArrowRight, Package, AlertTriangle, MessageSquare, Activity
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, Cell,
+  PieChart, Pie
 } from "recharts";
 
-const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color = "gold" }) => (
-  <Card className="bg-[#12121a] border-[#1e1e2a] overflow-hidden group hover:border-[#c9a55c]/30 transition-all duration-300">
-    <CardContent className="p-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="text-sm text-gray-400 mb-1">{title}</p>
-          <h3 className="text-3xl font-light tracking-tight text-white">{value}</h3>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-          {trend && (
-            <div className={`flex items-center gap-1 mt-2 text-xs ${trend === "up" ? "text-emerald-400" : "text-red-400"}`}>
-              {trend === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              <span>{trendValue}</span>
-            </div>
-          )}
-        </div>
-        <div className={`p-3 rounded-xl bg-[#c9a55c]/10 group-hover:bg-[#c9a55c]/20 transition-colors`}>
-          <Icon className="h-6 w-6 text-[#c9a55c]" />
-        </div>
+// ── Tokens LSA ──────────────────────────────────────────────
+const T = {
+  pearl: "#F9F9F7",
+  white: "#FFFFFF",
+  onyx: "#121212",
+  charcoal: "#757575",
+  subtle: "#EEEEEE",
+  gold: "#C5A059",
+};
+
+// ── KPI Card ────────────────────────────────────────────────
+const StatCard = ({ title, value, subtitle, trend, trendValue, highlight = false }) => (
+  <div style={{
+    background: T.white,
+    border: `1px solid ${highlight ? T.gold : T.subtle}`,
+    borderBottom: `2px solid ${highlight ? T.gold : T.subtle}`,
+    borderRadius: 4,
+    padding: "28px 24px",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+  }}>
+    <p style={{
+      fontFamily: "Inter, sans-serif",
+      fontSize: 10,
+      letterSpacing: "0.18em",
+      textTransform: "uppercase",
+      color: "#999",
+      marginBottom: 12,
+    }}>{title}</p>
+    <p style={{
+      fontFamily: "Inter, sans-serif",
+      fontSize: 28,
+      fontWeight: 300,
+      color: T.onyx,
+      lineHeight: 1.1,
+    }}>{value}</p>
+    {subtitle && (
+      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: T.charcoal, marginTop: 6 }}>
+        {subtitle}
+      </p>
+    )}
+    {trend && (
+      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
+        {trend === "up"
+          ? <TrendingUp size={11} color="#4CAF50" />
+          : <TrendingDown size={11} color="#E53935" />}
+        <span style={{ fontSize: 11, color: trend === "up" ? "#4CAF50" : "#E53935" }}>{trendValue}</span>
       </div>
-    </CardContent>
-  </Card>
+    )}
+  </div>
 );
 
-const AppointmentCard = ({ appointment }) => {
-  const statusColors = {
-    scheduled: "bg-blue-500/20 text-blue-400",
-    confirmed: "bg-emerald-500/20 text-emerald-400",
-    in_progress: "bg-[#c9a55c]/20 text-[#c9a55c]",
-    completed: "bg-gray-500/20 text-gray-400",
-    cancelled: "bg-red-500/20 text-red-400",
-    no_show: "bg-orange-500/20 text-orange-400"
-  };
-
-  return (
-    <div className="flex items-center gap-4 p-4 bg-[#1a1a25] rounded-xl border border-[#1e1e2a] hover:border-[#c9a55c]/20 transition-all">
-      <div className="text-center min-w-[60px]">
-        <p className="text-2xl font-light text-white">
-          {format(parseISO(appointment.start_time), "HH:mm")}
-        </p>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-white truncate">{appointment.patient_name}</p>
-        <p className="text-sm text-gray-400 truncate">{appointment.procedure_name}</p>
-      </div>
-      <Badge className={statusColors[appointment.status] || statusColors.scheduled}>
-        {appointment.status === "confirmed" ? "Confirmado" : 
-         appointment.status === "scheduled" ? "Agendado" :
-         appointment.status === "in_progress" ? "Em andamento" : appointment.status}
-      </Badge>
-    </div>
-  );
+// ── Appointment Row (Dashboard mini-list) ───────────────────
+const statusDot = {
+  confirmed: T.onyx,
+  scheduled: T.gold,
+  in_progress: T.gold,
+  completed: "#CCCCCC",
+  cancelled: "#E53935",
+  no_show: "#E53935",
 };
+
+const AppointmentRow = ({ appointment }) => (
+  <div style={{
+    display: "flex", alignItems: "center", gap: 16,
+    padding: "14px 0",
+    borderBottom: `1px solid ${T.subtle}`,
+  }}>
+    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "#BCBCBC", width: 40, flexShrink: 0 }}>
+      {format(parseISO(appointment.start_time), "HH:mm")}
+    </span>
+    <span style={{
+      width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+      backgroundColor: statusDot[appointment.status] || T.gold,
+    }} />
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <p style={{
+        fontFamily: "'Playfair Display', serif",
+        fontStyle: "italic",
+        fontSize: 15,
+        color: T.onyx,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+      }}>{appointment.patient_name}</p>
+      <p style={{
+        fontFamily: "Inter, sans-serif", fontSize: 10,
+        letterSpacing: "0.1em", textTransform: "uppercase",
+        color: T.charcoal, marginTop: 2,
+      }}>{appointment.procedure_name}</p>
+    </div>
+    {appointment.price > 0 && (
+      <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: T.onyx, flexShrink: 0 }}>
+        R$ {appointment.price.toLocaleString("pt-BR")}
+      </span>
+    )}
+  </div>
+);
+
+const SectionTitle = ({ children, subtitle }) => (
+  <div style={{ marginBottom: 20 }}>
+    <h2 style={{
+      fontFamily: "'Playfair Display', serif",
+      fontSize: 20, fontWeight: 500,
+      letterSpacing: "0.03em", color: T.onyx, margin: 0,
+    }}>{children}</h2>
+    {subtitle && <p style={{
+      fontFamily: "Inter, sans-serif", fontSize: 10,
+      letterSpacing: "0.12em", textTransform: "uppercase",
+      color: T.charcoal, marginTop: 4,
+    }}>{subtitle}</p>}
+  </div>
+);
 
 export default function Dashboard() {
   const today = new Date();
@@ -102,56 +137,44 @@ export default function Dashboard() {
     queryKey: ["appointments"],
     queryFn: () => base44.entities.Appointment.list("-start_time", 100),
   });
-
   const { data: patients = [] } = useQuery({
     queryKey: ["patients"],
     queryFn: () => base44.entities.Patient.list("-created_date", 1000),
   });
-
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: () => base44.entities.Transaction.list("-created_date", 1000),
   });
-
   const { data: leads = [] } = useQuery({
     queryKey: ["leads"],
     queryFn: () => base44.entities.Lead.list("-created_date", 100),
   });
-
   const { data: supplies = [] } = useQuery({
     queryKey: ["supplies"],
     queryFn: () => base44.entities.Supply.list(),
   });
 
-  // Calculate stats
   const todayAppointments = appointments.filter(a => {
-    try {
-      return isToday(parseISO(a.start_time));
-    } catch {
-      return false;
-    }
+    try { return isToday(parseISO(a.start_time)); } catch { return false; }
   });
 
   const monthlyIncome = transactions
     .filter(t => t.type === "income" && t.status === "paid")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
-
   const monthlyExpenses = transactions
     .filter(t => t.type === "expense" && t.status === "paid")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
+  const netProfit = monthlyIncome - monthlyExpenses;
+  const margin = monthlyIncome > 0 ? ((netProfit / monthlyIncome) * 100).toFixed(1) : "0.0";
 
   const lowStockItems = supplies.filter(s => s.current_stock <= (s.minimum_stock || 5));
-
-  const newLeadsThisMonth = leads.filter(l => {
+  const newLeads = leads.filter(l => {
     try {
-      const created = parseISO(l.created_date);
-      return created >= monthStart && created <= monthEnd;
-    } catch {
-      return false;
-    }
+      const d = parseISO(l.created_date);
+      return d >= monthStart && d <= monthEnd;
+    } catch { return false; }
   });
 
-  // Chart data
   const revenueData = [
     { name: "Jan", receita: 45000, despesas: 32000 },
     { name: "Fev", receita: 52000, despesas: 28000 },
@@ -162,337 +185,260 @@ export default function Dashboard() {
   ];
 
   const procedureData = [
-    { name: "Botox", value: 35, color: "#c9a55c" },
-    { name: "Preenchimento", value: 25, color: "#e4c98a" },
-    { name: "Skinbooster", value: 20, color: "#a17f3f" },
-    { name: "Bioestimuladores", value: 15, color: "#8b6914" },
-    { name: "Outros", value: 5, color: "#5c4a1f" },
+    { name: "Botox", value: 35 },
+    { name: "Preenchimento", value: 25 },
+    { name: "Skinbooster", value: 20 },
+    { name: "Bioestimuladores", value: 15 },
+    { name: "Outros", value: 5 },
   ];
+  const pieColors = ["#121212", "#333", "#555", "#888", "#BBBBB"];
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div style={{ fontFamily: "Inter, sans-serif", maxWidth: 1400 }}>
+
+      {/* ── Header ──────────────────────────────────────── */}
+      <div style={{ marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h1 className="text-3xl font-serif tracking-tight text-white">
-            Bem-vinda, <span className="gold-text">Dra. Paloma</span>
-          </h1>
-          <p className="text-gray-400 mt-1">
-            {format(today, "EEEE, d 'de' MMMM", { locale: ptBR })}
-          </p>
+          <h1 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 32, fontWeight: 500,
+            letterSpacing: "0.02em", color: T.onyx,
+            margin: 0,
+          }}>Performance Clínica</h1>
+          <p style={{
+            fontFamily: "Inter, sans-serif", fontSize: 12,
+            letterSpacing: "0.12em", textTransform: "uppercase",
+            color: T.charcoal, marginTop: 6,
+          }}>Visão geral de margem e saúde de caixa</p>
         </div>
-        <div className="flex gap-3">
+        <div style={{ display: "flex", gap: 10 }}>
           <Link to={createPageUrl("Agenda")}>
-            <Button className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black">
-              <Calendar className="mr-2 h-4 w-4" />
+            <button style={{
+              background: T.onyx, color: "#fff",
+              border: "none", borderRadius: 2,
+              fontFamily: "Inter, sans-serif", fontSize: 10,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+              padding: "11px 22px", cursor: "pointer",
+            }}>
               Nova Consulta
-            </Button>
+            </button>
           </Link>
           <Link to={createPageUrl("Patients")}>
-            <Button variant="outline" className="border-[#c9a55c]/30 text-[#c9a55c] hover:bg-[#c9a55c]/10">
-              <Users className="mr-2 h-4 w-4" />
+            <button style={{
+              background: "transparent", color: T.onyx,
+              border: `1px solid ${T.onyx}`, borderRadius: 2,
+              fontFamily: "Inter, sans-serif", fontSize: 10,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+              padding: "10px 22px", cursor: "pointer",
+            }}>
               Novo Paciente
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* ── KPIs ────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 40 }}>
         <StatCard
           title="Agenda Hoje"
           value={todayAppointments.length}
           subtitle="consultas agendadas"
-          icon={Calendar}
-          trend="up"
-          trendValue="+2 vs ontem"
+          trend="up" trendValue="+2 vs ontem"
         />
         <StatCard
           title="Pacientes Ativos"
           value={patients.filter(p => p.status === "active").length}
-          subtitle="total no sistema"
-          icon={Users}
-          trend="up"
-          trendValue="+5% este mês"
+          subtitle="cadastros no sistema"
+          trend="up" trendValue="+5% este mês"
         />
         <StatCard
-          title="Receita do Mês"
-          value={`R$ ${monthlyIncome.toLocaleString("pt-BR")}`}
-          subtitle={`Despesas: R$ ${monthlyExpenses.toLocaleString("pt-BR")}`}
-          icon={DollarSign}
-          trend={monthlyIncome > monthlyExpenses ? "up" : "down"}
-          trendValue={`Lucro: R$ ${(monthlyIncome - monthlyExpenses).toLocaleString("pt-BR")}`}
+          title="Lucro Líquido"
+          value={`R$ ${netProfit.toLocaleString("pt-BR")}`}
+          subtitle={`Receita: R$ ${monthlyIncome.toLocaleString("pt-BR")}`}
+          trend={netProfit >= 0 ? "up" : "down"}
+          trendValue={`Margem: ${margin}%`}
+          highlight
+        />
+        <StatCard
+          title="Margem Média por Cadeira"
+          value={`${margin}%`}
+          subtitle="margem líquida mensal"
+          trend={parseFloat(margin) >= 30 ? "up" : "down"}
+          trendValue={parseFloat(margin) >= 30 ? "Meta atingida" : "Abaixo da meta"}
         />
         <StatCard
           title="Leads Novos"
-          value={newLeadsThisMonth.length}
-          subtitle="este mês"
-          icon={MessageSquare}
-          trend="up"
-          trendValue="+12% vs mês anterior"
+          value={newLeads.length}
+          subtitle="captados este mês"
+          trend="up" trendValue="+12% vs mês anterior"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
-        <Card className="lg:col-span-2 bg-[#12121a] border-[#1e1e2a]">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-light text-white">Receita vs Despesas</CardTitle>
-              <Badge variant="outline" className="border-[#c9a55c]/30 text-[#c9a55c]">
-                Últimos 6 meses
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
-                  <defs>
-                    <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c9a55c" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#c9a55c" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorDespesas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e1e2a" />
-                  <XAxis dataKey="name" stroke="#6b7280" />
-                  <YAxis stroke="#6b7280" tickFormatter={(value) => `R$${value / 1000}k`} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#12121a",
-                      border: "1px solid #1e1e2a",
-                      borderRadius: "8px",
-                      color: "#fff"
-                    }}
-                    formatter={(value) => [`R$ ${value.toLocaleString("pt-BR")}`, ""]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="receita"
-                    stroke="#c9a55c"
-                    fillOpacity={1}
-                    fill="url(#colorReceita)"
-                    name="Receita"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="despesas"
-                    stroke="#ef4444"
-                    fillOpacity={1}
-                    fill="url(#colorDespesas)"
-                    name="Despesas"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── Charts Row ──────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 40 }}>
 
-        {/* Procedures Distribution */}
-        <Card className="bg-[#12121a] border-[#1e1e2a]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-light text-white">Procedimentos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={procedureData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {procedureData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#12121a",
-                      border: "1px solid #1e1e2a",
-                      borderRadius: "8px",
-                      color: "#fff"
-                    }}
-                    formatter={(value) => [`${value}%`, ""]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-2 mt-4">
-              {procedureData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-gray-300">{item.name}</span>
-                  </div>
-                  <span className="text-gray-400">{item.value}%</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Receita vs Despesas */}
+        <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+          <SectionTitle subtitle="Últimos 6 meses">Receita vs Despesas</SectionTitle>
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="gReceita" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={T.onyx} stopOpacity={0.08} />
+                    <stop offset="95%" stopColor={T.onyx} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gDespesas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#888" stopOpacity={0.06} />
+                    <stop offset="95%" stopColor="#888" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={T.subtle} />
+                <XAxis dataKey="name" tick={{ fontFamily: "Inter", fontSize: 10, fill: T.charcoal }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontFamily: "Inter", fontSize: 10, fill: T.charcoal }} axisLine={false} tickLine={false} tickFormatter={v => `R$${v / 1000}k`} />
+                <Tooltip
+                  contentStyle={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, fontFamily: "Inter", fontSize: 11 }}
+                  formatter={v => [`R$ ${v.toLocaleString("pt-BR")}`, ""]}
+                />
+                <Area type="monotone" dataKey="receita" stroke={T.onyx} strokeWidth={1.5} fillOpacity={1} fill="url(#gReceita)" name="Receita" />
+                <Area type="monotone" dataKey="despesas" stroke="#888" strokeWidth={1} fillOpacity={1} fill="url(#gDespesas)" name="Despesas" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Today's Appointments */}
-        <Card className="bg-[#12121a] border-[#1e1e2a]">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-light text-white flex items-center gap-2">
-                <Clock className="h-5 w-5 text-[#c9a55c]" />
-                Agenda de Hoje
-              </CardTitle>
-              <Link to={createPageUrl("Agenda")}>
-                <Button variant="ghost" size="sm" className="text-[#c9a55c] hover:bg-[#c9a55c]/10">
-                  Ver tudo
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {todayAppointments.length > 0 ? (
-              <div className="space-y-3">
-                {todayAppointments.slice(0, 5).map((apt) => (
-                  <AppointmentCard key={apt.id} appointment={apt} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-400">Nenhuma consulta agendada para hoje</p>
-                <Link to={createPageUrl("Agenda")}>
-                  <Button className="mt-4 bg-[#c9a55c]/20 text-[#c9a55c] hover:bg-[#c9a55c]/30">
-                    Agendar Consulta
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Alerts & Quick Actions */}
-        <div className="space-y-6">
-          {/* Low Stock Alert */}
-          {lowStockItems.length > 0 && (
-            <Card className="bg-[#12121a] border-orange-500/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-light text-white flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-orange-400" />
-                  Estoque Baixo
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {lowStockItems.slice(0, 3).map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                      <div>
-                        <p className="font-medium text-white">{item.name}</p>
-                        <p className="text-xs text-gray-400">{item.brand}</p>
-                      </div>
-                      <Badge className="bg-orange-500/20 text-orange-400">
-                        {item.current_stock} {item.unit}
-                      </Badge>
-                    </div>
+        {/* Procedimentos Donut */}
+        <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+          <SectionTitle subtitle="Distribuição">Procedimentos</SectionTitle>
+          <div style={{ height: 180 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={procedureData} cx="50%" cy="50%" innerRadius={48} outerRadius={75} paddingAngle={2} dataKey="value">
+                  {procedureData.map((_, i) => (
+                    <Cell key={i} fill={pieColors[i % pieColors.length]} />
                   ))}
+                </Pie>
+                <Tooltip contentStyle={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, fontFamily: "Inter", fontSize: 11 }} formatter={v => [`${v}%`, ""]} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            {procedureData.map((item, i) => (
+              <div key={item.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: pieColors[i], display: "inline-block" }} />
+                  <span style={{ fontFamily: "Inter", fontSize: 11, color: T.charcoal }}>{item.name}</span>
                 </div>
-                <Link to={createPageUrl("Inventory")}>
-                  <Button variant="outline" className="w-full mt-4 border-orange-500/30 text-orange-400 hover:bg-orange-500/10">
-                    Gerenciar Estoque
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Recent Leads */}
-          <Card className="bg-[#12121a] border-[#1e1e2a]">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-light text-white flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-[#c9a55c]" />
-                  Leads Recentes
-                </CardTitle>
-                <Link to={createPageUrl("CRM")}>
-                  <Button variant="ghost" size="sm" className="text-[#c9a55c] hover:bg-[#c9a55c]/10">
-                    Ver CRM
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
+                <span style={{ fontFamily: "Inter", fontSize: 11, color: T.onyx, fontWeight: 500 }}>{item.value}%</span>
               </div>
-            </CardHeader>
-            <CardContent>
-              {leads.length > 0 ? (
-                <div className="space-y-3">
-                  {leads.slice(0, 4).map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-3 bg-[#1a1a25] rounded-lg border border-[#1e1e2a]">
-                      <div>
-                        <p className="font-medium text-white">{lead.name}</p>
-                        <p className="text-xs text-gray-400">{lead.interest?.join(", ") || "Interesse não definido"}</p>
-                      </div>
-                      <Badge className={
-                        lead.priority === "vip" ? "bg-[#c9a55c]/20 text-[#c9a55c]" :
-                        lead.priority === "high" ? "bg-red-500/20 text-red-400" :
-                        "bg-gray-500/20 text-gray-400"
-                      }>
-                        {lead.priority === "vip" ? "VIP" : lead.pipeline_stage || "Novo"}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <MessageSquare className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-400">Nenhum lead cadastrado</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Performance Indicators */}
-      <Card className="bg-[#12121a] border-[#1e1e2a]">
-        <CardHeader>
-          <CardTitle className="text-lg font-light text-white flex items-center gap-2">
-            <Activity className="h-5 w-5 text-[#c9a55c]" />
-            Indicadores de Performance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Taxa de Conversão</span>
-                <span className="text-[#c9a55c]">72%</span>
-              </div>
-              <Progress value={72} className="h-2 bg-[#1e1e2a]" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Satisfação do Paciente</span>
-                <span className="text-emerald-400">94%</span>
-              </div>
-              <Progress value={94} className="h-2 bg-[#1e1e2a]" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Meta Mensal</span>
-                <span className="text-[#c9a55c]">85%</span>
-              </div>
-              <Progress value={85} className="h-2 bg-[#1e1e2a]" />
-            </div>
+      {/* ── Bottom Row ──────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 40 }}>
+
+        {/* Agenda de Hoje */}
+        <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+            <SectionTitle subtitle="Lista de hoje">Agenda de Hoje</SectionTitle>
+            <Link to={createPageUrl("Agenda")}>
+              <button style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontFamily: "Inter", fontSize: 10,
+                letterSpacing: "0.1em", textTransform: "uppercase",
+                color: T.charcoal, display: "flex", alignItems: "center", gap: 4,
+              }}>
+                Ver tudo <ArrowRight size={11} />
+              </button>
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+          {todayAppointments.length > 0 ? (
+            todayAppointments.slice(0, 6).map(apt => <AppointmentRow key={apt.id} appointment={apt} />)
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px 0", color: T.charcoal }}>
+              <Calendar size={28} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
+              <p style={{ fontFamily: "Inter", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                Nenhuma consulta hoje
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Leads + Alertas */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {lowStockItems.length > 0 && (
+            <div style={{
+              background: T.white, border: `1px solid #FFCDD2`,
+              borderLeft: "3px solid #E53935", borderRadius: 4,
+              padding: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+            }}>
+              <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#E53935", marginBottom: 12 }}>
+                Estoque crítico
+              </p>
+              {lowStockItems.slice(0, 3).map(item => (
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontFamily: "Inter", fontSize: 12, color: T.onyx }}>{item.name}</span>
+                  <span style={{ fontFamily: "Inter", fontSize: 11, color: "#E53935" }}>{item.current_stock} {item.unit}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.03)", flex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+              <SectionTitle subtitle="Este mês">Leads Recentes</SectionTitle>
+              <Link to={createPageUrl("CRM")}>
+                <button style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal }}>
+                  CRM →
+                </button>
+              </Link>
+            </div>
+            {leads.slice(0, 4).map(lead => (
+              <div key={lead.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.subtle}` }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background: lead.priority === "vip" ? T.gold : lead.priority === "high" ? "#E53935" : "#DDD",
+                }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 13, color: T.onyx }}>{lead.name}</p>
+                  <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: T.charcoal }}>
+                    {lead.interest?.slice(0, 2).join(", ") || "interesse a definir"}
+                  </p>
+                </div>
+                {lead.priority === "vip" && (
+                  <span style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: T.gold }}>VIP</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Performance Indicators ───────────────────────── */}
+      <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+        <SectionTitle subtitle="Métricas de qualidade">Indicadores de Performance</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+          {[
+            { label: "Taxa de Conversão", value: 72 },
+            { label: "Satisfação do Paciente", value: 94 },
+            { label: "Meta Mensal", value: 85 },
+          ].map(item => (
+            <div key={item.label}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal }}>
+                  {item.label}
+                </span>
+                <span style={{ fontFamily: "Inter", fontSize: 13, fontWeight: 500, color: T.onyx }}>{item.value}%</span>
+              </div>
+              <div style={{ height: 2, background: T.subtle, borderRadius: 1 }}>
+                <div style={{ height: 2, width: `${item.value}%`, background: item.value >= 90 ? T.onyx : T.gold, borderRadius: 1 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
