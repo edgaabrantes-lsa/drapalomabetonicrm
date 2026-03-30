@@ -64,14 +64,14 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#222]">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center justify-between px-4 py-2">
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="text-white hover:bg-white/10">
             <Menu className="h-5 w-5" />
           </Button>
           <img
             src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
             alt="Paloma Betoni"
-            style={{ height: 56, objectFit: "contain", filter: "brightness(0) invert(1)" }}
+            style={{ height: 44, objectFit: "contain", filter: "brightness(0) invert(1)" }}
           />
           <Avatar className="h-8 w-8 border border-[#C5A059]/40">
             <AvatarFallback className="bg-[#C5A059]/20 text-[#C5A059] text-xs">
