@@ -4,6 +4,14 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
+  		fontFamily: {
+  			serif: ['Playfair Display', 'Georgia', 'serif'],
+  			sans: ['Inter', 'system-ui', 'sans-serif'],
+  		},
+  		letterSpacing: {
+  			luxury: '0.12em',
+  			wide: '0.06em',
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
