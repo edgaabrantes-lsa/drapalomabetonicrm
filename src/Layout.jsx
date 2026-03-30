@@ -69,9 +69,9 @@ export default function Layout({ children, currentPageName }) {
             <Menu className="h-5 w-5" />
           </Button>
           <img
-            src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/d591938f5_WhatsAppImage2026-03-30at165843.jpg"
+            src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
             alt="Paloma Betoni"
-            style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1)" }}
+            style={{ height: 36, objectFit: "contain", filter: "brightness(0) invert(1)" }}
           />
           <Avatar className="h-8 w-8 border border-[#C5A059]/40">
             <AvatarFallback className="bg-[#C5A059]/20 text-[#C5A059] text-xs">
@@ -94,17 +94,17 @@ export default function Layout({ children, currentPageName }) {
       )}>
 
         {/* Logo */}
-        <div className="h-[72px] flex items-center justify-between px-5 border-b border-[#222] flex-shrink-0">
+        <div className="h-[80px] flex items-center justify-between px-5 border-b border-[#222] flex-shrink-0">
           {!collapsed && (
             <img
-              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/d591938f5_WhatsAppImage2026-03-30at165843.jpg"
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
               alt="Paloma Betoni"
               style={{
-                height: 38,
+                height: 52,
                 objectFit: "contain",
                 objectPosition: "left center",
                 filter: "brightness(0) invert(1)",
-                maxWidth: 160,
+                maxWidth: 200,
               }}
             />
           )}
