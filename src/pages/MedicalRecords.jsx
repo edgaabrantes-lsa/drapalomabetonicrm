@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AIRecordInput from "@/components/medical/AIRecordInput";
 
 const statusConfig = {
   draft: { label: "Rascunho", color: "bg-gray-500/20 text-gray-400" },
@@ -114,8 +115,24 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
     }, 2000);
   };
 
+  const handleAIResult = (aiData) => {
+    setFormData(prev => ({
+      ...prev,
+      chief_complaint: aiData.chief_complaint || prev.chief_complaint,
+      medical_history: aiData.medical_history || prev.medical_history,
+      allergies: aiData.allergies?.length ? aiData.allergies : prev.allergies,
+      current_medications: aiData.current_medications?.length ? aiData.current_medications : prev.current_medications,
+      procedures_performed: aiData.procedures_performed?.length ? aiData.procedures_performed : prev.procedures_performed,
+      evolution: aiData.evolution || prev.evolution,
+      recommendations: aiData.recommendations || prev.recommendations,
+    }));
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+      {/* AI Input */}
+      <AIRecordInput onResult={handleAIResult} />
+
       {/* Patient Selection */}
       <div>
         <Label className="text-gray-300">Paciente *</Label>
