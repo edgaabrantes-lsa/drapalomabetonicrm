@@ -79,6 +79,19 @@ const NewIntakeForm = ({ patients, onSuccess }) => {
           <InfoTile label="Tom Emocional" value={ai.tom_emocional} />
           <InfoTile label="Área" value={ai.area_tratamento} />
         </div>
+        {result.workflow_suggestion && (
+          <div className={`p-3 rounded-xl border flex gap-2 ${result.workflow_suggestion === 'MOVER_PARA_URGENCIA' ? 'bg-red-500/10 border-red-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
+            <p className={`text-sm font-medium ${result.workflow_suggestion === 'MOVER_PARA_URGENCIA' ? 'text-red-400' : 'text-blue-400'}`}>
+              🔀 {result.workflow_suggestion === 'MOVER_PARA_URGENCIA' ? 'Mover para Urgência' : 'Agendar Avaliação'}
+            </p>
+          </div>
+        )}
+        {result.lsa_commercial_hint && (
+          <div className="p-3 bg-[#c9a55c]/10 border border-[#c9a55c]/20 rounded-xl">
+            <p className="text-xs text-[#c9a55c] font-medium mb-0.5">💡 Dica Comercial LSA</p>
+            <p className="text-[#e4c98a] text-sm">{result.lsa_commercial_hint}</p>
+          </div>
+        )}
         {ai.alerta_saude && ai.alerta_saude !== 'Nenhum alerta identificado' && (
           <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-2">
             <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
@@ -194,7 +207,11 @@ const ScreeningDetail = ({ screening, patient, onValidate, isValidating }) => {
           <InfoTile label="Hipótese de Triagem" value={ai.hipotese_triagem} />
           <InfoTile label="Tom Emocional" value={ai.tom_emocional} />
           <InfoTile label="Área de Tratamento" value={ai.area_tratamento} />
+          {ai.urgency !== undefined && (
+            <InfoTile label="Urgência (0–5)" value={`${ai.urgency}/5`} />
+          )}
         </div>
+        {screening.ai_output?.workflow_suggestion || screening.lsa_commercial_hint ? null : null}
         {ai.alerta_saude && ai.alerta_saude !== 'Nenhum alerta identificado' && (
           <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-2">
             <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
