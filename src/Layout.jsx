@@ -68,9 +68,11 @@ export default function Layout({ children, currentPageName }) {
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="text-white hover:bg-white/10">
             <Menu className="h-5 w-5" />
           </Button>
-          <span style={{ fontFamily: "'Playfair Display', serif", letterSpacing: "0.04em" }} className="text-white text-base">
-            Dra. Paloma Betoni
-          </span>
+          <img
+            src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/d591938f5_WhatsAppImage2026-03-30at165843.jpg"
+            alt="Paloma Betoni"
+            style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1)" }}
+          />
           <Avatar className="h-8 w-8 border border-[#C5A059]/40">
             <AvatarFallback className="bg-[#C5A059]/20 text-[#C5A059] text-xs">
               {user?.full_name?.[0] || "P"}
@@ -94,12 +96,17 @@ export default function Layout({ children, currentPageName }) {
         {/* Logo */}
         <div className="h-[72px] flex items-center justify-between px-5 border-b border-[#222] flex-shrink-0">
           {!collapsed && (
-            <div>
-              <p style={{ fontFamily: "'Playfair Display', serif", letterSpacing: "0.05em" }} className="text-white text-base font-medium">
-                Dra. Paloma
-              </p>
-              <p className="text-[10px] text-[#C5A059] tracking-[0.15em] uppercase mt-0.5">Clínica Premium</p>
-            </div>
+            <img
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/d591938f5_WhatsAppImage2026-03-30at165843.jpg"
+              alt="Paloma Betoni"
+              style={{
+                height: 38,
+                objectFit: "contain",
+                objectPosition: "left center",
+                filter: "brightness(0) invert(1)",
+                maxWidth: 160,
+              }}
+            />
           )}
           <Button
             variant="ghost" size="icon"
@@ -202,7 +209,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="text-right">
               <p className="text-[10px] text-[#BBBBBB] tracking-[0.1em] uppercase">Bem-vinda</p>
               <p className="text-sm font-medium text-[#121212]" style={{ fontFamily: "'Playfair Display', serif" }}>
-                {user?.full_name || "Dra. Paloma"}
+                {user?.full_name || "Dra. Paloma Betoni"}
               </p>
             </div>
           </div>
