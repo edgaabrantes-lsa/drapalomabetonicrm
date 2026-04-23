@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIRecordInput from "@/components/medical/AIRecordInput";
+import AudioRecorder from "@/components/medical/AudioRecorder";
 
 const statusConfig = {
   draft: { label: "Rascunho", color: "bg-gray-500/20 text-gray-400" },
@@ -289,28 +290,20 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
 
       {/* Evolution */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <Label className="text-gray-300">Evolução</Label>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleAITranscribe}
-            disabled={isTranscribing}
-            className="border-[#c9a55c]/30 text-[#c9a55c]"
-          >
-            {isTranscribing ? (
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-            ) : (
-              <Sparkles className="h-3 w-3 mr-1" />
-            )}
-            IA Transcrever
-          </Button>
-        </div>
+        <Label className="text-gray-300 mb-2 block">Evolução</Label>
+        <AudioRecorder
+          onSave={({ text, audio_url }) => {
+            setFormData(prev => ({
+              ...prev,
+              evolution: prev.evolution ? prev.evolution + "\n\n" + text : text,
+              audio_url: audio_url || prev.audio_url,
+            }));
+          }}
+        />
         <Textarea
           value={formData.evolution}
           onChange={(e) => setFormData(prev => ({ ...prev, evolution: e.target.value }))}
-          className="bg-[#1a1a25] border-[#1e1e2a] text-white"
+          className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-2"
           rows={4}
           placeholder="Evolução do tratamento..."
         />

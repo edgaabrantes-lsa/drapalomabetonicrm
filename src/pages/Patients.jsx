@@ -40,6 +40,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PatientImport from "@/components/patients/PatientImport";
+import { FileUp } from "lucide-react";
 
 const statusConfig = {
   active: { label: "Ativo", color: "bg-emerald-500/20 text-emerald-400" },
@@ -402,6 +404,7 @@ export default function Patients() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ["patients"],
@@ -462,7 +465,28 @@ export default function Patients() {
           <h1 className="text-2xl font-serif text-white">Pacientes</h1>
           <p className="text-gray-400">Gerencie o cadastro de pacientes</p>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <div className="flex gap-3">
+          <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-[#c9a55c]/30 text-[#c9a55c] hover:bg-[#c9a55c]/10">
+                <FileUp className="mr-2 h-4 w-4" />
+                Importar Planilha
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-serif">Importar Pacientes</DialogTitle>
+              </DialogHeader>
+              <PatientImport
+                existingPatients={patients}
+                onDone={() => {
+                  queryClient.invalidateQueries({ queryKey: ["patients"] });
+                  setIsImportOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black">
               <Plus className="mr-2 h-4 w-4" />
@@ -482,6 +506,7 @@ export default function Patients() {
             />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Stats */}

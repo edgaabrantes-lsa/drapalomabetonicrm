@@ -12,8 +12,10 @@ import {
   Plus,
   Edit,
   Trash2,
-  Save
+  Save,
+  Calendar
 } from "lucide-react";
+import GoogleCalendarIntegration from "@/components/settings/GoogleCalendarIntegration";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -299,6 +301,7 @@ const ProfessionalForm = ({ professional, onSave, onClose }) => {
 export default function Settings() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("procedures");
+
   const [isProcedureFormOpen, setIsProcedureFormOpen] = useState(false);
   const [isRoomFormOpen, setIsRoomFormOpen] = useState(false);
   const [isProfessionalFormOpen, setIsProfessionalFormOpen] = useState(false);
@@ -410,7 +413,7 @@ export default function Settings() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-[#1a1a25] border border-[#1e1e2a]">
+        <TabsList className="bg-[#1a1a25] border border-[#1e1e2a] flex-wrap">
           <TabsTrigger value="procedures" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
             Procedimentos
           </TabsTrigger>
@@ -419,6 +422,10 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="professionals" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
             Profissionais
+          </TabsTrigger>
+          <TabsTrigger value="google_calendar" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
+            <Calendar className="h-3.5 w-3.5 mr-1.5" />
+            Google Agenda
           </TabsTrigger>
         </TabsList>
 
@@ -687,6 +694,15 @@ export default function Settings() {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* Google Calendar */}
+        <TabsContent value="google_calendar" className="mt-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-medium text-white">Integração Google Agenda</h2>
+            <p className="text-gray-400 text-sm mt-1">Sincronize agendamentos com o Google Agenda da Dra. Paloma</p>
+          </div>
+          <GoogleCalendarIntegration />
         </TabsContent>
       </Tabs>
     </div>
