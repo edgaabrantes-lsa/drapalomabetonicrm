@@ -18,6 +18,7 @@ import {
   X,
   UserCircle,
   MessageSquare,
+  MessagesSquare,
   Sparkles,
   ClipboardList,
   Calculator,
@@ -38,6 +39,7 @@ import { Input } from "@/components/ui/input";
 const navigation = [
   { name: "Dashboard", href: "Dashboard", icon: LayoutDashboard },
   { name: "CRM", href: "CRM", icon: MessageSquare },
+  { name: "Bate-papo", href: "Chat", icon: MessagesSquare },
   { name: "Agenda", href: "Agenda", icon: Calendar },
   { name: "Pacientes", href: "Patients", icon: Users },
   { name: "Prontuários", href: "MedicalRecords", icon: FileText },
