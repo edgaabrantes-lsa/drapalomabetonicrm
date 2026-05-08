@@ -59,6 +59,7 @@ import Pricing from './pages/Pricing';
 import Protocols from './pages/Protocols';
 import Settings from './pages/Settings';
 import Intake from './pages/Intake';
+import Chat from './pages/Chat';
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +76,7 @@ export const PAGES = {
     "Protocols": Protocols,
     "Settings": Settings,
     "Intake": Intake,
+    "Chat": Chat,
 }
 
 export const pagesConfig = {
