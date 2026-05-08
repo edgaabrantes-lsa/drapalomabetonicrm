@@ -194,31 +194,32 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className={cn(
-        "min-h-screen transition-all duration-300 pt-14 lg:pt-0",
+        "min-h-screen transition-all duration-300 pt-[108px] lg:pt-0",
         collapsed ? "lg:pl-[68px]" : "lg:pl-64"
       )}>
 
         {/* Top Bar */}
-        <header className="hidden lg:flex h-[90px] items-center justify-between px-8 sticky top-0 z-40"
+        <header className="hidden lg:flex h-[120px] items-center justify-between px-8 sticky top-0 z-40"
           style={{ backgroundColor: "#0F1521", borderBottom: "1px solid #1A2030" }}>
-          <div className="relative max-w-sm w-full">
+
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <img
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
+              alt="Paloma Betoni"
+              style={{ height: 110, objectFit: "contain" }}
+            />
+          </div>
+
+          <div className="relative max-w-xs w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#4A5568" }} />
             <Input
-              placeholder="Buscar pacientes, procedimentos..."
+              placeholder="Buscar pacientes..."
               className="pl-10 h-9 rounded-sm text-sm"
               style={{
                 backgroundColor: "#1A2030",
                 borderColor: "#252D3E",
                 color: "#C8D0DF",
               }}
-            />
-          </div>
-
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <img
-              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
-              alt="Paloma Betoni"
-              style={{ height: 180, objectFit: "contain" }}
             />
           </div>
 
@@ -238,7 +239,7 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page Content */}
-        <div className="p-4 lg:p-8 min-h-[calc(100vh-90px)]" style={{ backgroundColor: "#111620" }}>
+        <div className="p-4 lg:p-8 min-h-[calc(100vh-120px)]" style={{ backgroundColor: "#111620" }}>
           {children}
         </div>
       </main>
