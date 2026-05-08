@@ -18,63 +18,41 @@ export default function MessageInput({ onSend, messages, leadContext, disabled }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleQuickSelect = (content) => {
-    setText(content);
-    textareaRef.current?.focus();
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   return (
-    <div className="relative border-t border-[#F0F0F0] bg-white">
-      {/* Quick Replies Popup */}
-      {showQuick && (
-        <QuickReplies onSelect={handleQuickSelect} onClose={() => setShowQuick(false)} />
-      )}
-
-      {/* AI Reply Popup */}
-      {showAI && (
-        <AIReplyBox
-          messages={messages}
-          leadContext={leadContext}
-          onUse={(content) => { setText(content); textareaRef.current?.focus(); }}
-          onClose={() => setShowAI(false)}
-        />
-      )}
+    <div className="relative border-t" style={{ borderColor: "#1E2535", backgroundColor: "#0F1521" }}>
+      {showQuick && <QuickReplies onSelect={(c) => { setText(c); textareaRef.current?.focus(); }} onClose={() => setShowQuick(false)} />}
+      {showAI && <AIReplyBox messages={messages} leadContext={leadContext} onUse={(c) => { setText(c); textareaRef.current?.focus(); }} onClose={() => setShowAI(false)} />}
 
       {/* Action bar */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[#F5F5F5]">
-        <Button
-          variant="ghost"
-          size="sm"
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b" style={{ borderColor: "#1A2030" }}>
+        <button
           onClick={() => { setShowQuick(!showQuick); setShowAI(false); }}
-          className={cn("h-7 text-[10px] gap-1 rounded-sm text-[#888] hover:text-[#121212]", showQuick && "text-[#121212] bg-[#F0F0F0]")}
+          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm transition-colors"
+          style={{ color: showQuick ? "#C5A059" : "#5A6478", backgroundColor: showQuick ? "rgba(197,160,89,0.1)" : "transparent" }}
         >
-          <Zap className="h-3 w-3 text-[#C5A059]" />
+          <Zap className="h-3 w-3" style={{ color: "#C5A059" }} />
           Respostas Rápidas
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
+        </button>
+        <button
           onClick={() => { setShowAI(!showAI); setShowQuick(false); }}
-          className={cn("h-7 text-[10px] gap-1 rounded-sm text-[#888] hover:text-[#121212]", showAI && "text-[#121212] bg-[#F0F0F0]")}
+          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm transition-colors"
+          style={{ color: showAI ? "#C5A059" : "#5A6478", backgroundColor: showAI ? "rgba(197,160,89,0.1)" : "transparent" }}
         >
-          <Sparkles className="h-3 w-3 text-[#C5A059]" />
+          <Sparkles className="h-3 w-3" style={{ color: "#C5A059" }} />
           Assistente IA
-        </Button>
-        <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1 rounded-sm text-[#888] hover:text-[#121212]">
+        </button>
+        <button className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm" style={{ color: "#5A6478" }}>
           <CheckSquare className="h-3 w-3" />
           Criar Tarefa
-        </Button>
+        </button>
       </div>
 
       {/* Input area */}
       <div className="flex items-end gap-2 px-3 py-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#BBBBBB] hover:text-[#888] flex-shrink-0">
+        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 hover:bg-white/5" style={{ color: "#4A5568" }}>
           <Paperclip className="h-4 w-4" />
         </Button>
 
@@ -83,31 +61,34 @@ export default function MessageInput({ onSend, messages, leadContext, disabled }
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Digite uma mensagem... (Enter para enviar)"
+          placeholder="Digite uma mensagem..."
           disabled={disabled}
           rows={1}
-          className="flex-1 text-sm text-[#121212] bg-[#F9F9F7] border border-[#EEEEEE] rounded-2xl px-4 py-2 resize-none outline-none focus:border-[#CCCCCC] placeholder:text-[#BBBBBB] leading-5 max-h-32 overflow-y-auto"
-          style={{ minHeight: "38px" }}
+          className="flex-1 text-sm rounded-2xl px-4 py-2 resize-none outline-none leading-5 max-h-32 overflow-y-auto"
+          style={{
+            backgroundColor: "#1A2030",
+            border: "1px solid #252D3E",
+            color: "#E8EDF5",
+            minHeight: "38px",
+          }}
+          onFocus={(e) => { e.target.style.borderColor = "#C5A059"; }}
+          onBlur={(e) => { e.target.style.borderColor = "#252D3E"; }}
           onInput={(e) => {
             e.target.style.height = "38px";
             e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
           }}
         />
 
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#BBBBBB] hover:text-[#888] flex-shrink-0">
+        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 hover:bg-white/5" style={{ color: "#4A5568" }}>
           <Smile className="h-4 w-4" />
         </Button>
 
         {text.trim() ? (
-          <Button
-            onClick={handleSend}
-            disabled={disabled}
-            className="h-8 w-8 p-0 bg-[#25D366] hover:bg-[#20c05c] rounded-full flex-shrink-0"
-          >
+          <Button onClick={handleSend} disabled={disabled} className="h-8 w-8 p-0 rounded-full flex-shrink-0" style={{ backgroundColor: "#25D366" }}>
             <Send className="h-4 w-4 text-white" />
           </Button>
         ) : (
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-[#BBBBBB] hover:text-[#25D366] flex-shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 hover:text-green-400 hover:bg-white/5" style={{ color: "#4A5568" }}>
             <Mic className="h-4 w-4" />
           </Button>
         )}

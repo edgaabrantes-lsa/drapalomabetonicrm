@@ -59,24 +59,27 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
+    // Força dark mode no html root
+    document.documentElement.classList.add("dark");
+    document.documentElement.style.colorScheme = "dark";
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#F9F9F7", color: "#121212" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "#111620", color: "#E8EDF5" }}>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#222]">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 border-b" style={{ backgroundColor: "#0D1119", borderColor: "#1E2535" }}>
         <div className="flex items-center justify-between px-4 py-2">
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="text-white hover:bg-white/10">
+          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="text-[#E8EDF5] hover:bg-white/5">
             <Menu className="h-5 w-5" />
           </Button>
           <img
             src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
             alt="Paloma Betoni"
-            style={{ height: 44, objectFit: "contain", filter: "brightness(0) invert(1)" }}
+            style={{ height: 40, objectFit: "contain", filter: "brightness(0) invert(1)" }}
           />
           <Avatar className="h-8 w-8 border border-[#C5A059]/40">
-            <AvatarFallback className="bg-[#C5A059]/20 text-[#C5A059] text-xs">
+            <AvatarFallback style={{ backgroundColor: "rgba(197,160,89,0.15)", color: "#C5A059" }} className="text-xs">
               {user?.full_name?.[0] || "P"}
             </AvatarFallback>
           </Avatar>
@@ -85,45 +88,46 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Mobile Overlay */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setMobileOpen(false)} />
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/70" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar — preta por contraste intencional */}
+      {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 z-50 h-full bg-[#121212] border-r border-[#222] transition-all duration-300 flex flex-col",
-        collapsed ? "w-[72px]" : "w-64",
+        "fixed top-0 left-0 z-50 h-full border-r transition-all duration-300 flex flex-col",
+        collapsed ? "w-[68px]" : "w-64",
         mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      )}>
+      )} style={{ backgroundColor: "#0D1119", borderColor: "#1A2030" }}>
 
         {/* Logo */}
-        <div className="h-[140px] flex items-center justify-between px-5 border-b border-[#222] flex-shrink-0">
+        <div className="h-[130px] flex items-center justify-between px-4 flex-shrink-0" style={{ borderBottom: "1px solid #1A2030" }}>
           {!collapsed && (
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
               alt="Paloma Betoni"
               style={{
-                height: 110,
+                height: 100,
                 objectFit: "contain",
                 objectPosition: "left center",
                 filter: "brightness(0) invert(1)",
-                maxWidth: 220,
+                maxWidth: 210,
               }}
             />
           )}
           <Button
             variant="ghost" size="icon"
             onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
-            className="hidden lg:flex text-[#555] hover:text-[#C5A059] hover:bg-white/5 ml-auto"
+            className="hidden lg:flex ml-auto hover:bg-white/5"
+            style={{ color: "#4A5568" }}
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="lg:hidden text-[#555] hover:text-white">
+          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="lg:hidden hover:bg-white/5" style={{ color: "#4A5568" }}>
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {navigation.map((item) => {
             const isActive = currentPageName === item.href;
             return (
@@ -132,13 +136,14 @@ export default function Layout({ children, currentPageName }) {
                 to={createPageUrl(item.href)}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-sm transition-all duration-200 group border-l-2",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-sm transition-all duration-150 border-l-2",
                   isActive
-                    ? "border-[#C5A059] bg-white/5 text-white"
-                    : "border-transparent text-[#777] hover:text-white hover:bg-white/4 hover:border-[#444]"
+                    ? "border-[#C5A059] text-white"
+                    : "border-transparent text-[#5A6478] hover:text-[#C8D0DF] hover:bg-white/4"
                 )}
+                style={isActive ? { backgroundColor: "rgba(197,160,89,0.08)" } : {}}
               >
-                <item.icon className={cn("h-4 w-4 flex-shrink-0 transition-colors", isActive ? "text-[#C5A059]" : "text-current")} />
+                <item.icon className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-[#C5A059]" : "")} />
                 {!collapsed && (
                   <span className="text-sm font-light tracking-wide">{item.name}</span>
                 )}
@@ -148,38 +153,39 @@ export default function Layout({ children, currentPageName }) {
         </nav>
 
         {/* User Section */}
-        <div className="flex-shrink-0 p-3 border-t border-[#222]">
+        <div className="flex-shrink-0 p-2" style={{ borderTop: "1px solid #1A2030" }}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 hover:bg-white/5 text-[#999] hover:text-white rounded-sm",
+                  "w-full justify-start gap-3 rounded-sm hover:bg-white/5",
                   collapsed && "justify-center px-0"
                 )}
+                style={{ color: "#8A95AA" }}
               >
-                <Avatar className="h-8 w-8 border border-[#C5A059]/30 flex-shrink-0">
-                  <AvatarFallback className="bg-[#C5A059]/15 text-[#C5A059] text-xs">
+                <Avatar className="h-8 w-8 border flex-shrink-0" style={{ borderColor: "rgba(197,160,89,0.25)" }}>
+                  <AvatarFallback style={{ backgroundColor: "rgba(197,160,89,0.12)", color: "#C5A059" }} className="text-xs">
                     {user?.full_name?.[0] || "P"}
                   </AvatarFallback>
                 </Avatar>
                 {!collapsed && (
                   <div className="text-left min-w-0">
-                    <p className="text-xs font-medium text-white truncate">{user?.full_name || "Dra. Paloma"}</p>
-                    <p className="text-[10px] text-[#555] tracking-wider uppercase">{user?.role || "admin"}</p>
+                    <p className="text-xs font-medium truncate" style={{ color: "#E8EDF5" }}>{user?.full_name || "Dra. Paloma"}</p>
+                    <p className="text-[10px] tracking-widest uppercase" style={{ color: "#4A5568" }}>{user?.role || "admin"}</p>
                   </div>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 bg-[#1a1a1a] border-[#2a2a2a] text-white">
-              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer text-[#aaa] hover:text-white text-sm">
+            <DropdownMenuContent align="end" className="w-52" style={{ backgroundColor: "#171D29", borderColor: "#252D3E", color: "#E8EDF5" }}>
+              <DropdownMenuItem className="cursor-pointer text-sm hover:bg-white/5" style={{ color: "#C8D0DF" }}>
                 <UserCircle className="mr-2 h-4 w-4" /> Meu Perfil
               </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-white/5 cursor-pointer text-[#aaa] hover:text-white text-sm">
+              <DropdownMenuItem className="cursor-pointer text-sm hover:bg-white/5" style={{ color: "#C8D0DF" }}>
                 <Settings className="mr-2 h-4 w-4" /> Configurações
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[#2a2a2a]" />
-              <DropdownMenuItem onClick={() => base44.auth.logout()} className="hover:bg-red-500/10 text-red-400 cursor-pointer text-sm">
+              <DropdownMenuSeparator style={{ backgroundColor: "#252D3E" }} />
+              <DropdownMenuItem onClick={() => base44.auth.logout()} className="cursor-pointer text-sm" style={{ color: "#F87171" }}>
                 <LogOut className="mr-2 h-4 w-4" /> Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -190,34 +196,42 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <main className={cn(
         "min-h-screen transition-all duration-300 pt-14 lg:pt-0",
-        collapsed ? "lg:pl-[72px]" : "lg:pl-64"
+        collapsed ? "lg:pl-[68px]" : "lg:pl-64"
       )}>
 
         {/* Top Bar */}
-        <header className="hidden lg:flex h-[100px] items-center justify-between px-8 border-b border-[#EEEEEE] bg-white sticky top-0 z-40">
+        <header className="hidden lg:flex h-[90px] items-center justify-between px-8 sticky top-0 z-40"
+          style={{ backgroundColor: "#0F1521", borderBottom: "1px solid #1A2030" }}>
           <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#BBBBBB]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#4A5568" }} />
             <Input
               placeholder="Buscar pacientes, procedimentos..."
-              className="pl-10 bg-[#F9F9F7] border-[#EEEEEE] text-[#121212] placeholder:text-[#BBBBBB] text-sm h-9 rounded-sm focus:border-[#121212]"
+              className="pl-10 h-9 rounded-sm text-sm"
+              style={{
+                backgroundColor: "#1A2030",
+                borderColor: "#252D3E",
+                color: "#C8D0DF",
+              }}
             />
           </div>
+
           <div className="absolute left-1/2 -translate-x-1/2">
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
               alt="Paloma Betoni"
-              style={{ height: 80, objectFit: "contain" }}
+              style={{ height: 72, objectFit: "contain", filter: "brightness(0) invert(1)" }}
             />
           </div>
+
           <div className="flex items-center gap-5">
-            <Button variant="ghost" size="icon" className="relative text-[#999] hover:text-[#121212] hover:bg-[#F9F9F7] rounded-sm">
+            <Button variant="ghost" size="icon" className="relative rounded-sm hover:bg-white/5" style={{ color: "#5A6478" }}>
               <Bell className="h-4 w-4" />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#C5A059] rounded-full" />
             </Button>
-            <div className="h-6 w-px bg-[#EEEEEE]" />
+            <div className="h-6 w-px" style={{ backgroundColor: "#1E2535" }} />
             <div className="text-right">
-              <p className="text-[10px] text-[#BBBBBB] tracking-[0.1em] uppercase">Bem-vinda</p>
-              <p className="text-sm font-medium text-[#121212]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <p className="text-[10px] tracking-[0.12em] uppercase" style={{ color: "#4A5568" }}>Bem-vinda</p>
+              <p className="text-sm font-medium" style={{ fontFamily: "'Playfair Display', serif", color: "#E8EDF5" }}>
                 {user?.full_name || "Dra. Paloma Betoni"}
               </p>
             </div>
@@ -225,7 +239,7 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page Content */}
-        <div className="p-4 lg:p-8 bg-[#F9F9F7] min-h-[calc(100vh-72px)]">
+        <div className="p-4 lg:p-8 min-h-[calc(100vh-90px)]" style={{ backgroundColor: "#111620" }}>
           {children}
         </div>
       </main>
