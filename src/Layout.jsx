@@ -74,9 +74,9 @@ export default function Layout({ children, currentPageName }) {
             <Menu className="h-5 w-5" />
           </Button>
           <img
-            src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
+            src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/cf04bd610_ChatGPTImage8demaide202614_52_26.png"
             alt="Paloma Betoni"
-            style={{ height: 40, objectFit: "contain", filter: "brightness(0) invert(1)" }}
+            style={{ height: 36, objectFit: "contain" }}
           />
           <Avatar className="h-8 w-8 border border-[#C5A059]/40">
             <AvatarFallback style={{ backgroundColor: "rgba(197,160,89,0.15)", color: "#C5A059" }} className="text-xs">
@@ -102,13 +102,12 @@ export default function Layout({ children, currentPageName }) {
         <div className="h-[130px] flex items-center justify-between px-4 flex-shrink-0" style={{ borderBottom: "1px solid #1A2030" }}>
           {!collapsed && (
             <img
-              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/e49b3ee13_ChatGPTImage8demaide202614_52_21.png"
               alt="Paloma Betoni"
               style={{
-                height: 100,
+                height: 110,
                 objectFit: "contain",
                 objectPosition: "left center",
-                filter: "brightness(0) invert(1)",
                 maxWidth: 210,
               }}
             />
@@ -217,9 +216,9 @@ export default function Layout({ children, currentPageName }) {
 
           <div className="absolute left-1/2 -translate-x-1/2">
             <img
-              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/775d12811_WhatsApp_Image_2026-03-30_at_170145-removebg-preview.png"
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/cf04bd610_ChatGPTImage8demaide202614_52_26.png"
               alt="Paloma Betoni"
-              style={{ height: 72, objectFit: "contain", filter: "brightness(0) invert(1)" }}
+              style={{ height: 60, objectFit: "contain" }}
             />
           </div>
 
