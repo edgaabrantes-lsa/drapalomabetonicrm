@@ -340,8 +340,7 @@ export default function Intake() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-serif text-white flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-[#c9a55c]" />
+          <h1 className="text-2xl font-serif text-white">
             Triagem Inteligente
           </h1>
           <p className="text-gray-400">Análise de relatos por IA com validação humana obrigatória</p>
@@ -460,8 +459,7 @@ export default function Intake() {
       <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
         <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-xl font-serif flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[#c9a55c]" />
+            <DialogTitle className="text-xl font-serif">
               Nova Triagem com IA
             </DialogTitle>
           </DialogHeader>

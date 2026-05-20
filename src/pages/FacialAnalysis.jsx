@@ -539,17 +539,9 @@ export default function FacialAnalysis() {
       {isAnalyzing && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="w-full max-w-sm bg-[#12121a] border border-[#c9a55c]/20 rounded-3xl p-8 shadow-2xl">
-            {/* Animated logo */}
+            {/* Minimal loader */}
             <div className="flex justify-center mb-6">
-              <div className="relative w-20 h-20">
-                <div className="absolute inset-0 rounded-full border-2 border-[#c9a55c]/20 animate-ping" />
-                <div className="absolute inset-2 rounded-full border-2 border-[#c9a55c]/40 animate-pulse" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#c9a55c] to-[#a17f3f] flex items-center justify-center">
-                    <Brain className="h-8 w-8 text-black" />
-                  </div>
-                </div>
-              </div>
+              <div className="w-10 h-10 rounded-full border-2 border-[#c9a55c]/30 border-t-[#c9a55c] animate-spin" />
             </div>
 
             <p className="text-center text-xs text-[#c9a55c] uppercase tracking-widest mb-2">
@@ -606,10 +598,7 @@ export default function FacialAnalysis() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-serif text-white flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#c9a55c] to-[#a17f3f] flex items-center justify-center">
-              <Brain className="h-5 w-5 text-black" />
-            </div>
+          <h1 className="text-2xl font-serif text-white">
             Análise Facial com IA
           </h1>
           <p className="text-gray-400 mt-1">
