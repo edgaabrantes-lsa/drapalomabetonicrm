@@ -23,7 +23,8 @@ import {
   ClipboardList,
   Calculator,
   Bell,
-  Search
+  Search,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -47,7 +48,7 @@ const navigation = [
   { name: "Estoque", href: "Inventory", icon: Package },
   { name: "Financeiro", href: "Financial", icon: DollarSign },
   { name: "Precificação", href: "Pricing", icon: Calculator },
-  { name: "Análise Facial IA", href: "FacialAnalysis", icon: Sparkles },
+  { name: "Análise Facial IA", href: "FacialAnalysis", icon: Eye },
   { name: "Triagem IA", href: "Intake", icon: ClipboardList },
   { name: "Configurações", href: "Settings", icon: Settings },
 ];
