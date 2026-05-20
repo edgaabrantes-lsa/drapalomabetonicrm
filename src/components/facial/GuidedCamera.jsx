@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Camera, X, RotateCcw, Check, ChevronRight, AlertTriangle, Lightbulb } from "lucide-react";
+import { Camera, X, RotateCcw, Check, ChevronRight, AlertTriangle, Lightbulb, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ANGLE_STEPS = [
@@ -98,15 +98,18 @@ export default function GuidedCamera({ onComplete, onClose }) {
   const [quality, setQuality] = useState("idle"); // idle | good | warn
   const [countdown, setCountdown] = useState(null);
   const [flash, setFlash] = useState(false);
+  const [facingMode, setFacingMode] = useState("user"); // user = frontal, environment = traseira
 
   const currentStep = ANGLE_STEPS[step];
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (mode = "user") => {
     setCameraError(null);
-    const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+    setCameraReady(false);
+    // Stop existing stream first
+    streamRef.current?.getTracks().forEach(t => t.stop());
     const constraints = {
       video: {
-        facingMode: isMobile ? "user" : "user",
+        facingMode: { ideal: mode },
         width: { ideal: 1280 },
         height: { ideal: 960 },
       },
@@ -125,8 +128,16 @@ export default function GuidedCamera({ onComplete, onClose }) {
     }
   }, []);
 
+  const flipCamera = useCallback(async () => {
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
+    await startCamera(newMode).catch(() => {
+      setCameraError("Não foi possível alternar a câmera.");
+    });
+  }, [facingMode, startCamera]);
+
   useEffect(() => {
-    startCamera().catch(err => {
+    startCamera("user").catch(() => {
       setCameraError("Não foi possível acessar a câmera. Verifique as permissões.");
     });
     return () => {
@@ -150,9 +161,11 @@ export default function GuidedCamera({ onComplete, onClose }) {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
-    // Mirror for selfie
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
+    // Mirror only for front camera (selfie)
+    if (facingMode === "user") {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(video, 0, 0);
 
     return canvas.toDataURL("image/jpeg", 0.92);
@@ -263,7 +276,7 @@ export default function GuidedCamera({ onComplete, onClose }) {
               playsInline
               muted
               className="w-full h-full object-cover"
-              style={{ transform: "scaleX(-1)" }}
+              style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
             />
             <canvas ref={canvasRef} className="hidden" />
 
@@ -345,7 +358,18 @@ export default function GuidedCamera({ onComplete, onClose }) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3 justify-center pb-4">
+        <div className="flex gap-3 justify-center pb-4 items-center">
+          {/* Flip camera button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={flipCamera}
+            disabled={!cameraReady || countdown !== null}
+            className="w-12 h-12 rounded-full border border-gray-700 text-gray-300 hover:text-white hover:bg-white/10 disabled:opacity-40"
+            title={facingMode === "user" ? "Câmera traseira" : "Câmera frontal"}
+          >
+            <SwitchCamera className="h-5 w-5" />
+          </Button>
           {step > 0 && (
             <Button variant="outline" onClick={handleSkipAngle}
               className="border-gray-700 text-gray-400 hover:text-white rounded-full px-5">
