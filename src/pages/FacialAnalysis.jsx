@@ -375,6 +375,7 @@ export default function FacialAnalysis() {
 
     try {
       let fileUrls = [];
+      let firstPreview = imagePreview; // preserve preview for simulation
 
       if (hasUpload) {
         // Compress file → dataUrl → compress → back to File
@@ -386,6 +387,7 @@ export default function FacialAnalysis() {
         const compressed = await compressImage(dataUrl);
         const compressedFile = dataUrlToFile(compressed, "facial.jpg");
         const { file_url } = await base44.integrations.Core.UploadFile({ file: compressedFile });
+        console.log("[FacialAnalysis] Upload OK:", file_url);
         setUploadedImageUrl(file_url);
         fileUrls = [file_url];
       } else {
@@ -400,6 +402,7 @@ export default function FacialAnalysis() {
           })
         );
         fileUrls = uploads.map(u => u.file_url);
+        console.log("[FacialAnalysis] Camera uploads OK:", fileUrls);
         setUploadedImageUrl(fileUrls[0]);
       }
 
@@ -424,35 +427,41 @@ export default function FacialAnalysis() {
         setMapData(extracted);
         setAnalysisStep(6); // "Criando mapa facial"
 
-        // Generate 3 map images in parallel using the original photo as reference
-        const basePromptSuffix = ` STYLE: Premium clinical facial mapping overlay inspired by Prada's silent luxury aesthetic. Ultra-thin lines (0.5px), elegant serif typography, restrained color palette — only black (#000), white (#FFF), gray (#7A7A7A), plus RED (#CC2200) and AMBER (#E8A020) for the dot markers. The dots MUST be clearly visible filled circles placed directly on the patient's face at the specified anatomical points. Protocol name displayed elegantly. Clean, authoritative, high-end medical aesthetic. DO NOT alter or retouch the patient's face — only add overlay graphics on top.`;
+        // Generate 3 map images — isolated try/catch so failure doesn't break simulation
+        try {
+          const basePromptSuffix = ` STYLE: Premium clinical facial mapping overlay inspired by Prada's silent luxury aesthetic. Ultra-thin lines (0.5px), elegant serif typography, restrained color palette — only black (#000), white (#FFF), gray (#7A7A7A), plus RED (#CC2200) and AMBER (#E8A020) for the dot markers. The dots MUST be clearly visible filled circles placed directly on the patient's face at the specified anatomical points. Protocol name displayed elegantly. Clean, authoritative, high-end medical aesthetic. DO NOT alter or retouch the patient's face — only add overlay graphics on top.`;
 
-        const [techMap, clientMap, resultMap] = await Promise.all([
-          base44.integrations.Core.GenerateImage({
-            prompt: (extracted.image_prompt_technical || `Facial strategic map overlay on the patient photo with detailed clinical annotation points on malar, lips, chin, mandible, temples, under-eye areas. Thin connecting lines with elegant serif labels for each region. Show protocol name "${extracted.main_protocol}" at bottom.`) + basePromptSuffix,
-            existing_image_urls: fileUrls.slice(0, 1),
-          }),
-          base44.integrations.Core.GenerateImage({
-            prompt: (extracted.image_prompt_client || `Clean elegant facial map overlay on patient photo showing only key improvement areas with soft highlights. Protocol name "${extracted.main_protocol}" in elegant typography at top. Minimal clean aesthetic.`) + basePromptSuffix,
-            existing_image_urls: fileUrls.slice(0, 1),
-          }),
-          base44.integrations.Core.GenerateImage({
-            prompt: (extracted.image_prompt_result || `Facial transformation direction overlay on patient photo showing subtle lifting vectors and volumetric projection arrows. Shows before-to-after directional transformation. Elegant and sophisticated.`) + basePromptSuffix,
-            existing_image_urls: fileUrls.slice(0, 1),
-          }),
-        ]);
+          const [techMap, clientMap, resultMap] = await Promise.all([
+            base44.integrations.Core.GenerateImage({
+              prompt: (extracted.image_prompt_technical || `Facial strategic map overlay on the patient photo with detailed clinical annotation points on malar, lips, chin, mandible, temples, under-eye areas. Thin connecting lines with elegant serif labels for each region. Show protocol name "${extracted.main_protocol}" at bottom.`) + basePromptSuffix,
+              existing_image_urls: fileUrls.slice(0, 1),
+            }),
+            base44.integrations.Core.GenerateImage({
+              prompt: (extracted.image_prompt_client || `Clean elegant facial map overlay on patient photo showing only key improvement areas with soft highlights. Protocol name "${extracted.main_protocol}" in elegant typography at top. Minimal clean aesthetic.`) + basePromptSuffix,
+              existing_image_urls: fileUrls.slice(0, 1),
+            }),
+            base44.integrations.Core.GenerateImage({
+              prompt: (extracted.image_prompt_result || `Facial transformation direction overlay on patient photo showing subtle lifting vectors and volumetric projection arrows. Shows before-to-after directional transformation. Elegant and sophisticated.`) + basePromptSuffix,
+              existing_image_urls: fileUrls.slice(0, 1),
+            }),
+          ]);
 
-        setFacialMaps({
-          technical: techMap?.url,
-          client: clientMap?.url,
-          result: resultMap?.url,
-        });
+          setFacialMaps({
+            technical: techMap?.url,
+            client: clientMap?.url,
+            result: resultMap?.url,
+          });
+        } catch (mapErr) {
+          console.warn("[FacialAnalysis] Mapa facial falhou (não bloqueia simulação):", mapErr);
+          // Don't throw — analysis and simulation still work
+        }
       }
 
       stopStepProgress();
     } catch (err) {
-      setError("Erro ao gerar análise. Tente novamente.");
-      console.error(err);
+      const errMsg = err?.message || String(err);
+      console.error("[FacialAnalysis] Erro:", errMsg);
+      setError(`Erro ao gerar análise: ${errMsg}`);
     } finally {
       stopStepProgress();
       setIsAnalyzing(false);
