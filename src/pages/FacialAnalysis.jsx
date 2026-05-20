@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
 import GuidedCamera from "@/components/facial/GuidedCamera";
 import FacialMapDisplay from "@/components/facial/FacialMapDisplay";
+import SimulationPanel from "@/components/facial/SimulationPanel";
 
 const HOF_SYSTEM_PROMPT = `Você é um especialista em harmonização orofacial (HOF), estética avançada e análise estrutural da face humana, trabalhando para a Clínica Premium da Dra. Paloma Betoni.
 
@@ -294,6 +295,7 @@ export default function FacialAnalysis() {
   const [parsedSections, setParsedSections] = useState(null);
   const [mapData, setMapData] = useState(null);
   const [facialMaps, setFacialMaps] = useState(null); // { technical, client, result }
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("structured");
   const [showCamera, setShowCamera] = useState(false);
@@ -384,6 +386,7 @@ export default function FacialAnalysis() {
         const compressed = await compressImage(dataUrl);
         const compressedFile = dataUrlToFile(compressed, "facial.jpg");
         const { file_url } = await base44.integrations.Core.UploadFile({ file: compressedFile });
+        setUploadedImageUrl(file_url);
         fileUrls = [file_url];
       } else {
         // Compress all angles then upload in parallel
@@ -397,6 +400,7 @@ export default function FacialAnalysis() {
           })
         );
         fileUrls = uploads.map(u => u.file_url);
+        setUploadedImageUrl(fileUrls[0]);
       }
 
       const angleContext = hasCamera && capturedAngles.length > 1
@@ -463,6 +467,7 @@ export default function FacialAnalysis() {
     setParsedSections(null);
     setMapData(null);
     setFacialMaps(null);
+    setUploadedImageUrl(null);
     setError(null);
     setInputMode(null);
     setIsAnalyzing(false);
@@ -846,6 +851,11 @@ export default function FacialAnalysis() {
           {/* Tabs: Structured vs Raw */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="bg-[#1a1a25] border border-[#1e1e2a] flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="simulation"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Simulação
+              </TabsTrigger>
               <TabsTrigger value="map"
                 className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
                 <Map className="mr-2 h-4 w-4" />
@@ -874,6 +884,15 @@ export default function FacialAnalysis() {
                 Completo
               </TabsTrigger>
             </TabsList>
+
+            {/* Simulation Tab */}
+            <TabsContent value="simulation" className="mt-5">
+              <SimulationPanel
+                originalImageUrl={uploadedImageUrl}
+                originalPreview={imagePreview}
+                mapData={mapData}
+              />
+            </TabsContent>
 
             {/* Facial Map Tab */}
             <TabsContent value="map" className="mt-5">
