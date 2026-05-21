@@ -16,6 +16,7 @@ import GuidedCamera from "@/components/facial/GuidedCamera";
 import FacialMapDisplay from "@/components/facial/FacialMapDisplay";
 import SimulationPanel from "@/components/facial/SimulationPanel";
 import IndicateProtocolsModal from "@/components/facial/IndicateProtocolsModal";
+import PatientSelectorModal from "@/components/facial/PatientSelectorModal";
 
 const HOF_SYSTEM_PROMPT = `Você é um especialista em harmonização orofacial (HOF), estética avançada e análise estrutural da face humana, trabalhando para a Clínica Premium da Dra. Paloma Betoni.
 
@@ -330,6 +331,7 @@ export default function FacialAnalysis() {
   const [showCamera, setShowCamera] = useState(false);
   const [inputMode, setInputMode] = useState(null);
   const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
+  const [isPatientSelectorOpen, setIsPatientSelectorOpen] = useState(false);
   const [patientForTreatment, setPatientForTreatment] = useState({ id: null, name: "" });
   const fileInputRef = useRef(null);
   const stepTimerRef = useRef(null);
@@ -640,7 +642,7 @@ export default function FacialAnalysis() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={() => setIsProtocolModalOpen(true)}
+              onClick={() => setIsPatientSelectorOpen(true)}
               className="border-[#c9a55c]/30 text-[#c9a55c] hover:bg-[#c9a55c]/10"
             >
               <CheckCircle className="mr-2 h-4 w-4" />
@@ -1122,17 +1124,25 @@ export default function FacialAnalysis() {
         </div>
       )}
 
+      {/* Modal para Selecionar Paciente */}
+      <PatientSelectorModal
+        open={isPatientSelectorOpen}
+        onOpenChange={setIsPatientSelectorOpen}
+        onSelect={(patient) => {
+          setPatientForTreatment({ id: patient.id, name: patient.full_name });
+          setIsProtocolModalOpen(true);
+        }}
+      />
+
       {/* Modal para Indicar Protocolos */}
       <IndicateProtocolsModal
         patientId={patientForTreatment.id}
         patientName={patientForTreatment.name}
-        protocolosSugeridos={parsedSections?.protocols ? [
-          {
-            nome: "Preenchimento Full Face",
-            regioes: ["Malar", "Mandíbula", "Mento"],
-            justificativa: "Indicado via análise facial IA"
-          }
-        ] : []}
+        protocolosSugeridos={mapData?.regions?.map((r) => ({
+          nome: r.protocol || r.intervention,
+          regioes: [r.area],
+          justificativa: r.note || "Indicado via análise facial IA"
+        })) || []}
         open={isProtocolModalOpen}
         onOpenChange={setIsProtocolModalOpen}
         onSuccess={() => {
