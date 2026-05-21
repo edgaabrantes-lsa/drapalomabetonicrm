@@ -17,6 +17,10 @@ import FacialMapDisplay from "@/components/facial/FacialMapDisplay";
 import SimulationPanel from "@/components/facial/SimulationPanel";
 import IndicateProtocolsModal from "@/components/facial/IndicateProtocolsModal";
 import PatientSelectorModal from "@/components/facial/PatientSelectorModal";
+import ProtocolSelectionPanel from "@/components/facial/ProtocolSelectionPanel";
+import ProposalGenerator from "@/components/facial/ProposalGenerator";
+import PatientRegistration from "@/components/facial/PatientRegistration";
+import ProposalPreview from "@/components/facial/ProposalPreview";
 
 const HOF_SYSTEM_PROMPT = `Você é um especialista em harmonização orofacial (HOF), estética avançada e análise estrutural da face humana, trabalhando para a Clínica Premium da Dra. Paloma Betoni.
 
@@ -332,7 +336,11 @@ export default function FacialAnalysis() {
   const [inputMode, setInputMode] = useState(null);
   const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
   const [isPatientSelectorOpen, setIsPatientSelectorOpen] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [patientForTreatment, setPatientForTreatment] = useState({ id: null, name: "" });
+  const [selectedProtocols, setSelectedProtocols] = useState([]);
+  const [showProposal, setShowProposal] = useState(false);
+  const [proposalData, setProposalData] = useState(null);
   const fileInputRef = useRef(null);
   const stepTimerRef = useRef(null);
 
@@ -1124,6 +1132,95 @@ export default function FacialAnalysis() {
         </div>
       )}
 
+      {/* Fluxo Pós-Análise Completo */}
+      {analysis && mapData && (
+        <div className="space-y-6 pt-6 border-t border-[#1e1e2a]">
+          <div className="flex items-center gap-3 mb-6">
+            <Star className="h-6 w-6 text-[#C5A059]" />
+            <h2 className="text-xl font-serif text-white">Próximos Passos</h2>
+          </div>
+
+          {/* Passo 1: Selecionar Paciente ou Cadastrar */}
+          {!patientForTreatment.id ? (
+            <Card className="bg-[#1a1a25] border-[#1e1e2a]">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">1. Selecione ou Cadastre um Paciente</h3>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setIsPatientSelectorOpen(true)}
+                    className="bg-[#C5A059] text-[#111620] hover:bg-[#D9BB82]"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Selecionar Paciente Existente
+                  </Button>
+                  <Button
+                    onClick={() => setIsRegistrationOpen(true)}
+                    variant="outline"
+                    className="border-[#1e1e2a] text-white hover:bg-[#1e1e2a]"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Cadastrar Novo Paciente
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Passo 2: Seleção de Protocolos */}
+              <Card className="bg-[#1a1a25] border-[#1e1e2a]">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">2. Selecione os Protocolos</h3>
+                    <Badge className="bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/30">
+                      Paciente: {patientForTreatment.name}
+                    </Badge>
+                  </div>
+                  <ProtocolSelectionPanel
+                    protocolosSugeridos={{
+                      principal: {
+                        id: "principal",
+                        nome: mapData.main_protocol,
+                        descricao: "Protocolo principal baseado na análise estrutural",
+                        valor: 8997,
+                        sessoes: 3,
+                        duracao: "3-4 meses",
+                        valorPorSessao: 2999,
+                      },
+                      complementares: mapData.complementary_protocols?.map((p, i) => ({
+                        id: `comp-${i}`,
+                        nome: p,
+                        descricao: "Protocolo complementar para otimização de resultados",
+                        valor: 2500 + (i * 500),
+                      })) || [],
+                    }}
+                    onSelectionChange={setSelectedProtocols}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Passo 3: Gerar Proposta */}
+              {selectedProtocols.length > 0 && (
+                <Card className="bg-[#1a1a25] border-[#1e1e2a]">
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">3. Gere a Proposta Personalizada</h3>
+                    <ProposalGenerator
+                      patient={patientForTreatment}
+                      selectedProtocols={selectedProtocols}
+                      analysisData={mapData}
+                      onGenerate={(data) => {
+                        setProposalData(data);
+                        setShowProposal(true);
+                        toast.success("Proposta gerada com sucesso!");
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {/* Modal para Selecionar Paciente */}
       <PatientSelectorModal
         open={isPatientSelectorOpen}
@@ -1133,6 +1230,20 @@ export default function FacialAnalysis() {
           setIsProtocolModalOpen(true);
         }}
       />
+
+      {/* Modal para Cadastrar Paciente */}
+      <div className={`fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 ${!isRegistrationOpen ? 'hidden' : ''}`}>
+        <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <PatientRegistration
+            onComplete={(patient) => {
+              setPatientForTreatment({ id: patient.id, name: patient.full_name });
+              setIsRegistrationOpen(false);
+              toast.success("Paciente cadastrado e vinculado à análise!");
+            }}
+            onCancel={() => setIsRegistrationOpen(false)}
+          />
+        </div>
+      </div>
 
       {/* Modal para Indicar Protocolos */}
       <IndicateProtocolsModal
@@ -1149,6 +1260,14 @@ export default function FacialAnalysis() {
           toast.success("Protocolos indicados com sucesso!");
         }}
       />
+
+      {/* Modal de Visualização da Proposta */}
+      {showProposal && proposalData && (
+        <ProposalPreview
+          proposalData={proposalData}
+          onClose={() => setShowProposal(false)}
+        />
+      )}
     </div>
   );
 }
