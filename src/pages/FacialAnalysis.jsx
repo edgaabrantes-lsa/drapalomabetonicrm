@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import {
   Upload, Sparkles, Brain, ChevronDown, ChevronUp,
   FileText, Star, Target, Zap, Eye, User, Shield,
-  Download, RefreshCw, Camera, AlertCircle, CheckCircle2,
+  Download, RefreshCw, Camera, AlertCircle, CheckCircle2, CheckCircle,
   TrendingUp, Layers, Clipboard, ImagePlus, X, Check, Map
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,36 +11,38 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 import GuidedCamera from "@/components/facial/GuidedCamera";
 import FacialMapDisplay from "@/components/facial/FacialMapDisplay";
 import SimulationPanel from "@/components/facial/SimulationPanel";
+import IndicateProtocolsModal from "@/components/facial/IndicateProtocolsModal";
 
 const HOF_SYSTEM_PROMPT = `Você é um especialista em harmonização orofacial (HOF), estética avançada e análise estrutural da face humana, trabalhando para a Clínica Premium da Dra. Paloma Betoni.
 
-PROTOCOLOS PREMIUM DISPONÍVEIS NA CLÍNICA:
+PROTOCOLOS PREMIUM DISPONÍVEIS NA CLÍNICA (USE ESTES NOMES EXATOS):
 
-1. **Preenchimento Full Face** (R$ 20.000 ou R$ 1.700/ml) - Reposicionamento global da face, harmonização estrutural e rejuvenescimento tridimensional. Regiões: malar, mandíbula, mento, têmporas, olheiras, pré-jowls, sulcos, lábios
-2. **Preenchimento Labial** (R$ 2.997) - Definição, hidratação, contorno e volumização labial
-3. **Rinomodelação** (R$ 6.997) - Correção estética nasal sem cirurgia (giba nasal leve, ponta caída, assimetria, refinamento de perfil)
-4. **Preenchimento de Mento** (R$ 4.500) - Projetar e equilibrar o queixo (retrognatismo leve, falta de projeção, harmonização de perfil)
-5. **Preenchimento Malar** (R$ 3.500) - Reposição de volume e sustentação facial (perda de sustentação, face cansada, emagrecimento facial)
-6. **Preenchimento de Ângulo de Mandíbula** (R$ 4.500) - Definição mandibular e estruturação facial (falta de definição, flacidez leve, perfil facial apagado)
-7. **Preenchimento Pré-Jowls** (R$ 3.500) - Correção de depressões e suavização da linha mandibular (formação de bulldog, queda facial, quebra mandibular)
-8. **Preenchimento de Têmpora** (R$ 3.500) - Reposição volumétrica e rejuvenescimento lateral da face (afundamento temporal, emagrecimento facial, envelhecimento estrutural)
-9. **Preenchimento de Cauda da Sobrancelha** (R$ 3.000) - Elevação e sustentação da lateral da sobrancelha (queda da cauda, olhar cansado, sustentação lateral)
-10. **Preenchimento de Olheira** (R$ 3.500) - Suavização do aspecto cansado e aprofundamento infraorbital (sulco profundo, sombra, aspecto fatigado)
-11. **Preenchimento Pré-Maxila** (R$ 3.500) - Sustentação central e refinamento do terço médio (sulco nasolabial, falta de suporte facial, perfil envelhecido)
-12. **Preenchimento de Fossa Nasal** (R$ 3.500) - Correção estrutural lateral nasal e refinamento de contorno (assimetria, sustentação nasal, refinamento facial)
+1. **Preenchimento Full Face** (R$ 20.000 ou R$ 1.700/ml) - Reposicionamento global: malar, mandíbula, mento, têmporas, olheiras, pré-jowls, sulcos
+2. **Preenchimento Labial** (R$ 2.997) - Definição e volumização labial
+3. **Rinomodelação** (R$ 6.997) - Correção nasal: giba, ponta caída, assimetria
+4. **Preenchimento de Mento** (R$ 4.500) - Projeção do queixo
+5. **Preenchimento Malar** (R$ 3.500) - Volume e sustentação malar
+6. **Preenchimento de Ângulo de Mandíbula** (R$ 4.500) - Definição mandibular
+7. **Preenchimento Pré-Jowls** (R$ 3.500) - Suavização linha mandibular
+8. **Preenchimento de Têmpora** (R$ 3.500) - Reposição temporal
+9. **Preenchimento de Cauda da Sobrancelha** (R$ 3.000) - Elevação lateral sobrancelha
+10. **Preenchimento de Olheira** (R$ 3.500) - Suavização infraorbital
+11. **Preenchimento Pré-Maxila** (R$ 3.500) - Sustentação terço médio
+12. **Preenchimento de Fossa Nasal** (R$ 3.500) - Correção lateral nasal
 13. **Toxina Botulínica - Terço Superior** (R$ 3.500) - Testa, glabela, pés de galinha
-14. **Toxina Botulínica - Terço Inferior** (R$ 3.500) - Sorriso gengival, código de barras, queixo, contorno inferior
-15. **Ultra Toxina Botulínica Pescoço+Terço Inferior+Terço Superior** (R$ 6.000) - Bandas platismais, flacidez cervical
-16. **Bruxismo** (R$ 3.500) - Relaxamento do masseter e alívio funcional
-17. **Fios de Tração** (R$ 7.000 casos leves / R$ 15.000 casos graves) - Lifting sem cirurgia e reposicionamento tecidual
-18. **Fios Lisos** (R$ 7.000 casos leves / R$ 15.000 casos graves) - Bioestimulação e melhora de textura
-19. **Bioestimulador - Rosto** (R$ 4.000) - Estimular colágeno e firmeza facial. Produtos: Sculptra, Radiesse, Elleva, HarmonyCa
-20. **Bioestimulador - Pescoço** (R$ 4.500) - Melhora de flacidez e qualidade cervical
-21. **Microagulhamento com Peptídeos** (R$ 2.800) - Regeneração cutânea avançada (poros, acne, textura, viço, linhas finas)
-22. **Enzimas para Papada** (R$ 2.000) - Redução de gordura submentoniana (papada leve/moderada, contorno facial)
+14. **Toxina Botulínica - Terço Inferior** (R$ 3.500) - Sorriso gengival, código de barras
+15. **Ultra Toxina Botulínica** (R$ 6.000) - Pescoço + terço inferior + superior
+16. **Bruxismo** (R$ 3.500) - Relaxamento masseter
+17. **Fios de Tração** (R$ 7.000-15.000) - Lifting sem cirurgia
+18. **Fios Lisos** (R$ 7.000-15.000) - Bioestimulação
+19. **Bioestimulador - Rosto** (R$ 4.000) - Sculptra, Radiesse, Elleva, HarmonyCa
+20. **Bioestimulador - Pescoço** (R$ 4.500) - Flacidez cervical
+21. **Microagulhamento com Peptídeos** (R$ 2.800) - Regeneração cutânea
+22. **Enzimas para Papada** (R$ 2.000) - Redução gordura submentoniana
 
 SEMPRE sugira protocolos REAIS desta lista acima, usando os nomes exatos e valores.
 
@@ -327,6 +329,8 @@ export default function FacialAnalysis() {
   const [activeTab, setActiveTab] = useState("structured");
   const [showCamera, setShowCamera] = useState(false);
   const [inputMode, setInputMode] = useState(null);
+  const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
+  const [patientForTreatment, setPatientForTreatment] = useState({ id: null, name: "" });
   const fileInputRef = useRef(null);
   const stepTimerRef = useRef(null);
 
@@ -633,11 +637,21 @@ export default function FacialAnalysis() {
           </p>
         </div>
         {analysis && (
-          <Button variant="outline" onClick={resetAnalysis}
-            className="border-[#1e1e2a] text-gray-400 hover:text-white">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Nova Análise
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsProtocolModalOpen(true)}
+              className="border-[#c9a55c]/30 text-[#c9a55c] hover:bg-[#c9a55c]/10"
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Indicar no Paciente
+            </Button>
+            <Button variant="outline" onClick={resetAnalysis}
+              className="border-[#1e1e2a] text-gray-400 hover:text-white">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Nova Análise
+            </Button>
+          </div>
         )}
       </div>
 
@@ -1107,6 +1121,24 @@ export default function FacialAnalysis() {
           </Tabs>
         </div>
       )}
+
+      {/* Modal para Indicar Protocolos */}
+      <IndicateProtocolsModal
+        patientId={patientForTreatment.id}
+        patientName={patientForTreatment.name}
+        protocolosSugeridos={parsedSections?.protocols ? [
+          {
+            nome: "Preenchimento Full Face",
+            regioes: ["Malar", "Mandíbula", "Mento"],
+            justificativa: "Indicado via análise facial IA"
+          }
+        ] : []}
+        open={isProtocolModalOpen}
+        onOpenChange={setIsProtocolModalOpen}
+        onSuccess={() => {
+          toast.success("Protocolos indicados com sucesso!");
+        }}
+      />
     </div>
   );
 }

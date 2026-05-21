@@ -1,0 +1,136 @@
+{
+  "name": "Patient",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Nome completo do paciente"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "cpf",
+        "rg",
+        "passport"
+      ],
+      "default": "cpf"
+    },
+    "document_number": {
+      "type": "string"
+    },
+    "birth_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "female",
+        "male",
+        "other"
+      ]
+    },
+    "phone": {
+      "type": "string"
+    },
+    "whatsapp": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "number": {
+          "type": "string"
+        },
+        "complement": {
+          "type": "string"
+        },
+        "neighborhood": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "zip_code": {
+          "type": "string"
+        }
+      }
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "vip"
+      ],
+      "default": "active"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "instagram",
+        "google",
+        "referral",
+        "website",
+        "whatsapp",
+        "other"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    },
+    "consent_whatsapp": {
+      "type": "boolean",
+      "default": false
+    },
+    "consent_images": {
+      "type": "boolean",
+      "default": false
+    },
+    "consent_terms_signed": {
+      "type": "boolean",
+      "default": false
+    },
+    "consent_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "protocolos_ativos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos protocolos em andamento"
+    },
+    "historico_tratamentos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos tratamentos realizados"
+    }
+  },
+  "required": [
+    "full_name",
+    "phone"
+  ]
+}

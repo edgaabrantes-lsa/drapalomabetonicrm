@@ -1,0 +1,114 @@
+{
+  "name": "PatientTreatment",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "ID do paciente"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "protocolo_id": {
+      "type": "string",
+      "description": "ID do protocolo premium (se aplic\u00e1vel)"
+    },
+    "protocolo_nome": {
+      "type": "string",
+      "description": "Nome do protocolo ou procedimento"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "preenchimento",
+        "toxina",
+        "fios",
+        "bioestimulador",
+        "enzimas",
+        "microagulhamento",
+        "avulso"
+      ]
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "protocolo",
+        "avulso"
+      ],
+      "default": "avulso",
+      "description": "Se \u00e9 parte de um protocolo completo ou procedimento avulso"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "indicado",
+        "agendado",
+        "realizado",
+        "cancelado"
+      ],
+      "default": "indicado"
+    },
+    "data_indicacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_realizacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "valor": {
+      "type": "number"
+    },
+    "valor_pago": {
+      "type": "number"
+    },
+    "profissional_id": {
+      "type": "string"
+    },
+    "profissional_nome": {
+      "type": "string"
+    },
+    "quantidade_ml": {
+      "type": "number",
+      "description": "Quantidade de ml utilizado (para preenchimentos)"
+    },
+    "regioes_tratadas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "fotos_antes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fotos_depois": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "satisfacao": {
+      "type": "string",
+      "enum": [
+        "muito_satisfeito",
+        "satisfeito",
+        "neutro",
+        "insatisfeito"
+      ],
+      "description": "N\u00edvel de satisfa\u00e7\u00e3o do paciente"
+    }
+  },
+  "required": [
+    "patient_id",
+    "protocolo_nome",
+    "categoria",
+    "tipo",
+    "status"
+  ]
+}

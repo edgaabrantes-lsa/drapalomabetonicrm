@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PatientImport from "@/components/patients/PatientImport";
+import PatientTreatmentPanel from "@/components/patients/PatientTreatmentPanel";
 import { FileUp } from "lucide-react";
 
 const statusConfig = {
@@ -346,14 +347,13 @@ const PatientForm = ({ patient, onSave, onClose }) => {
   );
 };
 
-const PatientCard = ({ patient, onClick }) => {
+const PatientCard = ({ patient, onClick, onViewTreatments }) => {
   const age = patient.birth_date
     ? differenceInYears(new Date(), parseISO(patient.birth_date))
     : null;
 
   return (
     <Card
-      onClick={onClick}
       className="bg-[#12121a] border-[#1e1e2a] hover:border-[#c9a55c]/30 cursor-pointer transition-all group"
     >
       <CardContent className="p-4">
@@ -390,7 +390,20 @@ const PatientCard = ({ patient, onClick }) => {
               </div>
             )}
           </div>
-          <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-[#c9a55c] transition-colors" />
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewTreatments(patient);
+              }}
+              className="text-[#c9a55c] hover:bg-[#c9a55c]/10"
+            >
+              Tratamentos
+            </Button>
+            <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-[#c9a55c] transition-colors" />
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -405,6 +418,8 @@ export default function Patients() {
   const [editingPatient, setEditingPatient] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isTreatmentModalOpen, setIsTreatmentModalOpen] = useState(false);
+  const [patientForTreatment, setPatientForTreatment] = useState(null);
 
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ["patients"],
@@ -571,9 +586,30 @@ export default function Patients() {
               setEditingPatient(patient);
               setIsFormOpen(true);
             }}
+            onViewTreatments={(p) => {
+              setPatientForTreatment(p);
+              setIsTreatmentModalOpen(true);
+            }}
           />
         ))}
       </div>
+
+      {/* Treatment Modal */}
+      <Dialog open={isTreatmentModalOpen} onOpenChange={setIsTreatmentModalOpen}>
+        <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-serif">
+              Tratamentos de {patientForTreatment?.full_name}
+            </DialogTitle>
+          </DialogHeader>
+          {patientForTreatment && (
+            <PatientTreatmentPanel
+              patientId={patientForTreatment.id}
+              patientName={patientForTreatment.full_name}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {filteredPatients.length === 0 && !isLoading && (
         <div className="text-center py-12">
