@@ -1,0 +1,71 @@
+{
+  "name": "ProtocoloPremium",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "preenchimento",
+        "toxina",
+        "fios",
+        "bioestimulador",
+        "enzimas",
+        "microagulhamento"
+      ]
+    },
+    "objetivo": {
+      "type": "string"
+    },
+    "indicacoes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "regioes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "valor_min": {
+      "type": "number"
+    },
+    "valor_max": {
+      "type": "number"
+    },
+    "valor_por_ml": {
+      "type": "boolean",
+      "default": false
+    },
+    "nivel_complexidade": {
+      "type": "string",
+      "enum": [
+        "leve",
+        "medio",
+        "grave",
+        "premium"
+      ]
+    },
+    "descricao_tecnica": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    }
+  },
+  "required": [
+    "nome",
+    "categoria",
+    "objetivo",
+    "valor_min"
+  ]
+}
