@@ -11,7 +11,7 @@
     --foreground: 210 25% 93%;         /* #E8EDF5 — texto principal */
     --card: 222 18% 12%;               /* #171D29 — cards */
     --card-foreground: 210 25% 93%;
-    --popover: 222 18% 12%;
+    --popover: 222 18% 12%;            /* #171D29 — dropdowns, dialogs */
     --popover-foreground: 210 25% 93%;
     --primary: 38 57% 57%;             /* #C5A059 — dourado */
     --primary-foreground: 222 20% 9%;

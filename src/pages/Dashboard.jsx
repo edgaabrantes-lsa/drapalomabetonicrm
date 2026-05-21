@@ -17,13 +17,13 @@ import {
   PieChart, Pie
 } from "recharts";
 
-// ── Tokens LSA ──────────────────────────────────────────────
+// ── Tokens LSA Dark ──────────────────────────────────────────────
 const T = {
-  pearl: "#F9F9F7",
-  white: "#FFFFFF",
-  onyx: "#121212",
-  charcoal: "#757575",
-  subtle: "#EEEEEE",
+  pearl: "#111620",
+  white: "#171D29",
+  onyx: "#E8EDF5",
+  charcoal: "#8A95AA",
+  subtle: "#252D3E",
   gold: "#C5A059",
 };
 
