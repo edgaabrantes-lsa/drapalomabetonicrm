@@ -40,7 +40,7 @@ export default function PatientTreatmentPanel({ patientId, patientName }) {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.PatientTreatment.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(["patient-treatments"]);
+      queryClient.invalidateQueries({ queryKey: ["patient-treatments"] });
       setDialogOpen(false);
       setSelectedProtocolo(null);
     },
@@ -49,7 +49,7 @@ export default function PatientTreatmentPanel({ patientId, patientName }) {
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.PatientTreatment.update(id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["patient-treatments"]);
+      queryClient.invalidateQueries({ queryKey: ["patient-treatments"] });
     },
   });
 

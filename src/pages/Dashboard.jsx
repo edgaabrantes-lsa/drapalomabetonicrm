@@ -191,7 +191,7 @@ export default function Dashboard() {
     { name: "Bioestimuladores", value: 15 },
     { name: "Outros", value: 5 },
   ];
-  const pieColors = ["#121212", "#333", "#555", "#888", "#BBBBB"];
+  const pieColors = ["#121212", "#333", "#555", "#888", "#BBBBBB"];
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", maxWidth: 1400 }}>

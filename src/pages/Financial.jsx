@@ -71,7 +71,9 @@ const paymentMethods = {
   pix: "PIX",
   transfer: "Transferência",
   check: "Cheque",
-  installments: "Parcelado"
+  installments: "Parcelado",
+  link: "Link de Pagamento",
+  boleto: "Boleto"
 };
 
 const TransactionForm = ({ transaction, patients, onSave, onClose }) => {
