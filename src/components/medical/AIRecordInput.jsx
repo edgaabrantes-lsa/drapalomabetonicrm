@@ -45,56 +45,77 @@ export default function AIRecordInput({ onResult }) {
 
   const processAudio = async (blob) => {
     setMode(MODE_PROCESSING);
-    setStatusText("Enviando áudio para análise...");
+    setStatusText("Enviando áudio para transcrição...");
 
-    const file = new File([blob], "audio.webm", { type: "audio/webm" });
+    const file = new File([blob], "audio.webm", { type: blob.type || "audio/webm" });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-    setStatusText("IA preenchendo o prontuário...");
+    // PASSO 1: Transcrever o áudio em texto puro (sem inventar nada)
+    setStatusText("Transcrevendo áudio...");
+    let transcricao_original = "";
+    try {
+      transcricao_original = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
+    } catch {
+      transcricao_original = "";
+    }
+
+    if (!transcricao_original || transcricao_original.trim().length < 5) {
+      setMode(MODE_DONE);
+      setStatusText("Áudio sem conteúdo clínico identificável.");
+      onResult({ chief_complaint: "", medical_history: "", evolution: "", recommendations: "", transcricao_original: transcricao_original || "" });
+      return;
+    }
+
+    // PASSO 2: Extrair campos SOMENTE do texto transcrito, sem inventar nada
+    setStatusText("Extraindo informações clínicas do áudio...");
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é uma assistente médica da Clínica Dra. Paloma Betoni, especializada em medicina estética.
-Analise a transcrição do áudio do médico e extraia as informações clínicas para preencher um prontuário.
+      prompt: `Você é uma IA de extração clínica para prontuário estético. Sua função é APENAS extrair informações explicitamente mencionadas na transcrição abaixo. NÃO invente, NÃO presuma, NÃO complete e NÃO interprete além do que foi dito.
 
-Retorne um JSON com os campos:
-- chief_complaint: queixa principal mencionada
-- medical_history: histórico médico relevante
-- allergies: array de strings com alergias mencionadas
-- current_medications: array de strings com medicações
-- procedures_performed: array de objetos {procedure_name, quantity_applied, unit, area_treated, batch_number}
-- evolution: texto de evolução/observações clínicas
-- recommendations: recomendações pós-procedimento
+REGRAS OBRIGATÓRIAS:
+- Se uma informação não foi dita claramente, retorne exatamente: "Não informado no áudio."
+- Nunca crie histórico médico, alergias, medicações, comorbidades ou procedimentos se não foram mencionados diretamente.
+- Nunca infira doenças, manchas, acne, alergias ou medicamentos a partir de sintomas vagos.
+- Preencha APENAS os campos permitidos abaixo.
+- O campo "transcricao_original" deve conter exatamente o texto transcrito, sem alterações.
 
-Se algum campo não for mencionado, retorne string vazia ou array vazio.`,
-      file_urls: [file_url],
+CAMPOS PERMITIDOS PARA PREENCHIMENTO AUTOMÁTICO:
+- queixa_principal: somente se mencionada diretamente
+- historico_medico: somente se mencionado diretamente (ex: "paciente tem hipertensão")
+- evolucao_procedimento: relato do procedimento feito, se mencionado
+- recomendacoes_finais: cuidados pós-procedimento, se mencionados
+
+CAMPOS QUE DEVEM PERMANECER VAZIOS (não preencher):
+- alergias, medicações em uso, procedimentos com lote/quantidade (são manuais)
+
+TRANSCRIÇÃO DO ÁUDIO:
+${transcricao_original}
+
+Retorne JSON limpo preenchendo apenas os campos acima. Para tudo que não foi dito, use "Não informado no áudio."`,
       response_json_schema: {
         type: "object",
         properties: {
-          chief_complaint: { type: "string" },
-          medical_history: { type: "string" },
-          allergies: { type: "array", items: { type: "string" } },
-          current_medications: { type: "array", items: { type: "string" } },
-          procedures_performed: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                procedure_name: { type: "string" },
-                quantity_applied: { type: "number" },
-                unit: { type: "string" },
-                area_treated: { type: "string" },
-                batch_number: { type: "string" },
-              },
-            },
-          },
-          evolution: { type: "string" },
-          recommendations: { type: "string" },
+          queixa_principal: { type: "string" },
+          historico_medico: { type: "string" },
+          evolucao_procedimento: { type: "string" },
+          recomendacoes_finais: { type: "string" },
+          transcricao_original: { type: "string" },
         },
       },
     });
 
+    // Garantir que transcricao_original venha do passo 1 (mais confiável)
+    const finalResult = {
+      chief_complaint: result.queixa_principal || "",
+      medical_history: result.historico_medico || "",
+      evolution: result.evolucao_procedimento || "",
+      recommendations: result.recomendacoes_finais || "",
+      transcricao_original: transcricao_original,
+      // NÃO retornar: allergies, current_medications, procedures_performed
+    };
+
     setMode(MODE_DONE);
     setStatusText("Prontuário preenchido com sucesso!");
-    onResult(result);
+    onResult(finalResult);
   };
 
   // ── FOTO / IMAGEM ──────────────────────────────────────

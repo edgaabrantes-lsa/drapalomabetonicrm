@@ -119,20 +119,29 @@ export default function AudioRecorder({ onSave }) {
   const handleTranscribe = async () => {
     if (!audioBlob) return;
     setStatus(ST_UPLOADING);
-    const file = new File([audioBlob], "audio.webm", { type: audioBlob.type });
+    const file = new File([audioBlob], "audio.webm", { type: audioBlob.type || "audio/webm" });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     setUploadedUrl(file_url);
 
     setStatus(ST_TRANSCRIBING);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é uma assistente médica especializada em medicina estética. 
-Transcreva e organize o áudio da Dra. Paloma Betoni em texto claro e estruturado para uso em prontuário médico.
-Se o áudio contiver observações clínicas, organize-as em forma de evolução médica.
-Retorne apenas o texto transcrito e organizado, sem comentários adicionais.`,
-      file_urls: [file_url],
-    });
-    setTranscription(result);
-    setEditedText(result);
+    // Usa TranscribeAudio para obter transcrição literal — sem interpretação, sem invenção
+    let transcricao = "";
+    try {
+      transcricao = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
+    } catch {
+      setStatus(ST_ERROR);
+      setErrorMsg("Erro ao transcrever o áudio. Verifique a qualidade do áudio e tente novamente.");
+      return;
+    }
+
+    if (!transcricao || transcricao.trim().length < 3) {
+      setStatus(ST_ERROR);
+      setErrorMsg("Áudio sem conteúdo identificável. Tente gravar novamente com mais clareza.");
+      return;
+    }
+
+    setTranscription(transcricao);
+    setEditedText(transcricao);
     setStatus(ST_REVIEW);
   };
 

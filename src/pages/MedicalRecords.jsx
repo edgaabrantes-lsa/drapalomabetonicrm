@@ -117,15 +117,19 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
   };
 
   const handleAIResult = (aiData) => {
+    // Preenche APENAS campos permitidos — alergias, medicações e procedimentos permanecem manuais
+    const naoInformado = (val) => !val || val === "Não informado no áudio." ? "" : val;
     setFormData(prev => ({
       ...prev,
-      chief_complaint: aiData.chief_complaint || prev.chief_complaint,
-      medical_history: aiData.medical_history || prev.medical_history,
-      allergies: aiData.allergies?.length ? aiData.allergies : prev.allergies,
-      current_medications: aiData.current_medications?.length ? aiData.current_medications : prev.current_medications,
-      procedures_performed: aiData.procedures_performed?.length ? aiData.procedures_performed : prev.procedures_performed,
-      evolution: aiData.evolution || prev.evolution,
-      recommendations: aiData.recommendations || prev.recommendations,
+      chief_complaint: naoInformado(aiData.chief_complaint) || prev.chief_complaint,
+      medical_history: naoInformado(aiData.medical_history) || prev.medical_history,
+      evolution: naoInformado(aiData.evolution)
+        ? (prev.evolution ? prev.evolution + "\n\n" + naoInformado(aiData.evolution) : naoInformado(aiData.evolution))
+        : prev.evolution,
+      recommendations: naoInformado(aiData.recommendations) || prev.recommendations,
+      // transcricao_original salva para auditoria
+      audio_transcription: aiData.transcricao_original || prev.audio_transcription,
+      // NÃO tocar: allergies, current_medications, procedures_performed (preenchimento manual)
     }));
   };
 
