@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { PIPELINE_STAGES } from "@/hooks/useConversations";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { format, parseISO } from "date-fns";
@@ -22,14 +23,17 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const pipelineStages = [
-  { id: "inbox",         label: "Entrada",       color: "#6b7280", bg: "from-gray-500/10 to-transparent" },
-  { id: "first_contact", label: "1º Contato",    color: "#3b82f6", bg: "from-blue-500/10 to-transparent" },
-  { id: "interested",    label: "Interessado",   color: "#8b5cf6", bg: "from-purple-500/10 to-transparent" },
-  { id: "scheduling",    label: "Agendando",     color: "#f59e0b", bg: "from-yellow-500/10 to-transparent" },
-  { id: "scheduled",     label: "Agendado",      color: "#10b981", bg: "from-emerald-500/10 to-transparent" },
-  { id: "converted",     label: "Convertido",    color: "#c9a55c", bg: "from-yellow-600/10 to-transparent" },
-];
+const BG_MAP = {
+  inbox: "from-gray-500/10 to-transparent",
+  first_contact: "from-blue-500/10 to-transparent",
+  interested: "from-purple-500/10 to-transparent",
+  scheduling: "from-yellow-500/10 to-transparent",
+  scheduled: "from-emerald-500/10 to-transparent",
+  converted: "from-yellow-600/10 to-transparent",
+  lost: "from-red-500/10 to-transparent",
+};
+
+const pipelineStages = PIPELINE_STAGES.map(s => ({ ...s, bg: BG_MAP[s.id] || "from-gray-500/10 to-transparent" }));
 
 const sourceLabels = {
   instagram: "Instagram", google: "Google", referral: "Indicação",
@@ -447,15 +451,21 @@ export default function CRM() {
     const lead = leads.find(l => l.id === draggableId);
     if (!lead) return;
 
-    // Optimistic update
+    const newStage = destination.droppableId;
+
+    // Atualização otimista imediata
     queryClient.setQueryData(["leads"], (old = []) =>
       old.map(l => l.id === draggableId
-        ? { ...l, pipeline_stage: destination.droppableId }
+        ? { ...l, pipeline_stage: newStage }
         : l
       )
     );
 
-    updateMutation.mutate({ id: draggableId, data: { ...lead, pipeline_stage: destination.droppableId } });
+    // Persiste no banco — pipeline_stage é a fonte única de verdade
+    updateMutation.mutate({
+      id: draggableId,
+      data: { ...lead, pipeline_stage: newStage }
+    });
   };
 
   const handleSave = (data) => {

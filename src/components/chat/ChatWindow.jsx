@@ -15,10 +15,11 @@ const CHANNEL_LABELS = {
   website: { label: "Site", color: "#60A5FA" },
 };
 
-const TEMP_DOT = {
-  hot: "#F87171",
-  warm: "#FBBF24",
-  cold: "#60A5FA",
+import { STAGE_MAP } from "@/hooks/useConversations";
+
+// Mapeamento de cor por pipeline_stage — alinhado com CRM
+const getStageDotColor = (pipeline_stage) => {
+  return STAGE_MAP[pipeline_stage]?.color || "#6b7280";
 };
 
 function DateDivider({ date }) {
@@ -85,7 +86,7 @@ export default function ChatWindow({ conversation, onBack, onStatusChange }) {
               {lead?.name?.[0] || "?"}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
-              style={{ backgroundColor: TEMP_DOT[conversation.temperature] || "#6B7280", borderColor: "#0F1521" }} />
+              style={{ backgroundColor: getStageDotColor(conversation.pipeline_stage), borderColor: "#0F1521" }} />
           </div>
 
           <div className="flex-1 min-w-0">

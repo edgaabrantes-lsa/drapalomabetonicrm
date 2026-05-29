@@ -3,15 +3,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import ConversationItem from "./ConversationItem";
+import { PIPELINE_STAGES } from "@/hooks/useConversations";
 
+// Filtros alinhados com pipeline_stage — mesma fonte que o CRM/Kanban
 const FILTERS = [
-  { value: "all", label: "Todas" },
-  { value: "hot", label: "Quente 🔴" },
-  { value: "warm", label: "Morno 🟡" },
-  { value: "cold", label: "Frio 🔵" },
-  { value: "new", label: "Novos" },
-  { value: "in_progress", label: "Em Atendimento" },
-  { value: "scheduled", label: "Agendados" },
+  { value: "all", label: "Todos" },
+  ...PIPELINE_STAGES.map(s => ({ value: s.id, label: s.label }))
 ];
 
 export default function ConversationList({

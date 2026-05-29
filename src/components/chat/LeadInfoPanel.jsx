@@ -2,30 +2,18 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, FileText, DollarSign, UserCheck, X, Phone, Tag } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PIPELINE_STAGES, STAGE_MAP } from "@/hooks/useConversations";
 
-const STATUSES = [
-  { value: "new", label: "Novo" },
-  { value: "in_progress", label: "Em Atendimento" },
-  { value: "scheduled", label: "Consulta Agendada" },
-  { value: "budget_sent", label: "Orçamento Enviado" },
-  { value: "closing", label: "Fechamento" },
-  { value: "active_patient", label: "Paciente Ativo" },
-  { value: "lost", label: "Perdido" },
-];
+// Status alinhados com pipeline_stage — mesma fonte que CRM e Kanban
+const STATUSES = PIPELINE_STAGES;
 
 const CHANNEL_LABELS = {
   whatsapp: "WhatsApp", instagram: "Instagram", website: "Site", google: "Google", referral: "Indicação",
 };
 
-const TEMP_CONFIG = {
-  hot: { label: "Quente", color: "#F87171", bg: "rgba(239,68,68,0.12)" },
-  warm: { label: "Morno", color: "#FBBF24", bg: "rgba(245,158,11,0.12)" },
-  cold: { label: "Frio", color: "#60A5FA", bg: "rgba(59,130,246,0.12)" },
-};
-
 export default function LeadInfoPanel({ conversation, onClose, onStatusChange }) {
   const lead = conversation?.lead;
-  const temp = TEMP_CONFIG[conversation?.temperature] || TEMP_CONFIG.warm;
+  const stage = STAGE_MAP[conversation?.pipeline_stage] || STAGE_MAP.inbox;
   if (!conversation) return null;
 
   return (
@@ -53,8 +41,8 @@ export default function LeadInfoPanel({ conversation, onClose, onStatusChange })
           </div>
           <div className="flex gap-1.5 flex-wrap">
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: temp.bg, color: temp.color }}>
-              {temp.label}
+              style={{ backgroundColor: `${stage.color}20`, color: stage.color }}>
+              {stage.label}
             </span>
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "#1A2030", color: "#8A95AA" }}>
               {CHANNEL_LABELS[conversation.channel] || "Direto"}
@@ -65,7 +53,7 @@ export default function LeadInfoPanel({ conversation, onClose, onStatusChange })
         {/* Status */}
         <div className="p-4 border-b" style={{ borderColor: "#1A2030" }}>
           <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "#4A5568" }}>Status do Funil</p>
-          <Select value={conversation.status} onValueChange={onStatusChange}>
+          <Select value={conversation.pipeline_stage || "inbox"} onValueChange={onStatusChange}>
             <SelectTrigger className="h-8 text-xs rounded-sm" style={{ backgroundColor: "#1A2030", borderColor: "#252D3E", color: "#C8D0DF" }}>
               <SelectValue />
             </SelectTrigger>
