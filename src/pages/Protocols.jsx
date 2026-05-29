@@ -316,7 +316,7 @@ const AssignProtocolForm = ({ protocols, patients, onSave, onClose }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
       <div>
         <Label className="text-gray-300">Paciente *</Label>
         <Select
@@ -542,8 +542,8 @@ export default function Protocols() {
                 Iniciar Protocolo
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-md">
-              <DialogHeader>
+            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl font-serif">Iniciar Protocolo</DialogTitle>
               </DialogHeader>
               <AssignProtocolForm
@@ -561,8 +561,8 @@ export default function Protocols() {
                 Novo Protocolo
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl">
-              <DialogHeader>
+            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl font-serif">
                   {editingProtocol ? "Editar Protocolo" : "Novo Protocolo"}
                 </DialogTitle>

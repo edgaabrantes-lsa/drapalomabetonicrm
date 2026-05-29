@@ -787,7 +787,7 @@ export default function Agenda() {
 
       {/* ── Form Dialog ──────────────────────────────── */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent style={{ maxWidth: 520 }}>
+        <DialogContent style={{ maxWidth: 520, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: T.onyx }}>
               {editingAppointment ? "Editar Consulta" : "Nova Consulta"}

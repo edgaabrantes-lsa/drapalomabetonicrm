@@ -220,7 +220,7 @@ const LeadForm = ({ lead, onSave, onClose }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Label className="text-gray-300">Nome *</Label>
@@ -527,8 +527,8 @@ export default function CRM() {
                 <Plus className="mr-2 h-4 w-4" /> Novo Lead
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg">
-              <DialogHeader>
+            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl font-serif">{editingLead ? "Editar Lead" : "Novo Lead"}</DialogTitle>
               </DialogHeader>
               <LeadForm lead={editingLead} onSave={handleSave}
@@ -631,7 +631,7 @@ export default function CRM() {
 
       {/* Lead Details Side Panel */}
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-md">
+        <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-md max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-xl font-serif">Detalhes do Lead</DialogTitle>
           </DialogHeader>

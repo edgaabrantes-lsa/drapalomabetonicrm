@@ -97,7 +97,7 @@ const TransactionForm = ({ transaction, patients, onSave, onClose }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label className="text-gray-300">Tipo</Label>
@@ -364,8 +364,8 @@ export default function Financial() {
                 Nova Transação
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg">
-              <DialogHeader>
+            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl font-serif">
                   {editingTransaction ? "Editar Transação" : "Nova Transação"}
                 </DialogTitle>

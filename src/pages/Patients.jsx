@@ -328,8 +328,8 @@ export default function Patients() {
                 Novo Paciente
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl">
-              <DialogHeader>
+            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl font-serif">
                   {editingPatient ? "Editar Paciente" : "Novo Paciente"}
                 </DialogTitle>
