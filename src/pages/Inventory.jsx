@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -16,7 +17,9 @@ import {
   ArrowUpCircle,
   Edit,
   History,
-  Filter
+  Filter,
+  Trash2,
+  ShieldAlert
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,7 +76,7 @@ const SupplyForm = ({ supply, onSave, onClose }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Label className="text-gray-300">Nome do Insumo *</Label>
@@ -280,7 +283,7 @@ const BatchForm = ({ supply, onSave, onClose }) => {
   );
 };
 
-const SupplyCard = ({ supply, onEdit, onAddBatch }) => {
+const SupplyCard = ({ supply, onEdit, onAddBatch, onDelete, isAdmin }) => {
   const stockPercentage = supply.minimum_stock > 0
     ? Math.min((supply.current_stock / supply.minimum_stock) * 100, 100)
     : 100;
@@ -310,6 +313,14 @@ const SupplyCard = ({ supply, onEdit, onAddBatch }) => {
               <DropdownMenuItem className="text-white hover:bg-[#c9a55c]/10">
                 <History className="mr-2 h-4 w-4" /> Histórico
               </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem
+                  onClick={() => onDelete(supply)}
+                  className="text-red-400 hover:bg-red-500/10 focus:text-red-400"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -356,6 +367,15 @@ export default function Inventory() {
   const [editingSupply, setEditingSupply] = useState(null);
   const [selectedSupplyForBatch, setSelectedSupplyForBatch] = useState(null);
   const [activeTab, setActiveTab] = useState("supplies");
+  const [supplyToDelete, setSupplyToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(user => {
+      setIsAdmin(user?.role === "admin");
+    }).catch(() => {});
+  }, []);
 
   const { data: supplies = [] } = useQuery({
     queryKey: ["supplies"],
@@ -432,7 +452,55 @@ export default function Inventory() {
     createBatchMutation.mutate(data);
   };
 
-  const filteredSupplies = supplies.filter(supply => {
+  const handleDeleteSupply = async () => {
+    if (!supplyToDelete || !isAdmin) return;
+    setIsDeleting(true);
+    try {
+      // Verificar se tem histórico vinculado
+      const linkedBatches = batches.filter(b => b.supply_id === supplyToDelete.id);
+      const linkedMovements = movements.filter(m => m.supply_id === supplyToDelete.id);
+      const hasHistory = linkedBatches.length > 0 || linkedMovements.length > 0;
+
+      if (hasHistory) {
+        // Exclusão lógica: preserva histórico, apenas oculta da listagem
+        await base44.entities.Supply.update(supplyToDelete.id, {
+          ...supplyToDelete,
+          status: "inactive"
+        });
+      } else {
+        // Sem histórico: exclusão física
+        await base44.entities.Supply.delete(supplyToDelete.id);
+      }
+
+      // Registrar log de auditoria
+      await base44.entities.AuditLog.create({
+        action: "delete",
+        entity_type: "Supply",
+        entity_id: supplyToDelete.id,
+        user_email: (await base44.auth.me())?.email || "admin",
+        user_role: "admin",
+        details: {
+          supply_name: supplyToDelete.name,
+          had_history: hasHistory,
+          deletion_type: hasHistory ? "logical" : "physical",
+        },
+        old_values: supplyToDelete,
+      }).catch(() => {}); // log não deve bloquear a exclusão
+
+      queryClient.invalidateQueries({ queryKey: ["supplies"] });
+      toast.success(`Insumo "${supplyToDelete.name}" excluído com sucesso.`);
+      setSupplyToDelete(null);
+    } catch {
+      toast.error("Não foi possível excluir este insumo. Tente novamente.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Ocultar insumos marcados como excluídos logicamente (exclusão lógica)
+  const activeSupplies = supplies.filter(s => s.status !== "inactive");
+
+  const filteredSupplies = activeSupplies.filter(supply => {
     const matchesSearch = supply.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supply.brand?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || supply.category === categoryFilter;
@@ -503,8 +571,8 @@ export default function Inventory() {
                 Novo Insumo
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg">
-              <DialogHeader>
+            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl font-serif">
                   {editingSupply ? "Editar Insumo" : "Novo Insumo"}
                 </DialogTitle>
@@ -598,8 +666,10 @@ export default function Inventory() {
               <SupplyCard
                 key={supply.id}
                 supply={supply}
+                isAdmin={isAdmin}
                 onEdit={(s) => { setEditingSupply(s); setIsSupplyFormOpen(true); }}
                 onAddBatch={(s) => { setSelectedSupplyForBatch(s); setIsBatchFormOpen(true); }}
+                onDelete={(s) => setSupplyToDelete(s)}
               />
             ))}
           </div>
@@ -708,6 +778,45 @@ export default function Inventory() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Diálogo de Confirmação de Exclusão */}
+      {supplyToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#12121a] border border-[#1e1e2a] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-start gap-4 mb-5">
+              <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                <ShieldAlert className="h-5 w-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-base mb-1">Excluir Insumo</h3>
+                <p className="text-gray-400 text-sm">
+                  Tem certeza que deseja excluir <span className="text-white font-medium">"{supplyToDelete.name}"</span>?
+                  Esta ação não poderá ser desfeita.
+                </p>
+                <p className="text-xs text-gray-600 mt-2">
+                  Se existir histórico de lotes ou movimentações, o insumo será desativado logicamente para preservar a auditoria.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setSupplyToDelete(null)}
+                disabled={isDeleting}
+                className="border-[#1e1e2a] text-gray-400 hover:text-white"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleDeleteSupply}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isDeleting ? "Excluindo..." : "Confirmar exclusão"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
