@@ -25,7 +25,8 @@ import {
   Bell,
   Search,
   Eye,
-  Star
+  Star,
+  ScanFace
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -51,6 +52,7 @@ const navigation = [
   { name: "Financeiro", href: "Financial", icon: DollarSign },
   { name: "Precificação", href: "Pricing", icon: Calculator },
   { name: "Análise Facial IA", href: "FacialAnalysis", icon: Eye },
+  { name: "Simulações Full Face", href: "FullFaceSimulations", icon: ScanFace },
   { name: "Triagem IA", href: "Intake", icon: ClipboardList },
   { name: "Configurações", href: "Settings", icon: Settings },
 ];

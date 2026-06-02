@@ -1,0 +1,66 @@
+{
+  "name": "WaitingList",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "procedure_id": {
+      "type": "string"
+    },
+    "procedure_name": {
+      "type": "string"
+    },
+    "professional_id": {
+      "type": "string"
+    },
+    "preferred_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_time": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening",
+        "any"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "vip",
+        "urgent"
+      ],
+      "default": "normal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "contacted",
+        "scheduled",
+        "cancelled"
+      ],
+      "default": "waiting"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_name",
+    "phone",
+    "procedure_name"
+  ]
+}

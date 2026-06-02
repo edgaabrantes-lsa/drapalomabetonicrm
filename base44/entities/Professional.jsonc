@@ -1,0 +1,142 @@
+{
+  "name": "Professional",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "specialty": {
+      "type": "string"
+    },
+    "registration_number": {
+      "type": "string",
+      "description": "CRM ou outro registro"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string",
+      "description": "Cor para agenda"
+    },
+    "working_hours": {
+      "type": "object",
+      "properties": {
+        "monday": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "end": {
+              "type": "string"
+            },
+            "active": {
+              "type": "boolean"
+            }
+          }
+        },
+        "tuesday": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "end": {
+              "type": "string"
+            },
+            "active": {
+              "type": "boolean"
+            }
+          }
+        },
+        "wednesday": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "end": {
+              "type": "string"
+            },
+            "active": {
+              "type": "boolean"
+            }
+          }
+        },
+        "thursday": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "end": {
+              "type": "string"
+            },
+            "active": {
+              "type": "boolean"
+            }
+          }
+        },
+        "friday": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "end": {
+              "type": "string"
+            },
+            "active": {
+              "type": "boolean"
+            }
+          }
+        },
+        "saturday": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "end": {
+              "type": "string"
+            },
+            "active": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "vacation"
+      ],
+      "default": "active"
+    },
+    "procedures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos procedimentos que realiza"
+    }
+  },
+  "required": [
+    "name",
+    "email"
+  ]
+}

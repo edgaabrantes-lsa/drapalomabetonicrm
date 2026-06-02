@@ -1,0 +1,39 @@
+{
+  "name": "LeadInteraction",
+  "type": "object",
+  "properties": {
+    "lead_id": {
+      "type": "string"
+    },
+    "interaction_type": {
+      "type": "string",
+      "enum": [
+        "whatsapp_sent",
+        "whatsapp_received",
+        "call_outbound",
+        "call_inbound",
+        "email_sent",
+        "email_received",
+        "meeting",
+        "note",
+        "task_completed"
+      ]
+    },
+    "content": {
+      "type": "string"
+    },
+    "performed_by": {
+      "type": "string"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "lead_id",
+    "interaction_type"
+  ]
+}

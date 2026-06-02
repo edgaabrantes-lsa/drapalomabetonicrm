@@ -1,0 +1,111 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "instagram",
+        "google",
+        "referral",
+        "website",
+        "whatsapp",
+        "tiktok",
+        "facebook",
+        "other"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "contacted",
+        "qualified",
+        "proposal",
+        "negotiation",
+        "won",
+        "lost"
+      ],
+      "default": "new"
+    },
+    "pipeline_stage": {
+      "type": "string",
+      "enum": [
+        "inbox",
+        "first_contact",
+        "interested",
+        "scheduling",
+        "scheduled",
+        "converted",
+        "lost"
+      ],
+      "default": "inbox"
+    },
+    "interest": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Procedimentos de interesse"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Email do respons\u00e1vel"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "vip"
+      ],
+      "default": "medium"
+    },
+    "estimated_value": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "last_contact_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "next_followup_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "converted_to_patient": {
+      "type": "boolean",
+      "default": false
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "whatsapp_consent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ]
+}

@@ -21,6 +21,7 @@ import ProtocolSelectionPanel from "@/components/facial/ProtocolSelectionPanel";
 import ProposalGenerator from "@/components/facial/ProposalGenerator";
 import PatientRegistration from "@/components/facial/PatientRegistration";
 import ProposalPreview from "@/components/facial/ProposalPreview";
+import FullFaceSimulationModal from "@/components/facial/FullFaceSimulationModal";
 
 const HOF_SYSTEM_PROMPT = `Você é um especialista em harmonização orofacial (HOF), estética avançada e análise estrutural da face humana, trabalhando para a Clínica Premium da Dra. Paloma Betoni.
 
@@ -341,6 +342,8 @@ export default function FacialAnalysis() {
   const [selectedProtocols, setSelectedProtocols] = useState([]);
   const [showProposal, setShowProposal] = useState(false);
   const [proposalData, setProposalData] = useState(null);
+  const [isFullFaceSimulationOpen, setIsFullFaceSimulationOpen] = useState(false);
+  const [patientForSimulation, setPatientForSimulation] = useState({ id: null, name: "" });
   const fileInputRef = useRef(null);
   const stepTimerRef = useRef(null);
 
@@ -648,6 +651,16 @@ export default function FacialAnalysis() {
         </div>
         {analysis && (
           <div className="flex gap-3">
+            <Button
+              onClick={() => {
+                setPatientForSimulation({ id: null, name: "" });
+                setIsFullFaceSimulationOpen(true);
+              }}
+              className="bg-gradient-to-r from-[#c9a55c] to-[#a17f3f] hover:from-[#a17f3f] hover:to-[#8a6a30] text-black font-semibold"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Gerar Antes e Depois com IA
+            </Button>
             <Button
               variant="outline"
               onClick={() => setIsPatientSelectorOpen(true)}
@@ -1268,6 +1281,18 @@ export default function FacialAnalysis() {
           onClose={() => setShowProposal(false)}
         />
       )}
+
+      {/* Modal de Simulação Full Face */}
+      <FullFaceSimulationModal
+        open={isFullFaceSimulationOpen}
+        onClose={() => setIsFullFaceSimulationOpen(false)}
+        patientId={patientForSimulation.id}
+        patientName={patientForSimulation.name}
+        onSuccess={(result) => {
+          toast.success("Simulação gerada com sucesso!");
+          setIsFullFaceSimulationOpen(false);
+        }}
+      />
     </div>
   );
 }

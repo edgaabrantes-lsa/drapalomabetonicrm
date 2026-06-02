@@ -1,0 +1,98 @@
+{
+  "name": "MedicalRecord",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "ID do paciente"
+    },
+    "record_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "chief_complaint": {
+      "type": "string",
+      "description": "Queixa principal"
+    },
+    "medical_history": {
+      "type": "string",
+      "description": "Hist\u00f3rico m\u00e9dico"
+    },
+    "allergies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "contraindications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "current_medications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "procedures_performed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "procedure_name": {
+            "type": "string"
+          },
+          "quantity_applied": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "batch_number": {
+            "type": "string"
+          },
+          "area_treated": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evolution": {
+      "type": "string",
+      "description": "Evolu\u00e7\u00e3o do tratamento"
+    },
+    "recommendations": {
+      "type": "string"
+    },
+    "professional_id": {
+      "type": "string"
+    },
+    "audio_transcription": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "approved"
+      ],
+      "default": "draft"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "patient_id",
+    "record_date"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "name": "SupplyBatch",
+  "type": "object",
+  "properties": {
+    "supply_id": {
+      "type": "string"
+    },
+    "supply_name": {
+      "type": "string"
+    },
+    "batch_number": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "quantity_remaining": {
+      "type": "number"
+    },
+    "manufacture_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "purchase_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "purchase_price": {
+      "type": "number"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "supplier": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "depleted"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "supply_id",
+    "batch_number",
+    "quantity",
+    "expiry_date"
+  ]
+}

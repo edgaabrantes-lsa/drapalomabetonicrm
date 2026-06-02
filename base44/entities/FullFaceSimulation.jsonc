@@ -1,0 +1,91 @@
+{
+  "name": "FullFaceSimulation",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "original_image_url": {
+      "type": "string"
+    },
+    "generated_image_url": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "front_camera",
+        "back_camera",
+        "webcam",
+        "upload"
+      ]
+    },
+    "consent_lgpd": {
+      "type": "boolean",
+      "default": false
+    },
+    "consent_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "facial_analysis_snapshot": {
+      "type": "object"
+    },
+    "protocol_type": {
+      "type": "string",
+      "default": "full_face_premium"
+    },
+    "ai_prompt_version": {
+      "type": "string",
+      "default": "v1"
+    },
+    "technical_report": {
+      "type": "string"
+    },
+    "image_metadata": {
+      "type": "object",
+      "properties": {
+        "file_size": {
+          "type": "number"
+        },
+        "format": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "required": [
+    "patient_id",
+    "original_image_url",
+    "source_type",
+    "consent_lgpd"
+  ]
+}

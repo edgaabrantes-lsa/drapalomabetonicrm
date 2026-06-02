@@ -1,0 +1,77 @@
+{
+  "name": "Protocol",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "duration_months": {
+      "type": "number",
+      "enum": [
+        3,
+        6,
+        12
+      ]
+    },
+    "total_sessions": {
+      "type": "number"
+    },
+    "procedures_included": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "procedure_id": {
+            "type": "string"
+          },
+          "procedure_name": {
+            "type": "string"
+          },
+          "sessions": {
+            "type": "number"
+          },
+          "interval_days": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "items_included": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "items_not_included": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "total_price": {
+      "type": "number"
+    },
+    "total_cost": {
+      "type": "number"
+    },
+    "payment_conditions": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name",
+    "duration_months",
+    "total_sessions"
+  ]
+}

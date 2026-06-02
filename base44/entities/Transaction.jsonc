@@ -1,0 +1,116 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "income",
+        "expense"
+      ]
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "procedure",
+        "protocol",
+        "product",
+        "salary",
+        "rent",
+        "utilities",
+        "supplies",
+        "marketing",
+        "taxes",
+        "equipment",
+        "maintenance",
+        "other"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "credit_card",
+        "debit_card",
+        "pix",
+        "transfer",
+        "check",
+        "installments"
+      ]
+    },
+    "installments": {
+      "type": "number"
+    },
+    "current_installment": {
+      "type": "number"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "payment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "overdue",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "appointment_id": {
+      "type": "string"
+    },
+    "protocol_id": {
+      "type": "string"
+    },
+    "cost_center": {
+      "type": "string",
+      "enum": [
+        "clinical",
+        "administrative",
+        "marketing",
+        "infrastructure",
+        "personnel"
+      ]
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reconciled": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "type",
+    "category",
+    "amount",
+    "due_date"
+  ]
+}

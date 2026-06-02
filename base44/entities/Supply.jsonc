@@ -1,0 +1,66 @@
+{
+  "name": "Supply",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "injetavel",
+        "topico",
+        "equipamento",
+        "descartavel",
+        "outros"
+      ]
+    },
+    "brand": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "ml",
+        "mg",
+        "un",
+        "cx",
+        "fr",
+        "amp"
+      ]
+    },
+    "current_stock": {
+      "type": "number",
+      "default": 0
+    },
+    "minimum_stock": {
+      "type": "number"
+    },
+    "cost_per_unit": {
+      "type": "number"
+    },
+    "supplier": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "out_of_stock"
+      ],
+      "default": "active"
+    },
+    "requires_prescription": {
+      "type": "boolean",
+      "default": false
+    },
+    "storage_conditions": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "unit"
+  ]
+}

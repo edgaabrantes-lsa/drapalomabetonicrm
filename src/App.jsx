@@ -7,6 +7,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtocolosPremium from './pages/ProtocolosPremium';
+import FullFaceSimulations from './pages/FullFaceSimulations';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -64,6 +65,13 @@ const AuthenticatedApp = () => {
       <Route path="/ProtocolosPremium" element={
         <LayoutWrapper currentPageName="ProtocolosPremium">
           <ProtocolosPremium />
+        </LayoutWrapper>
+      } />
+      
+      {/* Nova rota de Simulações Full Face */}
+      <Route path="/FullFaceSimulations" element={
+        <LayoutWrapper currentPageName="FullFaceSimulations">
+          <FullFaceSimulations />
         </LayoutWrapper>
       } />
     </Routes>

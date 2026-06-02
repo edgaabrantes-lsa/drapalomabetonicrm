@@ -1,0 +1,96 @@
+{
+  "name": "PatientProtocol",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "protocol_id": {
+      "type": "string"
+    },
+    "protocol_name": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "expected_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "paused",
+        "cancelled"
+      ],
+      "default": "active"
+    },
+    "sessions_completed": {
+      "type": "number",
+      "default": 0
+    },
+    "total_sessions": {
+      "type": "number"
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "session_number": {
+            "type": "number"
+          },
+          "procedure_name": {
+            "type": "string"
+          },
+          "scheduled_date": {
+            "type": "string"
+          },
+          "completed_date": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_paid": {
+      "type": "number"
+    },
+    "total_value": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "adjustments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "performed_by": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "patient_id",
+    "protocol_id"
+  ]
+}

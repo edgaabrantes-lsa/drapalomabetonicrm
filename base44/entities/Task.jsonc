@@ -1,0 +1,74 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "followup",
+        "call",
+        "whatsapp",
+        "email",
+        "meeting",
+        "other"
+      ],
+      "default": "followup"
+    },
+    "related_to": {
+      "type": "string",
+      "enum": [
+        "lead",
+        "patient",
+        "appointment",
+        "general"
+      ]
+    },
+    "related_id": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ],
+      "default": "medium"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "assigned_to": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "due_date"
+  ]
+}

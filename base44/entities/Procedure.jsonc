@@ -1,0 +1,82 @@
+{
+  "name": "Procedure",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "facial",
+        "corporal",
+        "capilar",
+        "injetaveis",
+        "laser",
+        "outros"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "price": {
+      "type": "number"
+    },
+    "cost": {
+      "type": "number"
+    },
+    "supplies_required": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "supply_id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contraindications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "pre_care": {
+      "type": "string"
+    },
+    "post_care": {
+      "type": "string"
+    },
+    "consent_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "photo_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name",
+    "duration_minutes",
+    "price"
+  ]
+}

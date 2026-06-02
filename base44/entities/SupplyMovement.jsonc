@@ -1,0 +1,54 @@
+{
+  "name": "SupplyMovement",
+  "type": "object",
+  "properties": {
+    "supply_id": {
+      "type": "string"
+    },
+    "supply_name": {
+      "type": "string"
+    },
+    "batch_id": {
+      "type": "string"
+    },
+    "batch_number": {
+      "type": "string"
+    },
+    "movement_type": {
+      "type": "string",
+      "enum": [
+        "entry",
+        "exit",
+        "adjustment",
+        "loss",
+        "return"
+      ]
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "appointment_id": {
+      "type": "string"
+    },
+    "procedure_name": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "performed_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "supply_id",
+    "movement_type",
+    "quantity"
+  ]
+}

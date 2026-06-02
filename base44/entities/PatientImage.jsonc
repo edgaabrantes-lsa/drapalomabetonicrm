@@ -1,0 +1,57 @@
+{
+  "name": "PatientImage",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "medical_record_id": {
+      "type": "string"
+    },
+    "protocol_id": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "image_type": {
+      "type": "string",
+      "enum": [
+        "before",
+        "during",
+        "after",
+        "pre",
+        "post_immediate",
+        "7_days",
+        "30_days",
+        "90_days"
+      ],
+      "default": "before"
+    },
+    "procedure_name": {
+      "type": "string"
+    },
+    "session_number": {
+      "type": "number"
+    },
+    "capture_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "body_area": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "consent_signed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "patient_id",
+    "image_url",
+    "image_type"
+  ]
+}

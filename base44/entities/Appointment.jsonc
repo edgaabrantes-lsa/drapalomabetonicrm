@@ -1,0 +1,83 @@
+{
+  "name": "Appointment",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "professional_id": {
+      "type": "string"
+    },
+    "professional_name": {
+      "type": "string"
+    },
+    "room_id": {
+      "type": "string"
+    },
+    "procedure_id": {
+      "type": "string"
+    },
+    "procedure_name": {
+      "type": "string"
+    },
+    "protocol_id": {
+      "type": "string"
+    },
+    "session_number": {
+      "type": "number"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "confirmed",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "no_show"
+      ],
+      "default": "scheduled"
+    },
+    "confirmation_sent": {
+      "type": "boolean",
+      "default": false
+    },
+    "confirmation_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reminder_sent": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "is_vip": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "patient_id",
+    "start_time",
+    "procedure_name"
+  ]
+}
