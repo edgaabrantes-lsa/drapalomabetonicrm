@@ -571,7 +571,7 @@ ${transcricao}`;
           className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black font-medium"
         >
           <Mic className="h-3.5 w-3.5 mr-1.5" />
-          Enviar e Preencher Formulario
+          Enviar Audio e Preencher Formulario
         </Button>
         <Button
           size="sm"
