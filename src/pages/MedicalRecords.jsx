@@ -7,17 +7,8 @@ import {
   Plus,
   Search,
   FileText,
-  User,
-  Calendar,
-  Mic,
-  Camera,
   AlertTriangle,
   CheckCircle,
-  Clock,
-  ChevronRight,
-  Upload,
-  Loader2,
-  Sparkles
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,8 +46,6 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
 
   const [allergyInput, setAllergyInput] = useState("");
   const [medicationInput, setMedicationInput] = useState("");
-  const [isTranscribing, setIsTranscribing] = useState(false);
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
@@ -104,39 +93,68 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
     }));
   };
 
-  const handleAITranscribe = async () => {
-    setIsTranscribing(true);
-    // Simulated AI transcription - would use actual integration
-    setTimeout(() => {
-      setFormData(prev => ({
-        ...prev,
-        evolution: prev.evolution + "\n\n[Transcrição gerada por IA]"
-      }));
-      setIsTranscribing(false);
-    }, 2000);
+  // Preenchimento por audio — secao prontuario
+  const handleAIResult = (aiData) => {
+    const val = (v) => (!v || v === "Nao informado no audio." || v === "Não informado no áudio.") ? "" : v.trim();
+    setFormData(prev => {
+      const updated = { ...prev };
+      if (val(aiData.chief_complaint))  updated.chief_complaint = val(aiData.chief_complaint);
+      if (val(aiData.medical_history))  updated.medical_history = val(aiData.medical_history);
+      if (val(aiData.recommendations))  updated.recommendations = val(aiData.recommendations);
+      if (val(aiData.audio_transcription)) updated.audio_transcription = val(aiData.audio_transcription);
+      // Evolucao: adicionar ao invés de substituir se ja houver conteudo
+      if (val(aiData.evolution)) {
+        updated.evolution = prev.evolution
+          ? prev.evolution + "\n\n" + val(aiData.evolution)
+          : val(aiData.evolution);
+      }
+      // Alergias por audio (string) — adicionar ao array existente se mencionadas
+      if (val(aiData.alergias)) {
+        const novas = val(aiData.alergias).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+        const existentes = prev.allergies || [];
+        const combinadas = [...existentes, ...novas.filter(n => !existentes.includes(n))];
+        updated.allergies = combinadas;
+      }
+      // Medicacoes por audio (string) — adicionar ao array existente se mencionadas
+      if (val(aiData.medicacoes_em_uso)) {
+        const novas = val(aiData.medicacoes_em_uso).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+        const existentes = prev.current_medications || [];
+        const combinadas = [...existentes, ...novas.filter(n => !existentes.includes(n))];
+        updated.current_medications = combinadas;
+      }
+      return updated;
+    });
   };
 
-  const handleAIResult = (aiData) => {
-    // Preenche APENAS campos permitidos — alergias, medicações e procedimentos permanecem manuais
-    const naoInformado = (val) => !val || val === "Não informado no áudio." ? "" : val;
-    setFormData(prev => ({
-      ...prev,
-      chief_complaint: naoInformado(aiData.chief_complaint) || prev.chief_complaint,
-      medical_history: naoInformado(aiData.medical_history) || prev.medical_history,
-      evolution: naoInformado(aiData.evolution)
-        ? (prev.evolution ? prev.evolution + "\n\n" + naoInformado(aiData.evolution) : naoInformado(aiData.evolution))
-        : prev.evolution,
-      recommendations: naoInformado(aiData.recommendations) || prev.recommendations,
-      // transcricao_original salva para auditoria
-      audio_transcription: aiData.transcricao_original || prev.audio_transcription,
-      // NÃO tocar: allergies, current_medications, procedures_performed (preenchimento manual)
-    }));
+  // Preenchimento por audio — secao evolucao
+  const handleEvolutionAudioResult = (aiData) => {
+    const val = (v) => (!v || v === "Nao informado no audio." || v === "Não informado no áudio.") ? "" : v.trim();
+    setFormData(prev => {
+      const updated = { ...prev };
+      if (val(aiData.evolution)) {
+        updated.evolution = prev.evolution
+          ? prev.evolution + "\n\n" + val(aiData.evolution)
+          : val(aiData.evolution);
+      }
+      if (val(aiData.recommendations)) updated.recommendations = val(aiData.recommendations);
+      if (val(aiData.audio_transcription)) updated.audio_transcription = val(aiData.audio_transcription);
+      return updated;
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-      {/* AI Input */}
-      <AIRecordInput onResult={handleAIResult} />
+    <form onSubmit={handleSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
+      {/* AI Input — secao prontuario */}
+      <AIRecordInput
+        section="prontuario"
+        existingFields={{
+          queixa_principal: formData.chief_complaint,
+          historico_medico: formData.medical_history,
+          conduta_planejada: formData.evolution,
+          recomendacoes: formData.recommendations,
+        }}
+        onResult={handleAIResult}
+      />
 
       {/* Patient Selection */}
       <div>
@@ -293,23 +311,56 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
       </div>
 
       {/* Evolution */}
-      <div>
-        <Label className="text-gray-300 mb-2 block">Evolução</Label>
-        <AudioRecorder
-          onSave={({ text, audio_url }) => {
-            setFormData(prev => ({
-              ...prev,
-              evolution: prev.evolution ? prev.evolution + "\n\n" + text : text,
-              audio_url: audio_url || prev.audio_url,
-            }));
-          }}
-        />
+      <div className="space-y-2">
+        <Label className="text-gray-300 block">Evolucao</Label>
+        {/* Audio inteligente para evolucao */}
+        <div className="rounded-xl border border-[#c9a55c]/20 bg-[#c9a55c]/5 p-3 space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <FileText className="h-3.5 w-3.5 text-[#c9a55c]" />
+            <span className="text-xs font-medium text-[#c9a55c]">Audio de Evolucao</span>
+            <span className="text-xs text-gray-500">— grave o relato de evolucao e retorno</span>
+          </div>
+          <AudioRecorder
+            section="evolucao"
+            existingFields={{
+              evolucao_tratamento: formData.evolution,
+              recomendacoes_pos_procedimento: formData.recommendations,
+            }}
+            onStructured={(data) => {
+              const val = (v) => (!v || v.trim().length === 0) ? "" : v.trim();
+              setFormData(prev => {
+                const updated = { ...prev };
+                if (val(data.evolucao_tratamento)) {
+                  updated.evolution = prev.evolution
+                    ? prev.evolution + "\n\n" + val(data.evolucao_tratamento)
+                    : val(data.evolucao_tratamento);
+                }
+                if (val(data.resultado_observado)) {
+                  updated.evolution = (updated.evolution || "")
+                    + (updated.evolution ? "\n\nResultado: " : "Resultado: ")
+                    + val(data.resultado_observado);
+                }
+                if (val(data.intercorrencias)) {
+                  updated.evolution = (updated.evolution || "")
+                    + "\n\nIntercorrencias: " + val(data.intercorrencias);
+                }
+                if (val(data.recomendacoes_pos_procedimento)) {
+                  updated.recommendations = prev.recommendations
+                    ? prev.recommendations + "\n\n" + val(data.recomendacoes_pos_procedimento)
+                    : val(data.recomendacoes_pos_procedimento);
+                }
+                if (val(data.transcricao_original)) updated.audio_transcription = val(data.transcricao_original);
+                return updated;
+              });
+            }}
+          />
+        </div>
         <Textarea
           value={formData.evolution}
           onChange={(e) => setFormData(prev => ({ ...prev, evolution: e.target.value }))}
-          className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-2"
+          className="bg-[#1a1a25] border-[#1e1e2a] text-white"
           rows={4}
-          placeholder="Evolução do tratamento..."
+          placeholder="Evolucao do tratamento..."
         />
       </div>
 
