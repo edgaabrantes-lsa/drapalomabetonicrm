@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIRecordInput from "@/components/medical/AIRecordInput";
 import AudioRecorder from "@/components/medical/AudioRecorder";
 
+
 const statusConfig = {
   draft: { label: "Rascunho", color: "bg-gray-500/20 text-gray-400" },
   pending_review: { label: "Revisão", color: "bg-yellow-500/20 text-yellow-400" },
@@ -30,7 +31,17 @@ const statusConfig = {
 };
 
 const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) => {
-  const [formData, setFormData] = useState(record || {
+  const [formData, setFormData] = useState(record ? {
+    ...record,
+    chief_complaint:      record.chief_complaint      ?? "",
+    medical_history:      record.medical_history      ?? "",
+    evolution:            record.evolution            ?? "",
+    recommendations:      record.recommendations      ?? "",
+    allergies:            record.allergies            ?? [],
+    contraindications:    record.contraindications    ?? [],
+    current_medications:  record.current_medications  ?? [],
+    procedures_performed: record.procedures_performed ?? [],
+  } : {
     patient_id: "",
     record_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
     chief_complaint: "",
@@ -313,7 +324,6 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
       {/* Evolution */}
       <div className="space-y-2">
         <Label className="text-gray-300 block">Evolucao</Label>
-        {/* Audio inteligente para evolucao */}
         <div className="rounded-xl border border-[#c9a55c]/20 bg-[#c9a55c]/5 p-3 space-y-2">
           <div className="flex items-center gap-2 mb-1">
             <FileText className="h-3.5 w-3.5 text-[#c9a55c]" />
@@ -323,34 +333,32 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
           <AudioRecorder
             section="evolucao"
             existingFields={{
-              evolucao_tratamento: formData.evolution,
+              evolucao_tratamento:           formData.evolution,
               recomendacoes_pos_procedimento: formData.recommendations,
             }}
             onStructured={(data) => {
-              const val = (v) => (!v || v.trim().length === 0) ? "" : v.trim();
+              // data tem chaves do schema "evolucao": evolucao_tratamento, resultado_observado, etc.
+              const v = (x) => (!x || x.trim().length === 0) ? "" : x.trim();
               setFormData(prev => {
-                const updated = { ...prev };
-                if (val(data.evolucao_tratamento)) {
-                  updated.evolution = prev.evolution
-                    ? prev.evolution + "\n\n" + val(data.evolucao_tratamento)
-                    : val(data.evolucao_tratamento);
+                const upd = { ...prev };
+                // Montar texto de evolucao com todos os campos relevantes
+                const partes = [];
+                if (v(data.evolucao_tratamento))   partes.push(v(data.evolucao_tratamento));
+                if (v(data.resultado_observado))    partes.push("Resultado: " + v(data.resultado_observado));
+                if (v(data.feedback_paciente))      partes.push("Feedback: " + v(data.feedback_paciente));
+                if (v(data.intercorrencias))        partes.push("Intercorrencias: " + v(data.intercorrencias));
+                if (v(data.observacoes_finais))     partes.push("Observacoes: " + v(data.observacoes_finais));
+                if (partes.length > 0) {
+                  const texto = partes.join("\n\n");
+                  upd.evolution = prev.evolution ? prev.evolution + "\n\n" + texto : texto;
                 }
-                if (val(data.resultado_observado)) {
-                  updated.evolution = (updated.evolution || "")
-                    + (updated.evolution ? "\n\nResultado: " : "Resultado: ")
-                    + val(data.resultado_observado);
+                if (v(data.recomendacoes_pos_procedimento)) {
+                  upd.recommendations = prev.recommendations
+                    ? prev.recommendations + "\n\n" + v(data.recomendacoes_pos_procedimento)
+                    : v(data.recomendacoes_pos_procedimento);
                 }
-                if (val(data.intercorrencias)) {
-                  updated.evolution = (updated.evolution || "")
-                    + "\n\nIntercorrencias: " + val(data.intercorrencias);
-                }
-                if (val(data.recomendacoes_pos_procedimento)) {
-                  updated.recommendations = prev.recommendations
-                    ? prev.recommendations + "\n\n" + val(data.recomendacoes_pos_procedimento)
-                    : val(data.recomendacoes_pos_procedimento);
-                }
-                if (val(data.transcricao_original)) updated.audio_transcription = val(data.transcricao_original);
-                return updated;
+                if (v(data.transcricao_original)) upd.audio_transcription = v(data.transcricao_original);
+                return upd;
               });
             }}
           />
