@@ -270,6 +270,8 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   const [technicalReport, setTechnicalReport] = useState("");
   const [simulationId, setSimulationId] = useState(null);
   const [error, setError] = useState("");
+  const [savedToRecord, setSavedToRecord] = useState(false);
+  const [savingRecord, setSavingRecord] = useState(false);
   const fileInputRef = useRef(null);
 
   const processFile = (file, src = "upload") => {
@@ -353,20 +355,75 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   };
 
   const handleSaveMedicalRecord = async () => {
-    if (!simulationId) return;
+    if (!simulationId || !generatedImage) {
+      toast.error("Não foi possível salvar no prontuário. Verifique se a paciente está selecionada e tente novamente.");
+      return;
+    }
+    if (savedToRecord) {
+      toast.info("Esta simulação já foi salva no prontuário.");
+      return;
+    }
+
+    setSavingRecord(true);
     try {
+      const user = await base44.auth.me();
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0];
+      const optionLabels = selectedOptions.map(id => SIMULATION_OPTIONS.find(o => o.id === id)?.label || id).join(", ");
+
+      // 1. Salvar imagem original no prontuário
+      if (originalImageUrl) {
+        await base44.entities.PatientImage.create({
+          patient_id: patient.id,
+          image_url: originalImageUrl,
+          image_type: "before",
+          procedure_name: `Simulação IA — ${optionLabels}`,
+          capture_date: dateStr,
+          consent_signed: true,
+          notes: `Imagem ANTES — Simulação IA (ID: ${simulationId})`,
+        });
+      }
+
+      // 2. Salvar imagem gerada (depois) no prontuário
       await base44.entities.PatientImage.create({
         patient_id: patient.id,
         image_url: generatedImage,
         image_type: "after",
-        procedure_name: `Simulação IA — ${selectedOptions.map(o => SIMULATION_OPTIONS.find(x => x.id === o)?.label).join(", ")}`,
-        capture_date: new Date().toISOString().split("T")[0],
+        procedure_name: `Simulação IA — ${optionLabels}`,
+        capture_date: dateStr,
         consent_signed: true,
-        notes: `Simulação gerada por IA. ID: ${simulationId}. Áreas: ${selectedOptions.join(", ")}`,
+        notes: `Imagem DEPOIS — Simulação IA (ID: ${simulationId}). Áreas: ${optionLabels}. Profissional: ${user?.email || "—"}. Consentimento LGPD confirmado.`,
       });
-      toast.success("Salvo no prontuário da paciente!");
-    } catch {
-      toast.error("Erro ao salvar no prontuário.");
+
+      // 3. Criar registro no prontuário (MedicalRecord)
+      await base44.entities.MedicalRecord.create({
+        patient_id: patient.id,
+        record_date: now.toISOString(),
+        chief_complaint: `Simulação de Antes e Depois com IA — ${optionLabels}`,
+        evolution: `Simulação de Antes e Depois com IA realizada em ${format(now, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.\n\nOpções selecionadas: ${optionLabels}.\n\nImagem original e imagem simulada anexadas ao prontuário.\nConsentimento LGPD confirmado antes da geração.\n\nProfissional: ${user?.full_name || user?.email || "—"}.\nID da simulação: ${simulationId}`,
+        recommendations: "Resultado meramente ilustrativo para apoio visual em consulta estética. Não representa promessa de resultado clínico.",
+        professional_id: user?.id || "",
+        status: "approved",
+        attachments: [originalImageUrl, generatedImage].filter(Boolean),
+      });
+
+      // 4. Marcar simulação como salva no prontuário
+      await base44.entities.FullFaceSimulation.update(simulationId, {
+        facial_analysis_snapshot: {
+          simulation_options: selectedOptions,
+          saved_to_record: true,
+          saved_at: now.toISOString(),
+          saved_by: user?.email || "",
+        },
+      });
+
+      setSavedToRecord(true);
+      toast.success("Simulação salva com sucesso no prontuário da paciente.");
+    } catch (err) {
+      console.error("Erro ao salvar prontuário:", err);
+      toast.error("Não foi possível salvar no prontuário. Verifique se a paciente está selecionada e tente novamente.");
+    } finally {
+      setSavingRecord(false);
     }
   };
 
@@ -382,6 +439,8 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
     setTechnicalReport("");
     setSimulationId(null);
     setError("");
+    setSavedToRecord(false);
+    setSavingRecord(false);
   };
 
   // ── STEP: source ──
@@ -532,18 +591,25 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
 
   // ── STEP: result ──
   if (step === "result") return (
-    <div className="space-y-5">
-      {/* Slider antes/depois */}
+    <div className="space-y-4">
+      {/* Slider antes/depois — limitado em desktop para evitar scroll */}
       {originalImageUrl && generatedImage ? (
         <div>
           <p className="text-[10px] uppercase tracking-widest mb-2 text-center" style={{ color: T.muted }}>
             Arraste para comparar
           </p>
-          <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
+          {/* Desktop: max-height 60vh | Mobile: natural */}
+          <div className="rounded-xl overflow-hidden"
+            style={{ border: `1px solid ${T.border}`, maxHeight: "60vh" }}>
+            <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
+          </div>
         </div>
       ) : generatedImage ? (
-        <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-          <img src={generatedImage} alt="Simulação" className="w-full h-auto" />
+        <div className="rounded-xl overflow-hidden flex items-center justify-center"
+          style={{ border: `1px solid ${T.border}`, maxHeight: "60vh" }}>
+          <img src={generatedImage} alt="Simulação"
+            className="block"
+            style={{ maxHeight: "60vh", maxWidth: "100%", width: "auto", objectFit: "contain" }} />
         </div>
       ) : null}
 
@@ -580,10 +646,19 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
           <RefreshCw className="h-4 w-4 mr-2" /> Nova Simulação
         </Button>
         {generatedImage && (
-          <Button onClick={handleSaveMedicalRecord}
-            variant="outline" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
-            <FileText className="h-4 w-4 mr-2" /> Salvar no Prontuário
-          </Button>
+          savedToRecord ? (
+            <Button disabled variant="outline"
+              style={{ borderColor: "#34d39940", color: "#34d399", opacity: 0.8 }}>
+              <CheckCircle className="h-4 w-4 mr-2" /> Já salvo no prontuário
+            </Button>
+          ) : (
+            <Button onClick={handleSaveMedicalRecord} disabled={savingRecord}
+              variant="outline" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
+              {savingRecord
+                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+                : <><FileText className="h-4 w-4 mr-2" /> Salvar no Prontuário</>}
+            </Button>
+          )
         )}
         {generatedImage && (
           <a href={generatedImage} download={`simulacao_${patient.full_name?.replace(/\s+/g, "_")}.png`}
@@ -711,6 +786,18 @@ function SimulationHistory() {
                     <p className="text-xs" style={{ color: T.muted }}>
                       {sim.created_date && format(parseISO(sim.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </p>
+                    {sim.facial_analysis_snapshot?.saved_to_record && (
+                      <div className="flex items-center gap-1.5 text-xs py-1"
+                        style={{ color: "#34d399" }}>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Salvo no prontuário</span>
+                        {sim.facial_analysis_snapshot?.saved_at && (
+                          <span style={{ color: T.muted }}>
+                            · {format(parseISO(sim.facial_analysis_snapshot.saved_at), "dd/MM HH:mm", { locale: ptBR })}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="flex gap-2 pt-2 border-t" style={{ borderColor: T.border }}>
                       <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); setSelected(sim); }}
                         className="flex-1 h-8 text-xs" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
