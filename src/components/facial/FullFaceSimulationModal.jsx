@@ -278,12 +278,13 @@ export default function FullFaceSimulationModal({
       case "capture":
         return (
           <div className="space-y-4">
-            <div className="relative rounded-lg overflow-hidden" style={{ background: "#000" }}>
+            <div className="relative rounded-lg overflow-hidden" style={{ background: "#000", maxHeight: "50vh" }}>
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="w-full max-h-[400px] object-cover"
+                className="w-full object-contain"
+                style={{ maxHeight: "48vh" }}
               />
               <canvas ref={canvasRef} className="hidden" />
             </div>
@@ -314,11 +315,12 @@ export default function FullFaceSimulationModal({
       case "preview":
         return (
           <div className="space-y-4">
-            <div className="relative rounded-lg overflow-hidden">
+            <div className="relative rounded-lg overflow-hidden bg-black" style={{ maxHeight: "40vh" }}>
               <img
                 src={imagePreview}
                 alt="Preview"
-                className="w-full max-h-[400px] object-cover"
+                className="w-full object-contain"
+                style={{ maxHeight: "39vh" }}
               />
               <button
                 onClick={() => {
@@ -480,36 +482,37 @@ export default function FullFaceSimulationModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)" }}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: "rgba(0,0,0,0.85)" }}>
       <div
-        className="w-full max-w-2xl rounded-lg p-6 space-y-4"
-        style={{ background: T.white, border: `1px solid ${T.subtle}` }}
+        className="w-full sm:max-w-2xl rounded-t-2xl sm:rounded-lg flex flex-col"
+        style={{
+          background: T.white,
+          border: `1px solid ${T.subtle}`,
+          maxHeight: "95vh",
+          minHeight: "40vh",
+        }}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between">
+        {/* Header fixo */}
+        <div className="flex items-start justify-between p-5 flex-shrink-0" style={{ borderBottom: `1px solid ${T.subtle}` }}>
           <div>
-            <h2
-              className="text-xl font-serif"
-              style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: T.onyx }}
-            >
-              Simulação Full Face com IA
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: T.onyx }}>
+              Gerar Antes e Depois com IA
             </h2>
             {patientName && (
-              <p style={{ fontFamily: "Inter", fontSize: 11, color: T.charcoal, marginTop: 4 }}>
+              <p style={{ fontFamily: "Inter", fontSize: 11, color: T.charcoal, marginTop: 3 }}>
                 Paciente: {patientName}
               </p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/5"
-          >
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-white/5 flex-shrink-0">
             <X size={20} color={T.charcoal} />
           </button>
         </div>
 
-        {/* Conteúdo */}
-        {renderContent()}
+        {/* Conteúdo com scroll */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

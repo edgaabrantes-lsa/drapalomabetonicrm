@@ -19,14 +19,13 @@ import {
   UserCircle,
   MessageSquare,
   MessagesSquare,
-  Sparkles,
   ClipboardList,
   Calculator,
   Bell,
   Search,
   Eye,
-  Star,
-  ScanFace
+  ScanFace,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -47,12 +46,12 @@ const navigation = [
   { name: "Pacientes", href: "Patients", icon: Users },
   { name: "Prontuários", href: "MedicalRecords", icon: FileText },
   { name: "Protocolos", href: "Protocols", icon: ClipboardList },
-  { name: "Protocolos Premium", href: "ProtocolosPremium", icon: Star },
+  { name: "Protocolos Premium", href: "ProtocolosPremium", icon: Layers },
   { name: "Estoque", href: "Inventory", icon: Package },
   { name: "Financeiro", href: "Financial", icon: DollarSign },
   { name: "Precificação", href: "Pricing", icon: Calculator },
-  { name: "Análise Facial IA", href: "FacialAnalysis", icon: Eye },
-  { name: "Simulações Full Face", href: "FullFaceSimulations", icon: ScanFace },
+  { name: "Análise Facial", href: "FacialAnalysis", icon: Eye },
+  { name: "Gerar Antes e Depois", href: "BeforeAfterIA", icon: ScanFace },
   { name: "Triagem IA", href: "Intake", icon: ClipboardList },
   { name: "Configurações", href: "Settings", icon: Settings },
 ];

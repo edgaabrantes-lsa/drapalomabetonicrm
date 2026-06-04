@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtocolosPremium from './pages/ProtocolosPremium';
 import FullFaceSimulations from './pages/FullFaceSimulations';
+import BeforeAfterIA from './pages/BeforeAfterIA';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -72,6 +73,13 @@ const AuthenticatedApp = () => {
       <Route path="/FullFaceSimulations" element={
         <LayoutWrapper currentPageName="FullFaceSimulations">
           <FullFaceSimulations />
+        </LayoutWrapper>
+      } />
+      
+      {/* Gerar Antes e Depois com IA */}
+      <Route path="/BeforeAfterIA" element={
+        <LayoutWrapper currentPageName="BeforeAfterIA">
+          <BeforeAfterIA />
         </LayoutWrapper>
       } />
     </Routes>

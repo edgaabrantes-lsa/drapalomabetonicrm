@@ -1,10 +1,10 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import {
-  Upload, Sparkles, Brain, ChevronDown, ChevronUp,
-  FileText, Star, Target, Zap, Eye, User, Shield,
+  Upload, Sparkles, ChevronDown, ChevronUp,
+  FileText, Target, Activity, Eye, User, Shield,
   Download, RefreshCw, Camera, AlertCircle, CheckCircle2, CheckCircle,
-  TrendingUp, Layers, Clipboard, ImagePlus, X, Check, Map
+  TrendingUp, Layers, Clipboard, ImagePlus, X, Check, Map, ScanFace, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -551,13 +551,13 @@ export default function FacialAnalysis() {
     },
     {
       key: "diagnostic",
-      icon: Brain,
+      icon: Activity,
       title: "4. Diagnóstico Estratégico",
       color: "bg-emerald-500/20 text-emerald-400",
     },
     {
       key: "protocols",
-      icon: Zap,
+      icon: ClipboardList,
       title: "5. Protocolos HOF Indicados",
       color: "bg-[#c9a55c]/20 text-[#c9a55c]",
     },
@@ -801,7 +801,7 @@ export default function FacialAnalysis() {
             <Card className="bg-[#12121a] border-[#1e1e2a]">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-4">
-                  <Star className="h-5 w-5 text-[#c9a55c]" />
+                  <ScanFace className="h-5 w-5 text-[#c9a55c]" />
                   <h3 className="font-semibold text-white">O que este laudo inclui</h3>
                 </div>
                 <div className="space-y-3">
@@ -809,8 +809,8 @@ export default function FacialAnalysis() {
                     { icon: Layers, text: "Leitura estrutural da face (proporções, ângulos, simetria)" },
                     { icon: Eye, text: "Mapeamento de assimetrias e compensações musculares" },
                     { icon: Target, text: "Pontos de melhoria com grau de prioridade" },
-                    { icon: Brain, text: "Diagnóstico estratégico do tipo facial" },
-                    { icon: Zap, text: "Protocolos HOF sugeridos com justificativa técnica" },
+                    { icon: Activity, text: "Diagnóstico estratégico do tipo facial" },
+                    { icon: ClipboardList, text: "Protocolos HOF sugeridos com justificativa técnica" },
                     { icon: Clipboard, text: "Plano de harmonização estruturado" },
                     { icon: User, text: "Versão para paciente em linguagem acessível" },
                   ].map((item, i) => (
@@ -894,8 +894,8 @@ export default function FacialAnalysis() {
             {/* Quick info */}
             <div className="lg:col-span-2 grid grid-cols-2 gap-3">
               {[
-                { label: "Modelo IA",       value: "Claude Sonnet",       icon: Brain,       color: "text-purple-400" },
-                { label: "Protocolo",        value: "HOF Premium",         icon: Star,        color: "text-[#c9a55c]" },
+                { label: "Modelo IA",       value: "Claude Sonnet",       icon: Activity,    color: "text-purple-400" },
+                { label: "Protocolo",        value: "HOF Premium",         icon: ClipboardList, color: "text-[#c9a55c]" },
                 { label: "Clínica",          value: "Dra. Paloma Betoni",  icon: User,        color: "text-emerald-400" },
                 { label: "Tipo de Análise",  value: "Facial Completa",     icon: TrendingUp,  color: "text-blue-400" },
               ].map(item => (
@@ -920,7 +920,7 @@ export default function FacialAnalysis() {
               </TabsTrigger>
               <TabsTrigger value="map"
                 className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-                <Map className="mr-2 h-4 w-4" />
+                <ScanFace className="mr-2 h-4 w-4" />
                 Mapa Facial
                 {(facialMaps || mapData) && (
                   <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-[#c9a55c] inline-block" />
@@ -1149,7 +1149,7 @@ export default function FacialAnalysis() {
       {analysis && mapData && (
         <div className="space-y-6 pt-6 border-t border-[#1e1e2a]">
           <div className="flex items-center gap-3 mb-6">
-            <Star className="h-6 w-6 text-[#C5A059]" />
+            <ClipboardList className="h-6 w-6 text-[#C5A059]" />
             <h2 className="text-xl font-serif text-white">Próximos Passos</h2>
           </div>
 

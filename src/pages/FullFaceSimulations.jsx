@@ -4,8 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Download, Trash2, Eye, MessageSquare, Sparkles,
-  Calendar, User, CheckCircle, AlertCircle, Loader2
+  Download, Trash2, Eye, MessageSquare,
+  Calendar, User, CheckCircle, AlertCircle, Loader2, ImageIcon
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,8 +106,8 @@ export default function FullFaceSimulations() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-serif text-white">Simulações Full Face</h1>
-        <p className="text-gray-400">Histórico de simulações faciais geradas por IA</p>
+        <h1 className="text-2xl font-serif text-white">Histórico de Simulações Faciais</h1>
+        <p className="text-gray-400">Simulações geradas por IA</p>
       </div>
 
       {/* Stats */}
@@ -254,7 +254,7 @@ export default function FullFaceSimulations() {
 
       {simulations.length === 0 && !isLoading && (
         <div className="text-center py-12">
-          <Sparkles className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+          <ImageIcon className="h-12 w-12 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-400">Nenhuma simulação gerada ainda</p>
         </div>
       )}
