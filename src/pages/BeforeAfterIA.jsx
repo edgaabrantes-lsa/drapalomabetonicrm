@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Camera, Upload, X, Check, AlertCircle, Loader2,
-  Download, Trash2, Eye, MessageSquare, User, Calendar,
-  CheckCircle, ImageIcon, ScanFace, FileText, Shield,
-  Search, Filter, RefreshCw, ChevronLeft
+  Download, Trash2, Eye, User, FileText, Shield,
+  Search, RefreshCw, ChevronLeft, ScanFace, ImageIcon,
+  CheckCircle, RotateCcw, FlipHorizontal, ArrowLeft, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,72 +37,244 @@ const T = {
 const VALID_FORMATS = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_SIZE_MB = 10;
 
+const SIMULATION_OPTIONS = [
+  { id: "full_face", label: "Full Face", desc: "Simulação completa e harmônica do rosto" },
+  { id: "testa", label: "Rugas da Testa", desc: "Suavização das linhas horizontais da testa" },
+  { id: "glabela", label: "Glabela", desc: "Região entre as sobrancelhas" },
+  { id: "pes_galinha", label: "Pés de Galinha", desc: "Canto externo dos olhos" },
+  { id: "mandibula", label: "Mandíbula", desc: "Definição da linha mandibular" },
+  { id: "mento", label: "Mento / Queixo", desc: "Equilíbrio do perfil facial" },
+  { id: "mandibula_mento", label: "Mandíbula + Mento", desc: "Contorno facial combinado" },
+  { id: "melasma", label: "Melasma / Manchas", desc: "Irregularidades de pigmentação" },
+  { id: "olheiras", label: "Olheiras", desc: "Região infraorbital e escurecimento" },
+  { id: "labios", label: "Lábios", desc: "Volume e definição labial natural" },
+  { id: "nariz", label: "Nariz / Rinomodelação", desc: "Refinamento nasal sutil" },
+  { id: "papada", label: "Papada / Contorno Inferior", desc: "Região submentoniana" },
+];
+
 const statusConfig = {
-  pending:    { label: "Pendente",     color: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
-  processing: { label: "Processando",  color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  completed:  { label: "Concluído",    color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-  failed:     { label: "Falhou",       color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  pending:    { label: "Pendente",    color: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+  processing: { label: "Processando", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  completed:  { label: "Concluído",   color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  failed:     { label: "Falhou",      color: "bg-red-500/20 text-red-400 border-red-500/30" },
 };
 
-/* ══════════════════════════════════════
-   GERADOR — fluxo completo de simulação
-══════════════════════════════════════ */
-function SimulationWizard({ patient, onBack, onSuccess }) {
-  const [step, setStep] = useState("source"); // source | capture | preview | generating | result
-  const [sourceType, setSourceType] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState(null);
-  const [technicalReport, setTechnicalReport] = useState("");
-  const [error, setError] = useState("");
-
+/* ─────────────────────────────────────
+   CÂMERA — componente isolado e robusto
+───────────────────────────────────────*/
+function CameraCapture({ onCapture, onCancel }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const streamRef = useRef(null);
+  const [facingMode, setFacingMode] = useState("user");
+  const [cameraError, setCameraError] = useState("");
+  const [cameraReady, setCameraReady] = useState(false);
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
 
-  // Limpar stream ao desmontar
-  useEffect(() => {
-    return () => stopCamera();
+  const stopStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraReady(false);
   }, []);
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-      videoRef.current.srcObject = null;
-    }
-  };
-
-  const startCamera = async (facingMode) => {
-    setError("");
+  const startStream = useCallback(async (mode) => {
+    stopStream();
+    setCameraError("");
+    setCameraReady(false);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
-      });
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setSourceType(facingMode === "user" ? "webcam" : "back_camera");
-      setStep("capture");
-    } catch {
-      setError("Não foi possível acessar a câmera. Verifique as permissões.");
+      // Checar se há múltiplas câmeras
+      if (navigator.mediaDevices?.enumerateDevices) {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === "videoinput");
+        setHasMultipleCameras(videoDevices.length > 1);
+      }
+
+      const constraints = {
+        video: {
+          facingMode: { ideal: mode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(() => {});
+          setCameraReady(true);
+        };
+      }
+    } catch (err) {
+      const msg = err.name === "NotAllowedError" || err.name === "PermissionDeniedError"
+        ? "Permissão negada. Permita o acesso à câmera nas configurações do navegador."
+        : err.name === "NotFoundError"
+        ? "Nenhuma câmera encontrada neste dispositivo."
+        : "Não foi possível acessar a câmera. Tente pelo upload.";
+      setCameraError(msg);
     }
+  }, [stopStream]);
+
+  useEffect(() => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError("Seu navegador não suporta câmera. Use o upload de foto.");
+      return;
+    }
+    startStream(facingMode);
+    return () => stopStream();
+  }, []);
+
+  const switchCamera = () => {
+    const next = facingMode === "user" ? "environment" : "user";
+    setFacingMode(next);
+    startStream(next);
   };
 
-  const capturePhoto = () => {
+  const capture = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    if (!video || !canvas || !cameraReady) return;
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
     canvas.getContext("2d").drawImage(video, 0, 0);
     canvas.toBlob(blob => {
-      stopCamera();
-      processFile(new File([blob], "camera.jpg", { type: "image/jpeg" }));
+      if (!blob) return;
+      stopStream();
+      onCapture(new File([blob], "camera_photo.jpg", { type: "image/jpeg" }), "front_camera");
     }, "image/jpeg", 0.92);
   };
 
-  const processFile = (file) => {
+  if (cameraError) return (
+    <div className="space-y-4">
+      <div className="p-5 rounded-xl text-center" style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)" }}>
+        <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+        <p className="text-sm text-red-400 mb-1">Câmera indisponível</p>
+        <p className="text-xs" style={{ color: T.muted }}>{cameraError}</p>
+      </div>
+      <Button variant="outline" onClick={onCancel} className="w-full" style={{ borderColor: T.border, color: T.muted }}>
+        <Upload className="h-4 w-4 mr-2" /> Usar Upload em vez disso
+      </Button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="relative rounded-xl overflow-hidden bg-black" style={{ minHeight: 240 }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full block"
+          style={{ maxHeight: "50vh", objectFit: "cover" }}
+        />
+        <canvas ref={canvasRef} className="hidden" />
+        {!cameraReady && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: T.gold }} />
+          </div>
+        )}
+        {/* Botão trocar câmera */}
+        {hasMultipleCameras && (
+          <button onClick={switchCamera}
+            className="absolute top-3 right-3 p-2 rounded-full"
+            style={{ background: "rgba(0,0,0,0.6)" }}
+            title="Trocar câmera">
+            <FlipHorizontal className="h-5 w-5 text-white" />
+          </button>
+        )}
+        <div className="absolute bottom-3 left-3">
+          <span className="text-xs px-2 py-1 rounded" style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}>
+            {facingMode === "user" ? "Câmera Frontal" : "Câmera Traseira"}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={() => { stopStream(); onCancel(); }} className="flex-1"
+          style={{ borderColor: T.border, color: T.muted }}>
+          <X className="h-4 w-4 mr-2" /> Cancelar
+        </Button>
+        <Button onClick={capture} disabled={!cameraReady} className="flex-1"
+          style={{ background: T.gold, color: "#111620" }}>
+          <Camera className="h-4 w-4 mr-2" /> Capturar Foto
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────
+   SLIDER ANTES / DEPOIS
+───────────────────────────────────────*/
+function BeforeAfterSlider({ before, after }) {
+  const [pos, setPos] = useState(50);
+  const containerRef = useRef(null);
+  const dragging = useRef(false);
+
+  const updatePos = useCallback((clientX) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const p = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    setPos(p);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative overflow-hidden rounded-xl select-none cursor-col-resize"
+      style={{ touchAction: "none" }}
+      onMouseDown={e => { dragging.current = true; updatePos(e.clientX); }}
+      onMouseMove={e => { if (dragging.current) updatePos(e.clientX); }}
+      onMouseUp={() => { dragging.current = false; }}
+      onMouseLeave={() => { dragging.current = false; }}
+      onTouchStart={e => { dragging.current = true; updatePos(e.touches[0].clientX); }}
+      onTouchMove={e => { if (dragging.current) updatePos(e.touches[0].clientX); }}
+      onTouchEnd={() => { dragging.current = false; }}
+    >
+      <img src={after} alt="Depois" className="w-full block" />
+      <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
+        <img src={before} alt="Antes" className="w-full block" />
+      </div>
+      {/* Divisor */}
+      <div className="absolute top-0 bottom-0 w-0.5 bg-white/80 shadow-lg pointer-events-none"
+        style={{ left: `${pos}%` }}>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center gap-0.5">
+          <ArrowLeft className="h-3 w-3 text-gray-600" />
+          <ArrowRight className="h-3 w-3 text-gray-600" />
+        </div>
+      </div>
+      <div className="absolute bottom-2 left-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
+        style={{ background: "rgba(0,0,0,0.65)" }}>ANTES</div>
+      <div className="absolute bottom-2 right-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
+        style={{ background: "rgba(0,0,0,0.65)" }}>DEPOIS</div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────
+   WIZARD PRINCIPAL DE SIMULAÇÃO
+───────────────────────────────────────*/
+function SimulationWizard({ patient, onBack, onSuccess }) {
+  const [step, setStep] = useState("source"); // source | camera | options | preview | generating | result
+  const [sourceType, setSourceType] = useState("upload");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState(["full_face"]);
+  const [generatedImage, setGeneratedImage] = useState(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState(null);
+  const [technicalReport, setTechnicalReport] = useState("");
+  const [simulationId, setSimulationId] = useState(null);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef(null);
+
+  const processFile = (file, src = "upload") => {
     setError("");
-    if (!VALID_FORMATS.includes(file.type)) {
+    if (!VALID_FORMATS.includes(file.type) && !file.name?.endsWith(".heic")) {
       setError("Formato não suportado. Use JPG, PNG ou WEBP.");
       return;
     }
@@ -113,94 +285,128 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      if (img.width < 300 || img.height < 300) {
+      if (img.width < 200 || img.height < 200) {
         setError("Resolução muito baixa. Use uma foto mais nítida.");
         URL.revokeObjectURL(url);
         return;
       }
       setImageFile(file);
       setImagePreview(url);
-      setStep("preview");
+      setSourceType(src);
+      setStep("options");
     };
-    img.onerror = () => { setError("Imagem inválida."); URL.revokeObjectURL(url); };
+    img.onerror = () => { setError("Imagem inválida ou corrompida."); URL.revokeObjectURL(url); };
     img.src = url;
   };
 
   const handleUpload = (e) => {
     const file = e.target.files?.[0];
-    if (file) { setSourceType("upload"); processFile(file); }
+    if (file) processFile(file, "upload");
+    e.target.value = "";
+  };
+
+  const toggleOption = (id) => {
+    if (id === "full_face") {
+      setSelectedOptions(["full_face"]);
+      return;
+    }
+    setSelectedOptions(prev => {
+      const without = prev.filter(o => o !== "full_face");
+      return without.includes(id) ? without.filter(o => o !== id) : [...without, id];
+    });
   };
 
   const handleGenerate = async () => {
-    if (!consentChecked) { setError("É necessário confirmar o consentimento LGPD."); return; }
+    if (!consentChecked) { setError("Confirme o consentimento LGPD para continuar."); return; }
     if (!imageFile || !patient?.id) { setError("Selecione a paciente e a imagem."); return; }
+    if (selectedOptions.length === 0) { setError("Selecione ao menos uma área de simulação."); return; }
 
     setStep("generating");
     setError("");
 
     try {
-      // Upload da imagem original
       const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
+      setOriginalImageUrl(file_url);
 
-      // Chamar backend
       const response = await base44.functions.invoke("generateFullFaceSimulation", {
         patient_id: patient.id,
         original_image_url: file_url,
-        source_type: sourceType || "upload",
+        source_type: sourceType,
         consent_lgpd: true,
+        simulation_options: selectedOptions,
       });
 
       const result = response.data;
+      if (!result?.generated_image_url) throw new Error(result?.error || "Nenhuma imagem gerada.");
+
       setGeneratedImage(result.generated_image_url);
+      setSimulationId(result.simulation_id);
       setTechnicalReport(result.technical_report || "");
       setStep("result");
       if (onSuccess) onSuccess(result);
       toast.success("Simulação gerada com sucesso!");
     } catch (err) {
-      setError(err?.response?.data?.error || err.message || "Falha ao gerar simulação. Tente novamente.");
-      setStep("preview");
+      const msg = err?.response?.data?.error || err?.message || "Falha ao gerar simulação. Tente novamente.";
+      setError(msg);
+      setStep("options");
+    }
+  };
+
+  const handleSaveMedicalRecord = async () => {
+    if (!simulationId) return;
+    try {
+      await base44.entities.PatientImage.create({
+        patient_id: patient.id,
+        image_url: generatedImage,
+        image_type: "after",
+        procedure_name: `Simulação IA — ${selectedOptions.map(o => SIMULATION_OPTIONS.find(x => x.id === o)?.label).join(", ")}`,
+        capture_date: new Date().toISOString().split("T")[0],
+        consent_signed: true,
+        notes: `Simulação gerada por IA. ID: ${simulationId}. Áreas: ${selectedOptions.join(", ")}`,
+      });
+      toast.success("Salvo no prontuário da paciente!");
+    } catch {
+      toast.error("Erro ao salvar no prontuário.");
     }
   };
 
   const reset = () => {
-    stopCamera();
     setStep("source");
-    setSourceType(null);
+    setSourceType("upload");
     setImageFile(null);
     setImagePreview(null);
     setConsentChecked(false);
+    setSelectedOptions(["full_face"]);
     setGeneratedImage(null);
+    setOriginalImageUrl(null);
     setTechnicalReport("");
+    setSimulationId(null);
     setError("");
   };
 
   // ── STEP: source ──
   if (step === "source") return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-2">
-        <button onClick={onBack} className="text-sm flex items-center gap-1 hover:text-white transition-colors" style={{ color: T.muted }}>
-          <ChevronLeft className="h-4 w-4" /> Voltar
-        </button>
-      </div>
+    <div className="space-y-5">
+      <button onClick={onBack} className="flex items-center gap-1 text-sm transition-colors hover:text-white" style={{ color: T.muted }}>
+        <ChevronLeft className="h-4 w-4" /> Voltar
+      </button>
       <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: `${T.gold}10`, border: `1px solid ${T.gold}25` }}>
         <User className="h-4 w-4 flex-shrink-0" style={{ color: T.gold }} />
         <div>
-          <p className="text-xs uppercase tracking-widest" style={{ color: T.gold }}>Paciente selecionada</p>
+          <p className="text-[10px] uppercase tracking-widest" style={{ color: T.gold }}>Paciente selecionada</p>
           <p className="text-sm font-medium" style={{ color: T.text }}>{patient.full_name}</p>
         </div>
       </div>
-
-      <p className="text-sm" style={{ color: T.muted }}>Selecione como deseja capturar a foto:</p>
-
+      <p className="text-sm" style={{ color: T.muted }}>Como deseja capturar a foto?</p>
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: "Câmera Frontal", sub: "Selfie", icon: Camera, action: () => startCamera("user") },
-          { label: "Câmera Traseira", sub: "Melhor qualidade", icon: Camera, action: () => startCamera("environment") },
-          { label: "Webcam", sub: "Desktop", icon: Camera, action: () => startCamera("user") },
+          { label: "Câmera Frontal", sub: "Selfie", icon: Camera, action: () => setStep("camera") },
+          { label: "Câmera Traseira", sub: "Melhor qualidade", icon: Camera, action: () => setStep("camera") },
+          { label: "Webcam Desktop", sub: "Chrome / Safari", icon: Camera, action: () => setStep("camera") },
           { label: "Enviar Foto", sub: "JPG, PNG, WEBP", icon: Upload, action: () => fileInputRef.current?.click() },
-        ].map((opt) => (
+        ].map(opt => (
           <button key={opt.label} onClick={opt.action}
-            className="p-5 rounded-lg border flex flex-col items-center gap-2 transition-all hover:border-[#C5A059]/50"
+            className="p-5 rounded-xl border flex flex-col items-center gap-2 transition-all hover:border-[#C5A059]/60 active:scale-95"
             style={{ background: T.bg, borderColor: T.border }}>
             <opt.icon className="h-6 w-6" style={{ color: T.gold }} />
             <div className="text-center">
@@ -210,76 +416,100 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
           </button>
         ))}
       </div>
-      <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleUpload} className="hidden" />
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+        onChange={handleUpload} className="hidden" />
       {error && <ErrorMsg msg={error} />}
     </div>
   );
 
-  // ── STEP: capture ──
-  if (step === "capture") return (
+  // ── STEP: camera ──
+  if (step === "camera") return (
     <div className="space-y-4">
-      <div className="relative rounded-lg overflow-hidden bg-black" style={{ maxHeight: "60vh" }}>
-        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-contain" style={{ maxHeight: "55vh" }} />
-        <canvas ref={canvasRef} className="hidden" />
+      <button onClick={() => setStep("source")} className="flex items-center gap-1 text-sm" style={{ color: T.muted }}>
+        <ChevronLeft className="h-4 w-4" /> Voltar
+      </button>
+      <CameraCapture
+        onCapture={(file, src) => processFile(file, src)}
+        onCancel={() => setStep("source")}
+      />
+      <div className="flex items-center gap-2 justify-center">
+        <span className="text-xs" style={{ color: T.muted }}>Ou</span>
+        <button onClick={() => { setStep("source"); setTimeout(() => fileInputRef.current?.click(), 100); }}
+          className="text-xs underline" style={{ color: T.gold }}>
+          usar upload de arquivo
+        </button>
       </div>
-      <div className="flex gap-3 justify-center">
-        <Button variant="outline" onClick={() => { stopCamera(); reset(); }} style={{ borderColor: T.border, color: T.muted }}>
-          <X className="h-4 w-4 mr-2" /> Cancelar
-        </Button>
-        <Button onClick={capturePhoto} style={{ background: T.gold, color: "#111620" }}>
-          <Camera className="h-4 w-4 mr-2" /> Capturar Foto
-        </Button>
-      </div>
-      {error && <ErrorMsg msg={error} />}
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+        onChange={handleUpload} className="hidden" />
     </div>
   );
 
-  // ── STEP: preview ──
-  if (step === "preview") return (
-    <div className="space-y-4">
-      {/* Preview da imagem */}
-      <div className="relative rounded-lg overflow-hidden" style={{ background: "#000", maxHeight: "45vh" }}>
-        <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" style={{ maxHeight: "44vh" }} />
+  // ── STEP: options (preview + seleção de simulação + consentimento) ──
+  if (step === "options") return (
+    <div className="space-y-5">
+      {/* Preview miniatura */}
+      <div className="relative rounded-xl overflow-hidden bg-black" style={{ maxHeight: "30vh" }}>
+        <img src={imagePreview} alt="Foto selecionada" className="w-full h-full object-contain" style={{ maxHeight: "29vh" }} />
         <button onClick={reset}
-          className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
+          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
           style={{ background: "rgba(0,0,0,0.7)" }}>
-          <X className="h-4 w-4 text-white" />
+          <X className="h-3.5 w-3.5 text-white" />
+        </button>
+        <button onClick={() => setStep("source")}
+          className="absolute bottom-2 left-2 text-xs px-2 py-1 rounded flex items-center gap-1"
+          style={{ background: "rgba(0,0,0,0.7)", color: "#fff" }}>
+          <RotateCcw className="h-3 w-3" /> Trocar foto
         </button>
       </div>
 
-      {/* Checklist */}
-      <div className="p-3 rounded-lg" style={{ background: `${T.gold}08`, border: `1px solid ${T.gold}25` }}>
-        <p className="text-xs uppercase tracking-widest mb-2" style={{ color: T.gold }}>Checklist de qualidade</p>
-        <div className="space-y-1">
-          {["Rosto visível e bem iluminado", "Imagem nítida e sem borrão", "Apenas uma pessoa na foto", "Sem óculos escuros"].map((item) => (
-            <div key={item} className="flex items-center gap-2">
-              <Check className="h-3 w-3" style={{ color: T.gold }} />
-              <span className="text-xs" style={{ color: T.muted }}>{item}</span>
-            </div>
-          ))}
+      {/* Seleção de simulação */}
+      <div>
+        <p className="text-xs uppercase tracking-widest mb-3" style={{ color: T.gold }}>Áreas para Simulação</p>
+        <div className="grid grid-cols-2 gap-2">
+          {SIMULATION_OPTIONS.map(opt => {
+            const active = selectedOptions.includes(opt.id);
+            return (
+              <button key={opt.id} onClick={() => toggleOption(opt.id)}
+                className="p-3 rounded-lg border text-left transition-all"
+                style={{
+                  background: active ? `${T.gold}15` : T.bg,
+                  borderColor: active ? T.gold : T.border,
+                }}>
+                <div className="flex items-start justify-between gap-1">
+                  <p className="text-xs font-medium" style={{ color: active ? T.gold : T.text }}>{opt.label}</p>
+                  {active && <Check className="h-3 w-3 flex-shrink-0 mt-0.5" style={{ color: T.gold }} />}
+                </div>
+                <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{opt.desc}</p>
+              </button>
+            );
+          })}
         </div>
+        {selectedOptions.length > 0 && (
+          <p className="text-xs mt-2" style={{ color: T.muted }}>
+            Selecionado: {selectedOptions.map(id => SIMULATION_OPTIONS.find(o => o.id === id)?.label).join(", ")}
+          </p>
+        )}
       </div>
 
       {/* Consentimento LGPD */}
-      <div className="p-4 rounded-lg" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+      <div className="p-4 rounded-xl" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         <div className="flex items-start gap-3">
           <Checkbox id="lgpd" checked={consentChecked} onCheckedChange={setConsentChecked} className="mt-0.5" />
           <Label htmlFor="lgpd" className="text-xs leading-relaxed cursor-pointer" style={{ color: T.text }}>
-            Autorizo o uso desta imagem exclusivamente para análise facial, simulação estética, prontuário interno e planejamento do tratamento, conforme a política de privacidade da clínica.
+            Autorizo o uso desta imagem exclusivamente para análise facial, simulação estética, prontuário interno e planejamento do tratamento, conforme a política de privacidade da clínica. A imagem não será usada para treinamento de IA.
           </Label>
         </div>
       </div>
 
       {error && <ErrorMsg msg={error} />}
 
-      {/* Botões — sempre visíveis */}
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-3 pt-1">
         <Button variant="outline" onClick={reset} className="flex-1" style={{ borderColor: T.border, color: T.muted }}>
-          <RefreshCw className="h-4 w-4 mr-2" /> Trocar Foto
+          <RotateCcw className="h-4 w-4 mr-2" /> Recomeçar
         </Button>
-        <Button onClick={handleGenerate} disabled={!consentChecked}
+        <Button onClick={handleGenerate} disabled={!consentChecked || selectedOptions.length === 0}
           className="flex-1 disabled:opacity-40" style={{ background: T.gold, color: "#111620" }}>
-          <ScanFace className="h-4 w-4 mr-2" /> Gerar Antes e Depois
+          <ScanFace className="h-4 w-4 mr-2" /> Gerar Simulação
         </Button>
       </div>
     </div>
@@ -288,46 +518,80 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   // ── STEP: generating ──
   if (step === "generating") return (
     <div className="py-16 flex flex-col items-center justify-center space-y-6">
-      <div className="w-14 h-14 rounded-full border-2 border-[#C5A059]/30 border-t-[#C5A059] animate-spin" />
+      <div className="w-16 h-16 rounded-full border-2 border-[#C5A059]/20 border-t-[#C5A059] animate-spin" />
       <div className="text-center space-y-2">
-        <p className="text-xs uppercase tracking-widest" style={{ color: T.gold }}>IA Processando</p>
+        <p className="text-[10px] uppercase tracking-widest" style={{ color: T.gold }}>IA Processando</p>
         <p className="text-base font-medium" style={{ color: T.text }}>Gerando simulação facial...</p>
-        <p className="text-sm" style={{ color: T.muted }}>Isso pode levar até 60 segundos</p>
+        <p className="text-sm" style={{ color: T.muted }}>
+          {selectedOptions.includes("full_face") ? "Full Face Premium" : selectedOptions.map(id => SIMULATION_OPTIONS.find(o => o.id === id)?.label).join(" + ")}
+        </p>
+        <p className="text-xs" style={{ color: T.muted }}>Isso pode levar até 60 segundos</p>
       </div>
     </div>
   );
 
   // ── STEP: result ──
   if (step === "result") return (
-    <div className="space-y-4">
-      <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-        <img src={generatedImage} alt="Simulação Antes/Depois" className="w-full h-auto" />
+    <div className="space-y-5">
+      {/* Slider antes/depois */}
+      {originalImageUrl && generatedImage ? (
+        <div>
+          <p className="text-[10px] uppercase tracking-widest mb-2 text-center" style={{ color: T.muted }}>
+            Arraste para comparar
+          </p>
+          <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
+        </div>
+      ) : generatedImage ? (
+        <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+          <img src={generatedImage} alt="Simulação" className="w-full h-auto" />
+        </div>
+      ) : null}
+
+      {/* Opções usadas */}
+      <div className="flex flex-wrap gap-1.5">
+        {selectedOptions.map(id => {
+          const opt = SIMULATION_OPTIONS.find(o => o.id === id);
+          return opt ? (
+            <span key={id} className="text-xs px-2 py-0.5 rounded-full"
+              style={{ background: `${T.gold}15`, color: T.gold, border: `1px solid ${T.gold}30` }}>
+              {opt.label}
+            </span>
+          ) : null;
+        })}
       </div>
 
       {technicalReport && (
-        <div className="p-4 rounded-lg" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: T.gold }}>Relatório da Simulação</p>
+        <div className="p-4 rounded-xl" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+          <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: T.gold }}>Relatório</p>
           <p className="text-xs leading-relaxed" style={{ color: T.muted }}>{technicalReport}</p>
         </div>
       )}
 
-      <div className="p-3 rounded-lg flex items-start gap-2" style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}>
+      <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}>
         <Shield className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs leading-relaxed" style={{ color: T.muted }}>
           <span className="text-red-400 font-medium">Aviso Legal: </span>
-          Imagem meramente ilustrativa gerada por IA para apoio visual em consulta. O resultado real depende de avaliação profissional, anatomia individual e resposta biológica da paciente.
+          Imagem meramente ilustrativa para apoio visual em consulta. Resultado real depende de avaliação profissional.
         </p>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex flex-wrap gap-3">
         <Button onClick={reset} variant="outline" style={{ borderColor: T.border, color: T.muted }}>
           <RefreshCw className="h-4 w-4 mr-2" /> Nova Simulação
         </Button>
-        <a href={generatedImage} download={`simulacao_${patient.full_name}.png`}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium"
-          style={{ background: T.gold, color: "#111620" }}>
-          <Download className="h-4 w-4" /> Baixar Imagem
-        </a>
+        {generatedImage && (
+          <Button onClick={handleSaveMedicalRecord}
+            variant="outline" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
+            <FileText className="h-4 w-4 mr-2" /> Salvar no Prontuário
+          </Button>
+        )}
+        {generatedImage && (
+          <a href={generatedImage} download={`simulacao_${patient.full_name?.replace(/\s+/g, "_")}.png`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium"
+            style={{ background: T.gold, color: "#111620" }}>
+            <Download className="h-4 w-4" /> Baixar Imagem
+          </a>
+        )}
       </div>
     </div>
   );
@@ -335,17 +599,18 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   return null;
 }
 
-/* ══════════════════════════════
+/* ─────────────────────────────────────
    HISTÓRICO DE SIMULAÇÕES
-══════════════════════════════ */
+───────────────────────────────────────*/
 function SimulationHistory() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [toDelete, setToDelete] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const { data: user } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me() });
+  const isAdmin = user?.role === "admin";
+
   const { data: simulations = [], isLoading } = useQuery({
     queryKey: ["full-face-simulations"],
     queryFn: () => base44.entities.FullFaceSimulation.list("-created_date", 500),
@@ -365,8 +630,6 @@ function SimulationHistory() {
     },
   });
 
-  useEffect(() => { if (user?.role === "admin") setIsAdmin(true); }, [user]);
-
   const getPatient = (id) => patients.find(p => p.id === id);
 
   const filtered = simulations.filter(s => {
@@ -379,16 +642,15 @@ function SimulationHistory() {
     try {
       const res = await fetch(url);
       const blob = await res.blob();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = name;
-      link.click();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
     } catch { toast.error("Erro ao baixar imagem."); }
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Total", value: simulations.length, color: T.text },
@@ -398,21 +660,19 @@ function SimulationHistory() {
         ].map(stat => (
           <Card key={stat.label} style={{ background: T.card, borderColor: T.border }}>
             <CardContent className="p-4">
-              <p className="text-xs uppercase tracking-widest mb-1" style={{ color: T.muted }}>{stat.label}</p>
+              <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color: T.muted }}>{stat.label}</p>
               <p className="text-2xl font-light" style={{ color: stat.color }}>{stat.value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: T.muted }} />
         <Input placeholder="Buscar por paciente..." value={search} onChange={e => setSearch(e.target.value)}
           className="pl-9 text-sm" style={{ background: T.card, borderColor: T.border, color: T.text }} />
       </div>
 
-      {/* Grid */}
       {isLoading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin" style={{ color: T.gold }} /></div>
       ) : filtered.length === 0 ? (
@@ -457,7 +717,8 @@ function SimulationHistory() {
                         <Eye className="h-3 w-3 mr-1" /> Ver
                       </Button>
                       {sim.generated_image_url && (
-                        <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleDownload(sim.generated_image_url, `simulacao_${patient?.full_name || "paciente"}.png`); }}
+                        <Button size="sm" variant="outline"
+                          onClick={e => { e.stopPropagation(); handleDownload(sim.generated_image_url, `simulacao_${patient?.full_name || "paciente"}.png`); }}
                           className="flex-1 h-8 text-xs" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
                           <Download className="h-3 w-3 mr-1" /> Baixar
                         </Button>
@@ -483,7 +744,7 @@ function SimulationHistory() {
           {selected && (
             <div className="space-y-4 mt-2">
               {selected.generated_image_url && (
-                <img src={selected.generated_image_url} alt="Antes e Depois" className="w-full rounded-lg" />
+                <img src={selected.generated_image_url} alt="Antes e Depois" className="w-full rounded-xl" />
               )}
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -493,24 +754,21 @@ function SimulationHistory() {
                   { label: "Profissional", value: selected.user_email || "—" },
                 ].map(item => (
                   <div key={item.label} className="p-3 rounded-lg" style={{ background: T.bg }}>
-                    <p className="text-xs uppercase tracking-widest mb-1" style={{ color: T.muted }}>{item.label}</p>
+                    <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color: T.muted }}>{item.label}</p>
                     <p className="text-sm font-medium truncate" style={{ color: T.text }}>{item.value}</p>
                   </div>
                 ))}
               </div>
-
               {selected.technical_report && (
                 <div className="p-4 rounded-lg" style={{ background: T.bg }}>
-                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>Relatório</p>
+                  <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: T.muted }}>Relatório</p>
                   <p className="text-sm leading-relaxed" style={{ color: T.muted }}>{selected.technical_report}</p>
                 </div>
               )}
-
               <div className="p-3 rounded-lg text-xs leading-relaxed" style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: T.muted }}>
                 <span className="text-red-400 font-medium">Aviso Legal: </span>
-                Imagem ilustrativa gerada por IA para apoio visual. Não representa promessa de resultado.
+                Imagem ilustrativa gerada por IA. Não representa promessa de resultado.
               </div>
-
               <div className="flex flex-wrap gap-3 pt-2 border-t" style={{ borderColor: T.border }}>
                 {selected.generated_image_url && (
                   <a href={selected.generated_image_url}
@@ -531,19 +789,15 @@ function SimulationHistory() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirm Delete */}
       <AlertDialog open={!!toDelete} onOpenChange={() => setToDelete(null)}>
         <AlertDialogContent style={{ background: T.card, borderColor: T.border }}>
           <AlertDialogHeader>
             <AlertDialogTitle style={{ color: T.text }}>Excluir simulação?</AlertDialogTitle>
-            <AlertDialogDescription style={{ color: T.muted }}>
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogDescription style={{ color: T.muted }}>Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ color: T.muted }}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate(toDelete.id)}
-              className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={() => deleteMutation.mutate(toDelete.id)} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -553,9 +807,9 @@ function SimulationHistory() {
   );
 }
 
-/* ══════════════════════════════
-   ERRO
-══════════════════════════════ */
+/* ─────────────────────────────────────
+   COMPONENTE ERRO
+───────────────────────────────────────*/
 function ErrorMsg({ msg }) {
   return (
     <div className="flex items-start gap-2 p-3 rounded-lg" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
@@ -565,9 +819,9 @@ function ErrorMsg({ msg }) {
   );
 }
 
-/* ══════════════════════════════
+/* ─────────────────────────────────────
    PÁGINA PRINCIPAL
-══════════════════════════════ */
+───────────────────────────────────────*/
 export default function BeforeAfterIA() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("gerar");
@@ -577,21 +831,17 @@ export default function BeforeAfterIA() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-serif" style={{ color: T.text }}>Gerar Antes e Depois com IA</h1>
         <p className="mt-1 text-sm" style={{ color: T.muted }}>Simulação visual de resultado estético gerada por inteligência artificial</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={v => { setActiveTab(v); if (v === "gerar") setShowWizard(false); }}>
         <TabsList style={{ background: T.card, border: `1px solid ${T.border}` }}>
-          <TabsTrigger value="gerar"
-            className="data-[state=active]:text-[#C5A059]"
-            style={{ "--tw-ring-color": T.gold }}>
+          <TabsTrigger value="gerar" className="data-[state=active]:text-[#C5A059]">
             <ScanFace className="h-4 w-4 mr-2" /> Nova Simulação
           </TabsTrigger>
-          <TabsTrigger value="historico"
-            className="data-[state=active]:text-[#C5A059]">
+          <TabsTrigger value="historico" className="data-[state=active]:text-[#C5A059]">
             <FileText className="h-4 w-4 mr-2" /> Histórico de Simulações Faciais
           </TabsTrigger>
         </TabsList>
@@ -601,14 +851,13 @@ export default function BeforeAfterIA() {
           {showWizard && selectedPatient ? (
             <SimulationWizard
               patient={selectedPatient}
-              onBack={() => { setShowWizard(false); }}
+              onBack={() => setShowWizard(false)}
               onSuccess={() => {
                 queryClient.invalidateQueries({ queryKey: ["full-face-simulations"] });
-                setTimeout(() => setActiveTab("historico"), 2000);
               }}
             />
           ) : (
-            <div className="max-w-lg mx-auto space-y-6">
+            <div className="max-w-lg mx-auto">
               <Card style={{ background: T.card, borderColor: T.border }}>
                 <CardContent className="p-6 space-y-5">
                   <div className="flex items-center gap-3">
@@ -621,7 +870,6 @@ export default function BeforeAfterIA() {
                     </div>
                   </div>
 
-                  {/* Selecionar paciente */}
                   <div>
                     <p className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>Paciente</p>
                     {selectedPatient ? (
@@ -642,14 +890,13 @@ export default function BeforeAfterIA() {
                     )}
                   </div>
 
-                  {/* O que inclui */}
                   <div className="space-y-2">
                     {[
-                      "Simulação visual de harmonização facial",
-                      "Comparação lado a lado (antes / depois)",
-                      "Geração por IA com foco em naturalidade",
-                      "Download da imagem",
-                      "Histórico salvo automaticamente",
+                      "12 tipos de simulação selecionáveis",
+                      "Câmera ou upload de foto",
+                      "Comparação lado a lado com slider",
+                      "Download da imagem gerada",
+                      "Registro automático no histórico",
                     ].map(item => (
                       <div key={item} className="flex items-center gap-2">
                         <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: T.gold }} />
@@ -658,17 +905,16 @@ export default function BeforeAfterIA() {
                     ))}
                   </div>
 
-                  <div className="p-3 rounded-lg" style={{ background: `${T.gold}08`, border: `1px solid ${T.gold}20` }}>
+                  <div className="p-3 rounded-xl" style={{ background: `${T.gold}08`, border: `1px solid ${T.gold}20` }}>
                     <div className="flex items-start gap-2">
                       <Shield className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: T.gold }} />
                       <p className="text-xs leading-relaxed" style={{ color: T.muted }}>
-                        Imagem meramente ilustrativa. Não representa promessa de resultado clínico.
-                        Consentimento LGPD obrigatório antes da geração.
+                        Consentimento LGPD obrigatório. Imagem meramente ilustrativa.
                       </p>
                     </div>
                   </div>
 
-                  <Button onClick={() => { if (!selectedPatient) { setIsPatientSelectorOpen(true); } else { setShowWizard(true); } }}
+                  <Button onClick={() => { if (!selectedPatient) setIsPatientSelectorOpen(true); else setShowWizard(true); }}
                     className="w-full h-12 text-sm font-semibold" style={{ background: T.gold, color: "#111620" }}>
                     <ScanFace className="h-4 w-4 mr-2" />
                     {selectedPatient ? "Iniciar Simulação" : "Selecionar Paciente para Iniciar"}
@@ -681,7 +927,7 @@ export default function BeforeAfterIA() {
 
         {/* ABA HISTÓRICO */}
         <TabsContent value="historico" className="mt-5">
-          <div className="mb-2">
+          <div className="mb-4">
             <h2 className="text-lg font-medium uppercase tracking-widest" style={{ color: T.text }}>
               Histórico de Simulações Faciais
             </h2>
@@ -691,7 +937,6 @@ export default function BeforeAfterIA() {
         </TabsContent>
       </Tabs>
 
-      {/* Patient Selector */}
       <PatientSelectorModal
         open={isPatientSelectorOpen}
         onOpenChange={setIsPatientSelectorOpen}

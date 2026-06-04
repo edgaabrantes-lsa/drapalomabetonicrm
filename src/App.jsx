@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtocolosPremium from './pages/ProtocolosPremium';
 import FullFaceSimulations from './pages/FullFaceSimulations';
-import BeforeAfterIA from './pages/BeforeAfterIA';
+import BeforeAfterIA from './pages/BeforeAfterIA.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
