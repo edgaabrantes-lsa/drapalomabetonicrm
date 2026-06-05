@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   CheckCircle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import AIRecordInput from "@/components/medical/AIRecordInput";
-import AudioRecorder from "@/components/medical/AudioRecorder";
 
 
 const statusConfig = {
@@ -331,44 +329,44 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
       {/* Evolution */}
       <div className="space-y-2">
         <Label className="text-gray-300 block">Evolucao</Label>
-        <div className="rounded-xl border border-[#c9a55c]/20 bg-[#c9a55c]/5 p-3 space-y-2">
-          <div className="flex items-center gap-2 mb-1">
-            <FileText className="h-3.5 w-3.5 text-[#c9a55c]" />
-            <span className="text-xs font-medium text-[#c9a55c]">Audio de Evolucao</span>
-            <span className="text-xs text-gray-500">— grave o relato de evolucao e retorno</span>
-          </div>
-          <AudioRecorder
-            section="evolucao"
-            existingFields={{
-              evolucao_tratamento:            formData.evolution,
-              recomendacoes_pos_procedimento: formData.recommendations,
-            }}
-            onStructured={(data) => {
-              const v = (x) => (!x || typeof x !== "string" || x.trim() === "") ? "" : x.trim();
-              setFormData(prev => {
-                const upd = { ...prev };
-                // Montar texto de evolucao com todos os campos relevantes
-                const partes = [];
-                if (v(data.evolucao_tratamento))   partes.push(v(data.evolucao_tratamento));
-                if (v(data.resultado_observado))    partes.push("Resultado: " + v(data.resultado_observado));
-                if (v(data.feedback_paciente))      partes.push("Feedback: " + v(data.feedback_paciente));
-                if (v(data.intercorrencias))        partes.push("Intercorrencias: " + v(data.intercorrencias));
-                if (v(data.observacoes_finais))     partes.push("Observacoes: " + v(data.observacoes_finais));
-                if (partes.length > 0) {
-                  const texto = partes.join("\n\n");
-                  upd.evolution = prev.evolution ? prev.evolution + "\n\n" + texto : texto;
-                }
-                if (v(data.recomendacoes_pos_procedimento)) {
-                  upd.recommendations = prev.recommendations
-                    ? prev.recommendations + "\n\n" + v(data.recomendacoes_pos_procedimento)
-                    : v(data.recomendacoes_pos_procedimento);
-                }
-                if (v(data.transcricao_original)) upd.audio_transcription = v(data.transcricao_original);
-                return upd;
-              });
-            }}
-          />
-        </div>
+        {/* AIRecordInput section="evolucao" usa o contrato correto com os campos de evolucao */}
+        <AIRecordInput
+          section="evolucao"
+          existingFields={{
+            evolucao_tratamento:              formData.evolution        || "",
+            recomendacoes_pos_procedimento:   formData.recommendations  || "",
+          }}
+          onResult={(data) => {
+            // data contém: evolucao_tratamento, resultado_observado, feedback_paciente,
+            // intercorrencias, recomendacoes_pos_procedimento, proximo_retorno,
+            // observacoes_finais, audio_transcription
+            const v = (x) => (x && typeof x === "string" && x.trim()) ? x.trim() : "";
+            setFormData(prev => {
+              const upd = { ...prev };
+              // Concatenar todos os campos de evolucao em um texto estruturado
+              const partes = [];
+              if (v(data.evolucao_tratamento))   partes.push(v(data.evolucao_tratamento));
+              if (v(data.resultado_observado))    partes.push("Resultado: " + v(data.resultado_observado));
+              if (v(data.feedback_paciente))      partes.push("Feedback da paciente: " + v(data.feedback_paciente));
+              if (v(data.intercorrencias))        partes.push("Intercorrencias: " + v(data.intercorrencias));
+              if (v(data.proximo_retorno))        partes.push("Proximo retorno: " + v(data.proximo_retorno));
+              if (v(data.observacoes_finais))     partes.push("Observacoes: " + v(data.observacoes_finais));
+              if (partes.length > 0) {
+                const texto = partes.join("\n\n");
+                upd.evolution = prev.evolution ? prev.evolution + "\n\n" + texto : texto;
+              }
+              // Recomendacoes pos-procedimento
+              if (v(data.recomendacoes_pos_procedimento)) {
+                upd.recommendations = prev.recommendations
+                  ? prev.recommendations + "\n\n" + v(data.recomendacoes_pos_procedimento)
+                  : v(data.recomendacoes_pos_procedimento);
+              }
+              // Transcricao
+              if (v(data.audio_transcription)) upd.audio_transcription = v(data.audio_transcription);
+              return upd;
+            });
+          }}
+        />
         <Textarea
           value={formData.evolution}
           onChange={(e) => setFormData(prev => ({ ...prev, evolution: e.target.value }))}

@@ -322,16 +322,33 @@ export default function AudioRecorder({ section = "prontuario", onStructured, ex
     let prompt, schema;
 
     if (section === "prontuario") {
-      prompt = `Voce e uma IA clinica especializada em medicina estetica. Analise a transcricao abaixo e extraia APENAS as informacoes explicitamente mencionadas, distribuindo-as nos campos corretos do prontuario.
+      prompt = `Voce e uma IA auxiliar para organizacao de prontuario clinico-estetico.
+Receberá a transcricao de um audio gravado por uma profissional da saude.
+Sua funcao e extrair APENAS as informacoes EXPLICITAMENTE mencionadas e organiza-las nos campos corretos.
 
-REGRAS:
-- Preencha SOMENTE o que foi dito claramente. Nao invente, nao presuma.
-- Se uma informacao nao foi mencionada, retorne string vazia "".
-- Preserve os termos clinicos exatos.
+REGRAS OBRIGATORIAS:
+- Nao invente dados. Nao diagnostique. Nao complete informacoes ausentes.
+- Se uma informacao nao foi mencionada, retorne string vazia "" para aquele campo.
+- Preserve os termos clinicos exatos usados pela profissional.
 - Escreva em portugues do Brasil com boa pontuacao.
+- Alergias e medicacoes: retorne como texto corrido (ex: "AAS, dipirona").
+
+DEFINICAO DOS CAMPOS:
+- queixa_principal: o que a paciente relata/apresenta como queixa, reclamacao ou motivo da consulta
+- historico_medico: historico de saude, procedimentos anteriores, antecedentes medicos mencionados
+- alergias: alergias conhecidas ou ausencia de alergias se mencionado (ex: "nao possui alergias")
+- medicacoes_em_uso: medicamentos que a paciente usa regularmente
+- procedimentos_anteriores: procedimentos esteticos ou medicos realizados antes desta consulta
+- observacoes_clinicas: observacoes tecnicas ou clinicas feitas pela profissional durante avaliacao
+- conduta_planejada: o que a profissional planeja fazer, tratamento indicado, conduta decidida
+- procedimentos_realizados: procedimentos efetivamente realizados nesta consulta (se mencionado)
+- recomendacoes: orientacoes dadas a paciente, cuidados, uso de produtos, retorno
+- retorno_observacoes: data ou prazo para retorno, observacoes finais sobre seguimento
 
 TRANSCRICAO:
-${transcricao}`;
+${transcricao}
+
+Retorne SOMENTE JSON valido. Sem explicacoes. Sem Markdown. Sem texto antes ou depois do JSON.`;
 
       schema = {
         type: "object",
@@ -343,22 +360,35 @@ ${transcricao}`;
           procedimentos_anteriores: { type: "string" },
           observacoes_clinicas:     { type: "string" },
           conduta_planejada:        { type: "string" },
+          procedimentos_realizados: { type: "string" },
           recomendacoes:            { type: "string" },
           retorno_observacoes:      { type: "string" },
-          transcricao_original:     { type: "string" },
         },
       };
     } else {
-      prompt = `Voce e uma IA clinica especializada em medicina estetica. Analise a transcricao de evolucao do tratamento abaixo e extraia APENAS as informacoes explicitamente mencionadas.
+      prompt = `Voce e uma IA auxiliar para organizacao de prontuario clinico-estetico.
+Receberá a transcricao de um audio de EVOLUCAO/RETORNO gravado por uma profissional da saude.
+Extraia APENAS as informacoes EXPLICITAMENTE mencionadas.
 
-REGRAS:
-- Preencha SOMENTE o que foi dito claramente. Nao invente.
-- Se nao mencionado, retorne string vazia "".
+REGRAS OBRIGATORIAS:
+- Nao invente dados. Nao complete informacoes ausentes.
+- Se nao mencionado, retorne string vazia "" para aquele campo.
 - Preserve os termos clinicos exatos.
 - Escreva em portugues do Brasil.
 
+DEFINICAO DOS CAMPOS:
+- evolucao_tratamento: como o tratamento evoluiu, resultado parcial ou final observado
+- resultado_observado: resultado estetico ou clinico constatado pela profissional
+- feedback_paciente: o que a paciente relata sobre os resultados ou experiencia
+- intercorrencias: qualquer intercorrencia, efeito adverso ou complicacao mencionada
+- recomendacoes_pos_procedimento: orientacoes e cuidados pos-procedimento indicados
+- proximo_retorno: data, prazo ou condicao para o proximo retorno da paciente
+- observacoes_finais: observacoes gerais de encerramento da consulta de retorno
+
 TRANSCRICAO:
-${transcricao}`;
+${transcricao}
+
+Retorne SOMENTE JSON valido. Sem explicacoes. Sem Markdown.`;
 
       schema = {
         type: "object",
@@ -366,12 +396,10 @@ ${transcricao}`;
           evolucao_tratamento:              { type: "string" },
           resultado_observado:              { type: "string" },
           feedback_paciente:                { type: "string" },
-          procedimentos_realizados_retorno: { type: "string" },
           intercorrencias:                  { type: "string" },
           recomendacoes_pos_procedimento:   { type: "string" },
           proximo_retorno:                  { type: "string" },
           observacoes_finais:               { type: "string" },
-          transcricao_original:             { type: "string" },
         },
       };
     }
