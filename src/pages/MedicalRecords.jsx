@@ -105,57 +105,70 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
     }));
   };
 
-  // Utilitario: normaliza valor — vazio se nao informado
-  const val = (v) => (!v || typeof v !== "string" || v.trim() === "" ||
-    v === "Nao informado no audio." || v === "Não informado no áudio.") ? "" : v.trim();
+  // ── MAPEAMENTO DEFINITIVO: campos do AIRecordInput → campos do formulario ──
+  // AIRecordInput entrega: chief_complaint, medical_history, allergies_str,
+  // medications_str, evolution, recommendations, audio_transcription
+  // Este handler aplica diretamente ao formData sem conversao intermediaria.
 
-  // Converte string de alergias/medicacoes em array e mescla com existentes
-  const mergeStringIntoArray = (strValue, existingArray) => {
-    if (!val(strValue)) return existingArray;
-    const novas = val(strValue).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
-    const existentes = existingArray || [];
-    return [...existentes, ...novas.filter(n => !existentes.includes(n))];
+  const s = (v) => (v && typeof v === "string" && v.trim()) ? v.trim() : "";
+
+  // Converte string CSV para array e mescla sem duplicatas
+  const mergeCSVIntoArray = (csvStr, existingArr) => {
+    if (!s(csvStr)) return existingArr || [];
+    const novas = s(csvStr).split(/[,;]+/).map(x => x.trim()).filter(Boolean);
+    const base  = Array.isArray(existingArr) ? existingArr : [];
+    return [...base, ...novas.filter(n => !base.includes(n))];
   };
 
-  // Preenchimento por audio ou foto — secao prontuario
   const handleAIResult = (aiData) => {
     setFormData(prev => {
-      const updated = { ...prev };
+      const upd = { ...prev };
 
-      // Campos de texto direto
-      if (val(aiData.chief_complaint))     updated.chief_complaint = val(aiData.chief_complaint);
-      if (val(aiData.medical_history))     updated.medical_history = val(aiData.medical_history);
-      if (val(aiData.recommendations))     updated.recommendations = val(aiData.recommendations);
-      if (val(aiData.audio_transcription)) updated.audio_transcription = val(aiData.audio_transcription);
+      // Queixa principal
+      if (s(aiData.chief_complaint))
+        upd.chief_complaint = s(aiData.chief_complaint);
 
-      // Evolucao: concatenar se ja houver conteudo
-      if (val(aiData.evolution)) {
-        updated.evolution = prev.evolution
-          ? prev.evolution + "\n\n" + val(aiData.evolution)
-          : val(aiData.evolution);
+      // Historico medico
+      if (s(aiData.medical_history))
+        upd.medical_history = s(aiData.medical_history);
+
+      // Recomendacoes
+      if (s(aiData.recommendations))
+        upd.recommendations = s(aiData.recommendations);
+
+      // Transcricao
+      if (s(aiData.audio_transcription))
+        upd.audio_transcription = s(aiData.audio_transcription);
+
+      // Evolucao / conduta — concatenar se ja tiver conteudo
+      if (s(aiData.evolution)) {
+        upd.evolution = prev.evolution
+          ? prev.evolution + "\n\n" + s(aiData.evolution)
+          : s(aiData.evolution);
       }
 
-      // Alergias (string separada por virgula → array)
-      updated.allergies = mergeStringIntoArray(aiData.alergias, prev.allergies);
+      // Alergias: string CSV → array
+      upd.allergies = mergeCSVIntoArray(aiData.allergies_str, prev.allergies);
 
-      // Medicacoes (string separada por virgula → array)
-      updated.current_medications = mergeStringIntoArray(aiData.medicacoes_em_uso, prev.current_medications);
+      // Medicacoes: string CSV → array
+      upd.current_medications = mergeCSVIntoArray(aiData.medications_str, prev.current_medications);
 
-      return updated;
+      return upd;
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
       {/* Preencher prontuario por audio ou foto */}
+      {/* existingFields usa os nomes do schema do AudioRecorder (portugues) para deteccao de conflitos */}
       <AIRecordInput
         section="prontuario"
         existingFields={{
-          queixa_principal:         formData.chief_complaint  || "",
-          historico_medico:         formData.medical_history  || "",
-          conduta_planejada:        formData.evolution        || "",
-          recomendacoes:            formData.recommendations  || "",
-          alergias:                 (formData.allergies || []).join(", "),
+          queixa_principal:         formData.chief_complaint                          || "",
+          historico_medico:         formData.medical_history                          || "",
+          conduta_planejada:        formData.evolution                                || "",
+          recomendacoes:            formData.recommendations                          || "",
+          alergias:                 (formData.allergies         || []).join(", "),
           medicacoes_em_uso:        (formData.current_medications || []).join(", "),
         }}
         onResult={handleAIResult}

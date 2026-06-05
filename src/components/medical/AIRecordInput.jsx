@@ -1,6 +1,17 @@
 /**
  * AIRecordInput — Painel de preenchimento por audio ou foto para prontuario.
- * IMPORTANTE: usa display:none para esconder abas (nao desmonta AudioRecorder).
+ * IMPORTANTE: usa display:none para nao desmontar o AudioRecorder ao trocar aba.
+ *
+ * Contrato de saida (onResult):
+ *   Para section="prontuario", chama onResult com objeto contendo:
+ *     chief_complaint, medical_history, allergies_str, medications_str,
+ *     evolution, recommendations, audio_transcription
+ *   (allergies_str e medications_str sao strings separadas por virgula)
+ *
+ *   Para section="evolucao", chama onResult com objeto contendo:
+ *     evolucao_tratamento, resultado_observado, feedback_paciente,
+ *     intercorrencias, recomendacoes_pos_procedimento, proximo_retorno,
+ *     observacoes_finais, audio_transcription
  */
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
@@ -8,18 +19,13 @@ import { Mic, Camera, Upload, Loader2, CheckCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AudioRecorder from "@/components/medical/AudioRecorder";
 
-/**
- * Props:
- *   onResult(data): chamado com os campos estruturados
- *   section: "prontuario" | "evolucao"
- *   existingFields: campos ja preenchidos no formulario
- */
 export default function AIRecordInput({ onResult, section = "prontuario", existingFields = {} }) {
-  const [activeTab, setActiveTab] = useState("audio");
-  const [photoStatus, setPhotoStatus] = useState("idle"); // idle | processing | done | error
+  const [activeTab, setActiveTab]     = useState("audio");
+  const [photoStatus, setPhotoStatus] = useState("idle");
   const [photoMsg, setPhotoMsg]       = useState("");
   const fileInputRef = useRef(null);
 
+  // ── FOTO ────────────────────────────────────────────────────────────────────
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -41,27 +47,26 @@ export default function AIRecordInput({ onResult, section = "prontuario", existi
     let result;
     try {
       result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Voce e uma assistente medica. Analise a imagem de um prontuario manuscrito ou impresso e extraia todas as informacoes clinicas visiveis.
-
-Retorne JSON com os campos:
-- chief_complaint: queixa principal
-- medical_history: historico medico
-- allergies: alergias (string separada por virgula)
-- current_medications: medicacoes (string separada por virgula)
-- evolution: evolucao clinica
-- recommendations: recomendacoes
-
-Se algum campo nao estiver legivel, retorne string vazia.`,
+        prompt: `Voce e uma assistente medica. Analise a imagem de um prontuario e extraia as informacoes clinicas visiveis.
+Retorne SOMENTE JSON valido, sem explicacoes, sem Markdown.
+Campos:
+- chief_complaint (queixa principal)
+- medical_history (historico medico)
+- allergies_str (alergias, string separada por virgula)
+- medications_str (medicacoes, string separada por virgula)
+- evolution (evolucao clinica)
+- recommendations (recomendacoes)
+Se o campo nao estiver visivel, retorne string vazia.`,
         file_urls: [file_url],
         response_json_schema: {
           type: "object",
           properties: {
-            chief_complaint:     { type: "string" },
-            medical_history:     { type: "string" },
-            allergies:           { type: "string" },
-            current_medications: { type: "string" },
-            evolution:           { type: "string" },
-            recommendations:     { type: "string" },
+            chief_complaint:  { type: "string" },
+            medical_history:  { type: "string" },
+            allergies_str:    { type: "string" },
+            medications_str:  { type: "string" },
+            evolution:        { type: "string" },
+            recommendations:  { type: "string" },
           },
         },
       });
@@ -74,13 +79,13 @@ Se algum campo nao estiver legivel, retorne string vazia.`,
     setPhotoStatus("done");
     setPhotoMsg("Informacoes extraidas da imagem com sucesso.");
     onResult?.({
-      chief_complaint:     result.chief_complaint        || "",
-      medical_history:     result.medical_history        || "",
-      alergias:            result.allergies              || "",
-      medicacoes_em_uso:   result.current_medications    || "",
-      evolution:           result.evolution              || "",
-      recommendations:     result.recommendations        || "",
-      transcricao_original: "",
+      chief_complaint:     result.chief_complaint  || "",
+      medical_history:     result.medical_history  || "",
+      allergies_str:       result.allergies_str    || "",
+      medications_str:     result.medications_str  || "",
+      evolution:           result.evolution        || "",
+      recommendations:     result.recommendations  || "",
+      audio_transcription: "",
     });
   };
 
@@ -90,33 +95,40 @@ Se algum campo nao estiver legivel, retorne string vazia.`,
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Mapeia os dados estruturados do AudioRecorder para os campos do formulario
+  // ── AUDIO: converte saída do AudioRecorder para contrato de onResult ────────
+  // AudioRecorder retorna campos em portugues (queixa_principal, historico_medico, etc.)
+  // Aqui fazemos o mapeamento definitivo para os nomes do formulario.
   const handleAudioStructured = (data) => {
+    const s = (v) => (v && typeof v === "string" && v.trim()) ? v.trim() : "";
+
     if (section === "prontuario") {
       onResult?.({
-        chief_complaint:          data.queixa_principal          || "",
-        medical_history:          data.historico_medico          || "",
-        alergias:                 data.alergias                  || "",
-        medicacoes_em_uso:        data.medicacoes_em_uso         || "",
-        evolution:                data.conduta_planejada         || "",
-        recommendations:          data.recomendacoes             || "",
-        observacoes_clinicas:     data.observacoes_clinicas      || "",
-        conduta_planejada:        data.conduta_planejada         || "",
-        retorno_observacoes:      data.retorno_observacoes       || "",
-        procedimentos_anteriores: data.procedimentos_anteriores  || "",
-        audio_transcription:      data.transcricao_original      || "",
+        // campos de texto
+        chief_complaint:     s(data.queixa_principal),
+        medical_history:     s(data.historico_medico),
+        evolution:           s(data.conduta_planejada),
+        recommendations:     s(data.recomendacoes),
+        // campos especiais (string → array no form)
+        allergies_str:       s(data.alergias),
+        medications_str:     s(data.medicacoes_em_uso),
+        // campos extras mantidos para referencia
+        observacoes_clinicas:     s(data.observacoes_clinicas),
+        retorno_observacoes:      s(data.retorno_observacoes),
+        procedimentos_anteriores: s(data.procedimentos_anteriores),
+        // transcricao
+        audio_transcription: s(data.transcricao_original),
       });
     } else {
+      // section === "evolucao"
       onResult?.({
-        evolution:              data.evolucao_tratamento              || "",
-        resultado_observado:    data.resultado_observado              || "",
-        feedback_paciente:      data.feedback_paciente                || "",
-        procedimentos_retorno:  data.procedimentos_realizados_retorno || "",
-        intercorrencias:        data.intercorrencias                  || "",
-        recommendations:        data.recomendacoes_pos_procedimento   || "",
-        proximo_retorno:        data.proximo_retorno                  || "",
-        observacoes_finais:     data.observacoes_finais               || "",
-        audio_transcription:    data.transcricao_original             || "",
+        evolucao_tratamento:              s(data.evolucao_tratamento),
+        resultado_observado:              s(data.resultado_observado),
+        feedback_paciente:                s(data.feedback_paciente),
+        intercorrencias:                  s(data.intercorrencias),
+        recomendacoes_pos_procedimento:   s(data.recomendacoes_pos_procedimento),
+        proximo_retorno:                  s(data.proximo_retorno),
+        observacoes_finais:               s(data.observacoes_finais),
+        audio_transcription:              s(data.transcricao_original),
       });
     }
   };
@@ -154,12 +166,11 @@ Se algum campo nao estiver legivel, retorne string vazia.`,
       </div>
 
       {/*
-        IMPORTANTE: usar display:none em vez de condicional para NAO desmontar
-        o AudioRecorder quando o usuario muda de aba — preserva o estado da gravacao.
+        CRITICO: display:none preserva o estado do AudioRecorder ao trocar abas.
+        Nao usar condicional (unmount/remount perderia o audioBlob).
       */}
       <div style={{ display: activeTab === "audio" ? "block" : "none" }}>
         <AudioRecorder
-          key={section}
           section={section}
           existingFields={existingFields}
           onStructured={handleAudioStructured}
