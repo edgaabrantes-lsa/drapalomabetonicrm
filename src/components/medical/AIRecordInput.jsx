@@ -37,13 +37,13 @@ export default function AIRecordInput({ onResult, section = "prontuario", existi
     try {
       const res = await base44.integrations.Core.UploadFile({ file });
       file_url = res.file_url;
-    } catch {
+    } catch (err) {
       setPhotoStatus("error");
-      setPhotoMsg("Falha ao enviar a imagem. Verifique sua conexao e tente novamente.");
+      setPhotoMsg("Falha ao enviar a imagem: " + (err?.message || "erro de conexão"));
       return;
     }
 
-    setPhotoMsg("IA lendo o prontuario na imagem...");
+    setPhotoMsg("IA lendo o prontuário na imagem...");
     let result;
     try {
       result = await base44.integrations.Core.InvokeLLM({
@@ -70,9 +70,9 @@ Se o campo nao estiver visivel, retorne string vazia.`,
           },
         },
       });
-    } catch {
+    } catch (err) {
       setPhotoStatus("error");
-      setPhotoMsg("Falha ao analisar a imagem. Tente novamente.");
+      setPhotoMsg("Falha ao analisar a imagem: " + (err?.message || "tente novamente"));
       return;
     }
 
