@@ -159,6 +159,7 @@ Se algum campo nao estiver legivel, retorne string vazia.`,
       */}
       <div style={{ display: activeTab === "audio" ? "block" : "none" }}>
         <AudioRecorder
+          key={section}
           section={section}
           existingFields={existingFields}
           onStructured={handleAudioStructured}

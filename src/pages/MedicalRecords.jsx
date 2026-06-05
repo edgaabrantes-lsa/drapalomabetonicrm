@@ -33,14 +33,15 @@ const statusConfig = {
 const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) => {
   const [formData, setFormData] = useState(record ? {
     ...record,
-    chief_complaint:      record.chief_complaint      ?? "",
-    medical_history:      record.medical_history      ?? "",
-    evolution:            record.evolution            ?? "",
-    recommendations:      record.recommendations      ?? "",
-    allergies:            record.allergies            ?? [],
-    contraindications:    record.contraindications    ?? [],
-    current_medications:  record.current_medications  ?? [],
-    procedures_performed: record.procedures_performed ?? [],
+    chief_complaint:      record.chief_complaint      || "",
+    medical_history:      record.medical_history      || "",
+    evolution:            record.evolution            || "",
+    recommendations:      record.recommendations      || "",
+    audio_transcription:  record.audio_transcription  || "",
+    allergies:            Array.isArray(record.allergies)            ? record.allergies            : [],
+    contraindications:    Array.isArray(record.contraindications)    ? record.contraindications    : [],
+    current_medications:  Array.isArray(record.current_medications)  ? record.current_medications  : [],
+    procedures_performed: Array.isArray(record.procedures_performed) ? record.procedures_performed : [],
   } : {
     patient_id: "",
     record_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
@@ -104,65 +105,58 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
     }));
   };
 
-  // Preenchimento por audio — secao prontuario
-  const handleAIResult = (aiData) => {
-    const val = (v) => (!v || v === "Nao informado no audio." || v === "Não informado no áudio.") ? "" : v.trim();
-    setFormData(prev => {
-      const updated = { ...prev };
-      if (val(aiData.chief_complaint))  updated.chief_complaint = val(aiData.chief_complaint);
-      if (val(aiData.medical_history))  updated.medical_history = val(aiData.medical_history);
-      if (val(aiData.recommendations))  updated.recommendations = val(aiData.recommendations);
-      if (val(aiData.audio_transcription)) updated.audio_transcription = val(aiData.audio_transcription);
-      // Evolucao: adicionar ao invés de substituir se ja houver conteudo
-      if (val(aiData.evolution)) {
-        updated.evolution = prev.evolution
-          ? prev.evolution + "\n\n" + val(aiData.evolution)
-          : val(aiData.evolution);
-      }
-      // Alergias por audio (string) — adicionar ao array existente se mencionadas
-      if (val(aiData.alergias)) {
-        const novas = val(aiData.alergias).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
-        const existentes = prev.allergies || [];
-        const combinadas = [...existentes, ...novas.filter(n => !existentes.includes(n))];
-        updated.allergies = combinadas;
-      }
-      // Medicacoes por audio (string) — adicionar ao array existente se mencionadas
-      if (val(aiData.medicacoes_em_uso)) {
-        const novas = val(aiData.medicacoes_em_uso).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
-        const existentes = prev.current_medications || [];
-        const combinadas = [...existentes, ...novas.filter(n => !existentes.includes(n))];
-        updated.current_medications = combinadas;
-      }
-      return updated;
-    });
+  // Utilitario: normaliza valor — vazio se nao informado
+  const val = (v) => (!v || typeof v !== "string" || v.trim() === "" ||
+    v === "Nao informado no audio." || v === "Não informado no áudio.") ? "" : v.trim();
+
+  // Converte string de alergias/medicacoes em array e mescla com existentes
+  const mergeStringIntoArray = (strValue, existingArray) => {
+    if (!val(strValue)) return existingArray;
+    const novas = val(strValue).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+    const existentes = existingArray || [];
+    return [...existentes, ...novas.filter(n => !existentes.includes(n))];
   };
 
-  // Preenchimento por audio — secao evolucao
-  const handleEvolutionAudioResult = (aiData) => {
-    const val = (v) => (!v || v === "Nao informado no audio." || v === "Não informado no áudio.") ? "" : v.trim();
+  // Preenchimento por audio ou foto — secao prontuario
+  const handleAIResult = (aiData) => {
     setFormData(prev => {
       const updated = { ...prev };
+
+      // Campos de texto direto
+      if (val(aiData.chief_complaint))     updated.chief_complaint = val(aiData.chief_complaint);
+      if (val(aiData.medical_history))     updated.medical_history = val(aiData.medical_history);
+      if (val(aiData.recommendations))     updated.recommendations = val(aiData.recommendations);
+      if (val(aiData.audio_transcription)) updated.audio_transcription = val(aiData.audio_transcription);
+
+      // Evolucao: concatenar se ja houver conteudo
       if (val(aiData.evolution)) {
         updated.evolution = prev.evolution
           ? prev.evolution + "\n\n" + val(aiData.evolution)
           : val(aiData.evolution);
       }
-      if (val(aiData.recommendations)) updated.recommendations = val(aiData.recommendations);
-      if (val(aiData.audio_transcription)) updated.audio_transcription = val(aiData.audio_transcription);
+
+      // Alergias (string separada por virgula → array)
+      updated.allergies = mergeStringIntoArray(aiData.alergias, prev.allergies);
+
+      // Medicacoes (string separada por virgula → array)
+      updated.current_medications = mergeStringIntoArray(aiData.medicacoes_em_uso, prev.current_medications);
+
       return updated;
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
-      {/* AI Input — secao prontuario */}
+      {/* Preencher prontuario por audio ou foto */}
       <AIRecordInput
         section="prontuario"
         existingFields={{
-          queixa_principal: formData.chief_complaint,
-          historico_medico: formData.medical_history,
-          conduta_planejada: formData.evolution,
-          recomendacoes: formData.recommendations,
+          queixa_principal:         formData.chief_complaint  || "",
+          historico_medico:         formData.medical_history  || "",
+          conduta_planejada:        formData.evolution        || "",
+          recomendacoes:            formData.recommendations  || "",
+          alergias:                 (formData.allergies || []).join(", "),
+          medicacoes_em_uso:        (formData.current_medications || []).join(", "),
         }}
         onResult={handleAIResult}
       />
@@ -333,12 +327,11 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
           <AudioRecorder
             section="evolucao"
             existingFields={{
-              evolucao_tratamento:           formData.evolution,
+              evolucao_tratamento:            formData.evolution,
               recomendacoes_pos_procedimento: formData.recommendations,
             }}
             onStructured={(data) => {
-              // data tem chaves do schema "evolucao": evolucao_tratamento, resultado_observado, etc.
-              const v = (x) => (!x || x.trim().length === 0) ? "" : x.trim();
+              const v = (x) => (!x || typeof x !== "string" || x.trim() === "") ? "" : x.trim();
               setFormData(prev => {
                 const upd = { ...prev };
                 // Montar texto de evolucao com todos os campos relevantes
