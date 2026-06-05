@@ -1,0 +1,37 @@
+{
+  "name": "VigilanciaTreinamento",
+  "type": "object",
+  "properties": {
+    "colaborador": {
+      "type": "string"
+    },
+    "curso": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "validade": {
+      "type": "string",
+      "format": "date"
+    },
+    "certificado_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "valido",
+        "proximo_vencimento",
+        "vencido"
+      ],
+      "default": "valido"
+    }
+  },
+  "required": [
+    "colaborador",
+    "curso",
+    "data"
+  ]
+}

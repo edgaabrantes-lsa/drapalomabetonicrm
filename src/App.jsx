@@ -7,6 +7,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtocolosPremium from './pages/ProtocolosPremium';
+import VigilanciaPage from './pages/VigilanciaPage';
 import FullFaceSimulations from './pages/FullFaceSimulations';
 import BeforeAfterIA from './pages/BeforeAfterIA.jsx';
 
@@ -76,6 +77,13 @@ const AuthenticatedApp = () => {
         </LayoutWrapper>
       } />
       
+      {/* Vigilância Sanitária */}
+      <Route path="/VigilanciaPage" element={
+        <LayoutWrapper currentPageName="VigilanciaPage">
+          <VigilanciaPage />
+        </LayoutWrapper>
+      } />
+
       {/* Gerar Antes e Depois com IA */}
       <Route path="/BeforeAfterIA" element={
         <LayoutWrapper currentPageName="BeforeAfterIA">

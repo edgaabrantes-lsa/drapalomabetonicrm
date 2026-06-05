@@ -1,0 +1,157 @@
+// Definição de todas as seções e itens do checklist de Vigilância Sanitária
+
+export const SECTIONS = [
+  {
+    key: "documentacao",
+    label: "Documentação",
+    icon: "FileText",
+    color: "#3b82f6",
+    items: [
+      "CNPJ ativo",
+      "Alvará de funcionamento",
+      "Licença sanitária municipal",
+      "Contrato social atualizado",
+      "Responsável técnico cadastrado",
+      "Registro profissional ativo",
+      "Certificado de habilitação estética",
+      "Seguro profissional",
+      "Contrato da empresa de resíduos",
+      "Manual de biossegurança",
+      "POPs documentados",
+      "PGRSS documentado",
+      "LGPD implementada",
+      "Controle de treinamentos",
+      "Plano de emergência",
+    ],
+  },
+  {
+    key: "estrutura",
+    label: "Estrutura Física",
+    icon: "Building2",
+    color: "#0ea5e9",
+    items: [
+      "Recepção organizada",
+      "Sala de procedimentos adequada",
+      "Pia clínica funcional",
+      "Sabonete líquido disponível",
+      "Papel toalha disponível",
+      "Álcool 70%",
+      "Lixeira com pedal",
+      "Iluminação adequada",
+      "Ventilação adequada",
+      "Área de armazenamento organizada",
+      "Área de resíduos identificada",
+      "Controle de limpeza documentado",
+    ],
+  },
+  {
+    key: "prontuarios",
+    label: "Prontuários e Consentimentos",
+    icon: "ClipboardList",
+    color: "#6366f1",
+    items: [
+      "Anamnese completa",
+      "Prontuário digital",
+      "Termo de consentimento",
+      "Registro fotográfico",
+      "Evolução clínica",
+      "Histórico de intercorrências",
+      "Termo de uso de imagem",
+      "LGPD assinada",
+      "Arquivamento correto",
+      "Backup de documentos",
+    ],
+  },
+  {
+    key: "biosseguranca",
+    label: "Biossegurança",
+    icon: "Shield",
+    color: "#10b981",
+    items: [
+      "Uso de luvas",
+      "Uso de máscara",
+      "Uso de avental",
+      "Uso de touca",
+      "Higienização das mãos",
+      "Controle de limpeza",
+      "POP de limpeza",
+      "POP de desinfecção",
+      "Controle de infecção",
+      "Treinamento atualizado",
+    ],
+  },
+  {
+    key: "esterilizacao",
+    label: "Esterilização",
+    icon: "Zap",
+    color: "#f59e0b",
+    items: [
+      "Autoclave cadastrada",
+      "Manual da autoclave",
+      "Manutenção em dia",
+      "Teste biológico",
+      "Registro dos ciclos",
+      "Controle de esterilização",
+      "Armazenamento correto",
+      "Validade das embalagens",
+    ],
+  },
+  {
+    key: "estoque",
+    label: "Estoque e Produtos",
+    icon: "Package",
+    color: "#8b5cf6",
+    items: [
+      "Controle de validade",
+      "Controle de lote",
+      "Controle de entrada",
+      "Controle de saída",
+      "Notas fiscais arquivadas",
+      "Produtos ANVISA regularizados",
+      "Produtos organizados",
+      "Produtos identificados",
+      "Inventário atualizado",
+    ],
+  },
+  {
+    key: "residuos",
+    label: "Resíduos",
+    icon: "Trash2",
+    color: "#ef4444",
+    items: [
+      "Descarpack disponível",
+      "Contrato de coleta ativo",
+      "PGRSS ativo",
+      "Controle de coleta documentado",
+      "Comprovantes anexados",
+    ],
+  },
+  {
+    key: "lgpd",
+    label: "LGPD",
+    icon: "Lock",
+    color: "#ec4899",
+    items: [
+      "Política de privacidade publicada",
+      "Consentimento de dados coletado",
+      "Controle de acesso implementado",
+      "Controle de senhas",
+      "Backup de dados",
+      "Logs de acesso registrados",
+    ],
+  },
+];
+
+export const STATUS_CONFIG = {
+  nao_iniciado:   { label: "Não iniciado",  color: "#64748b", bg: "rgba(100,116,139,0.15)" },
+  em_andamento:   { label: "Em andamento",  color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
+  concluido:      { label: "Concluído",     color: "#10b981", bg: "rgba(16,185,129,0.15)" },
+  nao_se_aplica:  { label: "Não se aplica", color: "#94a3b8", bg: "rgba(148,163,184,0.1)" },
+};
+
+export function calcScore(items) {
+  const relevant = items.filter(i => i.status !== "nao_se_aplica");
+  if (!relevant.length) return 0;
+  const done = relevant.filter(i => i.status === "concluido").length;
+  return Math.round((done / relevant.length) * 100);
+}

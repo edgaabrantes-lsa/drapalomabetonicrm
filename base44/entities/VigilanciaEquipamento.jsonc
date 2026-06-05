@@ -1,0 +1,51 @@
+{
+  "name": "VigilanciaEquipamento",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "fabricante": {
+      "type": "string"
+    },
+    "numero_serie": {
+      "type": "string"
+    },
+    "data_compra": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_manutencao": {
+      "type": "string",
+      "format": "date"
+    },
+    "proxima_manutencao": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "manutencao",
+        "inativo"
+      ],
+      "default": "ativo"
+    },
+    "nota_fiscal_url": {
+      "type": "string"
+    },
+    "manual_url": {
+      "type": "string"
+    },
+    "registro": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

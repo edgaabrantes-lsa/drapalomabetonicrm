@@ -1,0 +1,46 @@
+{
+  "name": "VigilanciaItem",
+  "type": "object",
+  "properties": {
+    "section": {
+      "type": "string"
+    },
+    "item_key": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "nao_iniciado",
+        "em_andamento",
+        "concluido",
+        "nao_se_aplica"
+      ],
+      "default": "nao_iniciado"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "responsible": {
+      "type": "string"
+    },
+    "observations": {
+      "type": "string"
+    },
+    "file_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "section",
+    "item_key",
+    "label"
+  ]
+}

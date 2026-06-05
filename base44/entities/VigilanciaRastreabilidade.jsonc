@@ -1,0 +1,43 @@
+{
+  "name": "VigilanciaRastreabilidade",
+  "type": "object",
+  "properties": {
+    "produto": {
+      "type": "string"
+    },
+    "fabricante": {
+      "type": "string"
+    },
+    "lote": {
+      "type": "string"
+    },
+    "validade": {
+      "type": "string",
+      "format": "date"
+    },
+    "paciente": {
+      "type": "string"
+    },
+    "profissional": {
+      "type": "string"
+    },
+    "quantidade": {
+      "type": "number"
+    },
+    "unidade": {
+      "type": "string"
+    },
+    "data_procedimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "produto",
+    "lote",
+    "data_procedimento"
+  ]
+}

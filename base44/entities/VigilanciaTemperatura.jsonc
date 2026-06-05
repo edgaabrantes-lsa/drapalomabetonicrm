@@ -1,0 +1,27 @@
+{
+  "name": "VigilanciaTemperatura",
+  "type": "object",
+  "properties": {
+    "data_hora": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "temperatura": {
+      "type": "number"
+    },
+    "responsavel": {
+      "type": "string"
+    },
+    "dentro_faixa": {
+      "type": "boolean",
+      "default": true
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "data_hora",
+    "temperatura"
+  ]
+}
