@@ -110,46 +110,42 @@ const MedicalRecordForm = ({ record, patients, procedures, onSave, onClose }) =>
 
   const s = (v) => (v && typeof v === "string" && v.trim()) ? v.trim() : "";
 
-  // Converte string CSV para array e mescla sem duplicatas
+  // Converte string CSV para array, descartando frases que indicam ausencia
+  const FRASES_NEGATIVAS = /^(sem |nao |não |ningum|nenhum|ausente|negado|nega |desconhec)/i;
   const mergeCSVIntoArray = (csvStr, existingArr) => {
     if (!s(csvStr)) return existingArr || [];
-    const novas = s(csvStr).split(/[,;]+/).map(x => x.trim()).filter(Boolean);
+    // Se a string inteira indica ausencia (ex: "sem alergias"), retornar existente sem modificar
+    if (FRASES_NEGATIVAS.test(s(csvStr).trim())) return existingArr || [];
+    const novas = s(csvStr).split(/[,;]+/).map(x => x.trim()).filter(x => x && !FRASES_NEGATIVAS.test(x));
     const base  = Array.isArray(existingArr) ? existingArr : [];
-    return [...base, ...novas.filter(n => !base.includes(n))];
+    return novas.length ? [...base, ...novas.filter(n => !base.includes(n))] : base;
   };
 
+  // MAPEAMENTO DEFINITIVO: AIRecordInput → formData
+  // Campos entregues: chief_complaint, medical_history, allergies_str,
+  // medications_str, evolution, recommendations, audio_transcription
   const handleAIResult = (aiData) => {
+    console.log("[MedicalRecords] handleAIResult recebeu:", aiData);
     setFormData(prev => {
       const upd = { ...prev };
 
-      // Queixa principal
-      if (s(aiData.chief_complaint))
-        upd.chief_complaint = s(aiData.chief_complaint);
+      if (s(aiData.chief_complaint))    { upd.chief_complaint    = s(aiData.chief_complaint);    console.log("[form] chief_complaint =>", upd.chief_complaint); }
+      if (s(aiData.medical_history))    { upd.medical_history    = s(aiData.medical_history);    console.log("[form] medical_history =>", upd.medical_history); }
+      if (s(aiData.recommendations))    { upd.recommendations    = s(aiData.recommendations);    console.log("[form] recommendations =>", upd.recommendations); }
+      if (s(aiData.audio_transcription)){ upd.audio_transcription= s(aiData.audio_transcription); }
 
-      // Historico medico
-      if (s(aiData.medical_history))
-        upd.medical_history = s(aiData.medical_history);
-
-      // Recomendacoes
-      if (s(aiData.recommendations))
-        upd.recommendations = s(aiData.recommendations);
-
-      // Transcricao
-      if (s(aiData.audio_transcription))
-        upd.audio_transcription = s(aiData.audio_transcription);
-
-      // Evolucao / conduta — concatenar se ja tiver conteudo
       if (s(aiData.evolution)) {
         upd.evolution = prev.evolution
           ? prev.evolution + "\n\n" + s(aiData.evolution)
           : s(aiData.evolution);
+        console.log("[form] evolution =>", upd.evolution);
       }
 
-      // Alergias: string CSV → array
-      upd.allergies = mergeCSVIntoArray(aiData.allergies_str, prev.allergies);
+      const newAllergies = mergeCSVIntoArray(aiData.allergies_str, prev.allergies);
+      if (newAllergies !== prev.allergies) { upd.allergies = newAllergies; console.log("[form] allergies =>", upd.allergies); }
 
-      // Medicacoes: string CSV → array
-      upd.current_medications = mergeCSVIntoArray(aiData.medications_str, prev.current_medications);
+      const newMeds = mergeCSVIntoArray(aiData.medications_str, prev.current_medications);
+      if (newMeds !== prev.current_medications) { upd.current_medications = newMeds; console.log("[form] current_medications =>", upd.current_medications); }
 
       return upd;
     });

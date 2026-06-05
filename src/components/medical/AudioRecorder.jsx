@@ -473,6 +473,7 @@ Retorne SOMENTE JSON valido. Sem explicacoes. Sem Markdown.`;
         procedimentos_anteriores: "Procedimentos Anteriores",
         observacoes_clinicas:     "Observacoes Clinicas",
         conduta_planejada:        "Conduta Planejada",
+        procedimentos_realizados: "Procedimentos Realizados",
         recomendacoes:            "Recomendacoes",
         retorno_observacoes:      "Retorno / Observacoes",
       }

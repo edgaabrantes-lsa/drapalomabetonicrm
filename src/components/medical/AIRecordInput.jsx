@@ -100,36 +100,36 @@ Se o campo nao estiver visivel, retorne string vazia.`,
   // Aqui fazemos o mapeamento definitivo para os nomes do formulario.
   const handleAudioStructured = (data) => {
     const s = (v) => (v && typeof v === "string" && v.trim()) ? v.trim() : "";
+    console.log("[AIRecordInput] AudioRecorder entregou (PT):", data);
 
     if (section === "prontuario") {
-      onResult?.({
-        // campos de texto
-        chief_complaint:     s(data.queixa_principal),
-        medical_history:     s(data.historico_medico),
-        evolution:           s(data.conduta_planejada),
-        recommendations:     s(data.recomendacoes),
-        // campos especiais (string → array no form)
-        allergies_str:       s(data.alergias),
-        medications_str:     s(data.medicacoes_em_uso),
-        // campos extras mantidos para referencia
+      const mapped = {
+        chief_complaint:          s(data.queixa_principal),
+        medical_history:          s(data.historico_medico),
+        evolution:                s(data.conduta_planejada),
+        recommendations:          s(data.recomendacoes),
+        allergies_str:            s(data.alergias),
+        medications_str:          s(data.medicacoes_em_uso),
         observacoes_clinicas:     s(data.observacoes_clinicas),
         retorno_observacoes:      s(data.retorno_observacoes),
         procedimentos_anteriores: s(data.procedimentos_anteriores),
-        // transcricao
-        audio_transcription: s(data.transcricao_original),
-      });
+        audio_transcription:      s(data.transcricao_original),
+      };
+      console.log("[AIRecordInput] Mapeado (PT→EN) para formulario:", mapped);
+      onResult?.(mapped);
     } else {
-      // section === "evolucao"
-      onResult?.({
-        evolucao_tratamento:              s(data.evolucao_tratamento),
-        resultado_observado:              s(data.resultado_observado),
-        feedback_paciente:                s(data.feedback_paciente),
-        intercorrencias:                  s(data.intercorrencias),
-        recomendacoes_pos_procedimento:   s(data.recomendacoes_pos_procedimento),
-        proximo_retorno:                  s(data.proximo_retorno),
-        observacoes_finais:               s(data.observacoes_finais),
-        audio_transcription:              s(data.transcricao_original),
-      });
+      const mapped = {
+        evolucao_tratamento:            s(data.evolucao_tratamento),
+        resultado_observado:            s(data.resultado_observado),
+        feedback_paciente:              s(data.feedback_paciente),
+        intercorrencias:                s(data.intercorrencias),
+        recomendacoes_pos_procedimento: s(data.recomendacoes_pos_procedimento),
+        proximo_retorno:                s(data.proximo_retorno),
+        observacoes_finais:             s(data.observacoes_finais),
+        audio_transcription:            s(data.transcricao_original),
+      };
+      console.log("[AIRecordInput] Mapeado evolucao para formulario:", mapped);
+      onResult?.(mapped);
     }
   };
 
