@@ -10,6 +10,7 @@ import ProtocolosPremium from './pages/ProtocolosPremium';
 import VigilanciaPage from './pages/VigilanciaPage';
 import FullFaceSimulations from './pages/FullFaceSimulations';
 import BeforeAfterIA from './pages/BeforeAfterIA.jsx';
+import DossiePatient from './pages/DossiePatient.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -88,6 +89,13 @@ const AuthenticatedApp = () => {
       <Route path="/BeforeAfterIA" element={
         <LayoutWrapper currentPageName="BeforeAfterIA">
           <BeforeAfterIA />
+        </LayoutWrapper>
+      } />
+
+      {/* Dossiê da Paciente */}
+      <Route path="/DossiePatient" element={
+        <LayoutWrapper currentPageName="DossiePatient">
+          <DossiePatient />
         </LayoutWrapper>
       } />
     </Routes>

@@ -1,0 +1,55 @@
+{
+  "name": "DossieImagem",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "antes",
+        "depois",
+        "analise_facial",
+        "evolucao",
+        "intercorrencia",
+        "documento_clinico",
+        "outros"
+      ],
+      "default": "outros"
+    },
+    "titulo": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "procedimento_vinculado": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "file_type": {
+      "type": "string"
+    },
+    "data_upload": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "uploaded_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "categoria",
+    "file_url"
+  ]
+}

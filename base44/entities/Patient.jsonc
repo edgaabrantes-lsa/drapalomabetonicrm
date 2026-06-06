@@ -18,6 +18,9 @@
     "document_number": {
       "type": "string"
     },
+    "rg": {
+      "type": "string"
+    },
     "birth_date": {
       "type": "string",
       "format": "date"
@@ -39,6 +42,26 @@
     "email": {
       "type": "string",
       "format": "email"
+    },
+    "profession": {
+      "type": "string"
+    },
+    "marital_status": {
+      "type": "string",
+      "enum": [
+        "solteira",
+        "casada",
+        "divorciada",
+        "viuva",
+        "uniao_estavel",
+        "outro"
+      ]
+    },
+    "emergency_contact": {
+      "type": "string"
+    },
+    "emergency_phone": {
+      "type": "string"
     },
     "address": {
       "type": "object",
@@ -69,6 +92,21 @@
     "photo_url": {
       "type": "string"
     },
+    "dossie_status": {
+      "type": "string",
+      "enum": [
+        "lead",
+        "avaliacao_agendada",
+        "avaliacao_realizada",
+        "em_tratamento",
+        "procedimento_realizado",
+        "em_acompanhamento",
+        "finalizado",
+        "inativo",
+        "cancelado"
+      ],
+      "default": "lead"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -95,6 +133,9 @@
         "other"
       ]
     },
+    "interest": {
+      "type": "string"
+    },
     "notes": {
       "type": "string"
     },
@@ -118,15 +159,13 @@
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "IDs dos protocolos em andamento"
+      }
     },
     "historico_tratamentos": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "IDs dos tratamentos realizados"
+      }
     }
   },
   "required": [

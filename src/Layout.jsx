@@ -26,7 +26,8 @@ import {
   Eye,
   ScanFace,
   Layers,
-  ShieldCheck
+  ShieldCheck,
+  FolderOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -53,6 +54,7 @@ const navigation = [
   { name: "Precificação", href: "Pricing", icon: Calculator },
   { name: "Análise Facial", href: "FacialAnalysis", icon: Eye },
   { name: "Gerar Antes e Depois", href: "BeforeAfterIA", icon: ScanFace },
+  { name: "Dossiê da Paciente", href: "DossiePatient", icon: FolderOpen },
   { name: "Vigilância Sanitária", href: "VigilanciaPage", icon: ShieldCheck },
   { name: "Triagem IA", href: "Intake", icon: ClipboardList },
   { name: "Configurações", href: "Settings", icon: Settings },

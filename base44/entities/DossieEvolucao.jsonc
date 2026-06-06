@@ -1,0 +1,81 @@
+{
+  "name": "DossieEvolucao",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "anamnese",
+        "evolucao",
+        "intercorrencia",
+        "revisao",
+        "orientacao"
+      ],
+      "default": "evolucao"
+    },
+    "queixa_principal": {
+      "type": "string"
+    },
+    "expectativa": {
+      "type": "string"
+    },
+    "historico_clinico": {
+      "type": "string"
+    },
+    "historico_estetico": {
+      "type": "string"
+    },
+    "medicamentos": {
+      "type": "string"
+    },
+    "alergias": {
+      "type": "string"
+    },
+    "doencas_preexistentes": {
+      "type": "string"
+    },
+    "procedimentos_anteriores": {
+      "type": "string"
+    },
+    "contraindicacoes": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "orientacoes_pre": {
+      "type": "string"
+    },
+    "orientacoes_pos": {
+      "type": "string"
+    },
+    "profissional": {
+      "type": "string"
+    },
+    "profissional_id": {
+      "type": "string"
+    },
+    "data_registro": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "editado_por": {
+      "type": "string"
+    },
+    "editado_em": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "patient_id",
+    "tipo",
+    "data_registro"
+  ]
+}

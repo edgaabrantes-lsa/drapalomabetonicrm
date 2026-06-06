@@ -1,0 +1,47 @@
+{
+  "name": "DossieLog",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "acao": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "cadastro",
+        "edicao",
+        "prontuario",
+        "imagem",
+        "documento",
+        "financeiro",
+        "contrato",
+        "acesso",
+        "exclusao",
+        "permissao",
+        "outro"
+      ]
+    },
+    "usuario": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "data_hora": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "patient_id",
+    "acao",
+    "tipo",
+    "usuario"
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "name": "DossieDocumento",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "nome": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "contrato_mestre",
+        "anexo_financeiro",
+        "consentimento",
+        "termo_lgpd",
+        "uso_imagem",
+        "contrato_assinado",
+        "outro"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "nao_gerado",
+        "gerado",
+        "enviado_assinatura",
+        "assinado",
+        "substituido",
+        "cancelado",
+        "expirado"
+      ],
+      "default": "nao_gerado"
+    },
+    "versao": {
+      "type": "number",
+      "default": 1
+    },
+    "procedimento_vinculado": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "data_criacao": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data_assinatura": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "criado_por": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "historico_versoes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "versao": {
+            "type": "number"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "patient_id",
+    "nome",
+    "tipo"
+  ]
+}

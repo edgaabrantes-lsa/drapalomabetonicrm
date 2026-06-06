@@ -1,0 +1,50 @@
+{
+  "name": "DossieObservacao",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "observacao": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "atendimento",
+        "financeiro",
+        "clinico",
+        "preferencias",
+        "administrativo",
+        "pos_venda",
+        "outros"
+      ],
+      "default": "atendimento"
+    },
+    "prioridade": {
+      "type": "string",
+      "enum": [
+        "baixa",
+        "media",
+        "alta",
+        "urgente"
+      ],
+      "default": "media"
+    },
+    "usuario": {
+      "type": "string"
+    },
+    "data_hora": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "patient_id",
+    "observacao",
+    "categoria"
+  ]
+}

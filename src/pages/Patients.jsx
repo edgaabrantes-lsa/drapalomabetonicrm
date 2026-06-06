@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInYears, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
 import {
-  Plus, Search, Phone, User, Activity, FileUp
+  Plus, Search, Phone, User, Activity, FileUp, FolderOpen
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -227,11 +228,21 @@ const PatientCard = ({ patient, onStartTreatment, onViewTreatments }) => {
               <Activity className="mr-1 h-3 w-3" />
               Iniciar
             </Button>
+            <Link to={`/DossiePatient?patient_id=${patient.id}`} onClick={(e) => e.stopPropagation()}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full text-[#c9a55c] hover:bg-[#c9a55c]/10 text-xs h-7 px-3"
+              >
+                <FolderOpen className="mr-1 h-3 w-3" />
+                Dossiê
+              </Button>
+            </Link>
             <Button
               size="sm"
               variant="ghost"
               onClick={(e) => { e.stopPropagation(); onViewTreatments(patient); }}
-              className="text-[#c9a55c] hover:bg-[#c9a55c]/10 text-xs h-7 px-3"
+              className="text-gray-500 hover:bg-white/5 text-xs h-7 px-3"
             >
               Histórico
             </Button>

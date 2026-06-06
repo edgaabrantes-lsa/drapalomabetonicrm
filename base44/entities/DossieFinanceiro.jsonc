@@ -1,0 +1,104 @@
+{
+  "name": "DossieFinanceiro",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "procedimento": {
+      "type": "string"
+    },
+    "valor_total": {
+      "type": "number"
+    },
+    "entrada": {
+      "type": "number"
+    },
+    "num_parcelas": {
+      "type": "number",
+      "default": 1
+    },
+    "forma_pagamento": {
+      "type": "string",
+      "enum": [
+        "pix",
+        "dinheiro",
+        "cartao_credito",
+        "cartao_debito",
+        "transferencia",
+        "boleto",
+        "link_pagamento",
+        "outro"
+      ]
+    },
+    "status_financeiro": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "entrada_paga",
+        "pago_parcial",
+        "pago_integral",
+        "aguardando_conferencia",
+        "conferido",
+        "em_atraso",
+        "cancelado",
+        "reembolsado"
+      ],
+      "default": "pendente"
+    },
+    "data_vencimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_pagamento": {
+      "type": "string",
+      "format": "date"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "comprovantes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "tipo_pagamento": {
+            "type": "string"
+          },
+          "valor": {
+            "type": "number"
+          },
+          "data_pagamento": {
+            "type": "string"
+          },
+          "procedimento": {
+            "type": "string"
+          },
+          "observacao": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "data_upload": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "patient_id",
+    "procedimento",
+    "valor_total"
+  ]
+}
