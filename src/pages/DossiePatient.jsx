@@ -15,7 +15,6 @@ import DossieDocumentacao from "@/components/dossie/DossieDocumentacao";
 import DossieFinanceiroTab from "@/components/dossie/DossieFinanceiroTab";
 import DossieContratos from "@/components/dossie/DossieContratos";
 import DossieObservacoes from "@/components/dossie/DossieObservacoes";
-import DossieLogHistorico from "@/components/dossie/DossieLogHistorico";
 
 const ABAS = [
   { id: "cadastro", label: "Cadastro" },
@@ -25,8 +24,7 @@ const ABAS = [
   { id: "financeiro", label: "Financeiro" },
   { id: "contratos_gerados", label: "Contratos Gerados" },
   { id: "contratos_assinados", label: "Contratos Assinados" },
-  { id: "observacoes", label: "Observações" },
-  { id: "logs", label: "Histórico" }
+  { id: "observacoes", label: "Observações" }
 ];
 
 const DOSSIE_STATUS = {
@@ -212,9 +210,6 @@ export default function DossiePatient() {
               )}
               {activeTab === "observacoes" && (
                 <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />
-              )}
-              {activeTab === "logs" && (
-                <DossieLogHistorico patient={selectedPatient} />
               )}
             </div>
           </>
