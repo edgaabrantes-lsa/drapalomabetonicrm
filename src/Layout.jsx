@@ -134,9 +134,10 @@ export default function Layout({ children, currentPageName }) {
         <div
           className="flex items-center flex-shrink-0 relative"
           style={{
-            height: TOPBAR_H,
+            height: 100,
             borderBottom: "1px solid #1E1E1E",
             padding: "0 16px",
+            overflow: "visible",
           }}
         >
           {/* Logo — visível apenas quando aberto */}
@@ -144,7 +145,7 @@ export default function Layout({ children, currentPageName }) {
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/409f9cb09_ChatGPT_Image_8_de_mai_de_2026__14_52_21-removebg-preview.png"
               alt="Paloma Betoni"
-              style={{ height: 140, objectFit: "contain", maxWidth: 180, marginTop: 4 }}
+              style={{ height: 90, objectFit: "contain", width: "100%", maxWidth: 200 }}
             />
           )}
 
@@ -366,7 +367,7 @@ export default function Layout({ children, currentPageName }) {
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
               alt="Paloma Betoni"
-              style={{ height: 44, objectFit: "contain" }}
+              style={{ height: 132, objectFit: "contain" }}
             />
           </div>
 
