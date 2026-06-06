@@ -5,12 +5,14 @@ module.exports = {
   theme: {
   	extend: {
   		fontFamily: {
-  			serif: ['Playfair Display', 'Georgia', 'serif'],
-  			sans: ['Inter', 'system-ui', 'sans-serif'],
+  			heading: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+  			sans:    ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+  			display: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
   		},
   		letterSpacing: {
-  			luxury: '0.12em',
-  			wide: '0.06em',
+  			tighter: '-0.02em',
+  			tight: '-0.015em',
+  			corporate: '0.07em',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -18,6 +20,16 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			// Tokens corporativos diretos
+  			'corp-bg':      '#0A0A0A',
+  			'corp-bg-2':    '#121212',
+  			'corp-card':    '#1A1A1A',
+  			'corp-border':  '#2B2B2B',
+  			'corp-text':    '#FFFFFF',
+  			'corp-muted':   '#B0B0B0',
+  			'corp-dim':     '#666666',
+  			'corp-gold':    '#C8A96A',
+  			// Shadcn tokens
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

@@ -41,100 +41,140 @@ import {
 import { Input } from "@/components/ui/input";
 
 const navigation = [
-  { name: "Dashboard", href: "Dashboard", icon: LayoutDashboard },
-  { name: "CRM", href: "CRM", icon: MessageSquare },
-  { name: "Bate-papo", href: "Chat", icon: MessagesSquare },
-  { name: "Agenda", href: "Agenda", icon: Calendar },
-  { name: "Pacientes", href: "Patients", icon: Users },
-  { name: "Prontuários", href: "MedicalRecords", icon: FileText },
-  { name: "Protocolos", href: "Protocols", icon: ClipboardList },
-  { name: "Protocolos Premium", href: "ProtocolosPremium", icon: Layers },
-  { name: "Estoque", href: "Inventory", icon: Package },
-  { name: "Financeiro", href: "Financial", icon: DollarSign },
-  { name: "Precificação", href: "Pricing", icon: Calculator },
-  { name: "Análise Facial", href: "FacialAnalysis", icon: Eye },
-  { name: "Gerar Antes e Depois", href: "BeforeAfterIA", icon: ScanFace },
-  { name: "Dossiê da Paciente", href: "DossiePatient", icon: FolderOpen },
-  { name: "Vigilância Sanitária", href: "VigilanciaPage", icon: ShieldCheck },
-  { name: "Triagem IA", href: "Intake", icon: ClipboardList },
-  { name: "Configurações", href: "Settings", icon: Settings },
+  { name: "Dashboard",           href: "Dashboard",         icon: LayoutDashboard },
+  { name: "CRM",                 href: "CRM",               icon: MessageSquare },
+  { name: "Bate-papo",           href: "Chat",              icon: MessagesSquare },
+  { name: "Agenda",              href: "Agenda",            icon: Calendar },
+  { name: "Pacientes",           href: "Patients",          icon: Users },
+  { name: "Prontuários",         href: "MedicalRecords",    icon: FileText },
+  { name: "Protocolos",          href: "Protocols",         icon: ClipboardList },
+  { name: "Protocolos Premium",  href: "ProtocolosPremium", icon: Layers },
+  { name: "Estoque",             href: "Inventory",         icon: Package },
+  { name: "Financeiro",          href: "Financial",         icon: DollarSign },
+  { name: "Precificação",        href: "Pricing",           icon: Calculator },
+  { name: "Análise Facial",      href: "FacialAnalysis",    icon: Eye },
+  { name: "Antes e Depois",      href: "BeforeAfterIA",     icon: ScanFace },
+  { name: "Dossiê da Paciente",  href: "DossiePatient",     icon: FolderOpen },
+  { name: "Vigilância Sanitária",href: "VigilanciaPage",    icon: ShieldCheck },
+  { name: "Triagem IA",          href: "Intake",            icon: ClipboardList },
+  { name: "Configurações",       href: "Settings",          icon: Settings },
 ];
 
+const SIDEBAR_W_OPEN   = 240;
+const SIDEBAR_W_CLOSED = 60;
+const TOPBAR_H         = 56;
+
 export default function Layout({ children, currentPageName }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser]             = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
-    // Força dark mode no html root
     document.documentElement.classList.add("dark");
     document.documentElement.style.colorScheme = "dark";
   }, []);
 
-  return (
-    <div className="min-h-screen" style={{ backgroundColor: "#111620", color: "#E8EDF5" }}>
+  const sidebarWidth = collapsed ? SIDEBAR_W_CLOSED : SIDEBAR_W_OPEN;
 
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 border-b" style={{ backgroundColor: "#0D1119", borderColor: "#1E2535" }}>
-        <div className="flex items-center justify-between px-4 py-2">
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="text-[#E8EDF5] hover:bg-white/5">
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: "#0A0A0A", color: "#FFFFFF" }}>
+
+      {/* ── Mobile top bar ── */}
+      <div
+        className="lg:hidden fixed top-0 left-0 right-0 z-50 glass-topbar"
+        style={{ borderBottom: "1px solid #1E1E1E", height: 52 }}
+      >
+        <div className="flex items-center justify-between h-full px-4">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex items-center justify-center w-9 h-9 rounded-md transition-colors hover:bg-white/5"
+            style={{ color: "#B0B0B0" }}
+          >
             <Menu className="h-5 w-5" />
-          </Button>
+          </button>
+
           <img
             src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
             alt="Paloma Betoni"
-            style={{ height: 108, objectFit: "contain" }}
+            style={{ height: 36, objectFit: "contain" }}
           />
-          <Avatar className="h-8 w-8 border border-[#C5A059]/40">
-            <AvatarFallback style={{ backgroundColor: "rgba(197,160,89,0.15)", color: "#C5A059" }} className="text-xs">
+
+          <Avatar className="h-8 w-8" style={{ border: "1px solid #2B2B2B" }}>
+            <AvatarFallback
+              style={{ backgroundColor: "rgba(200,169,106,0.1)", color: "#C8A96A", fontSize: 12, fontWeight: 600 }}
+            >
               {user?.full_name?.[0] || "P"}
             </AvatarFallback>
           </Avatar>
         </div>
       </div>
 
-      {/* Mobile Overlay */}
+      {/* ── Mobile overlay ── */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/70" onClick={() => setMobileOpen(false)} />
+        <div
+          className="lg:hidden fixed inset-0 z-40"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          onClick={() => setMobileOpen(false)}
+        />
       )}
 
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed top-0 left-0 z-50 h-full border-r transition-all duration-300 flex flex-col",
-        collapsed ? "w-[68px]" : "w-64",
-        mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      )} style={{ backgroundColor: "#0D1119", borderColor: "#1A2030" }}>
-
-        {/* Logo */}
-        <div className="h-[130px] flex items-center justify-between px-4 flex-shrink-0" style={{ borderBottom: "1px solid #1A2030" }}>
+      {/* ══ SIDEBAR ══ */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 z-50 h-full flex flex-col glass-sidebar transition-all duration-200 ease-in-out",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+        style={{
+          width: sidebarWidth,
+          borderRight: "1px solid #1E1E1E",
+        }}
+      >
+        {/* Logo / Brand */}
+        <div
+          className="flex items-center flex-shrink-0 relative"
+          style={{
+            height: TOPBAR_H,
+            borderBottom: "1px solid #1E1E1E",
+            padding: "0 16px",
+          }}
+        >
+          {/* Logo — visível apenas quando aberto */}
           {!collapsed && (
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/409f9cb09_ChatGPT_Image_8_de_mai_de_2026__14_52_21-removebg-preview.png"
               alt="Paloma Betoni"
-              style={{
-                height: 330,
-                objectFit: "contain",
-                objectPosition: "center",
-                maxWidth: 240,
-              }}
+              style={{ height: 140, objectFit: "contain", maxWidth: 180, marginTop: 4 }}
             />
           )}
-          <Button
-            variant="ghost" size="icon"
+
+          {/* Botão colapsar — desktop */}
+          <button
             onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
-            className="hidden lg:flex ml-auto hover:bg-white/5"
-            style={{ color: "#4A5568" }}
+            className="hidden lg:flex items-center justify-center rounded-md transition-colors hover:bg-white/5 ml-auto flex-shrink-0"
+            style={{
+              width: 28, height: 28,
+              color: "#555555",
+              position: collapsed ? "static" : "absolute",
+              right: collapsed ? undefined : 12,
+            }}
+            title={collapsed ? "Expandir menu" : "Recolher menu"}
           >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="lg:hidden hover:bg-white/5" style={{ color: "#4A5568" }}>
-            <X className="h-4 w-4" />
-          </Button>
+            {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          </button>
+
+          {/* Botão fechar — mobile */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden flex items-center justify-center rounded-md transition-colors hover:bg-white/5 ml-auto"
+            style={{ width: 28, height: 28, color: "#555555" }}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto" style={{ padding: "8px 0" }}>
           {navigation.map((item) => {
             const isActive = currentPageName === item.href;
             return (
@@ -142,57 +182,141 @@ export default function Layout({ children, currentPageName }) {
                 key={item.name}
                 to={createPageUrl(item.href)}
                 onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-sm transition-all duration-150 border-l-2",
-                  isActive
-                    ? "border-[#C5A059] text-white"
-                    : "border-transparent text-[#5A6478] hover:text-[#C8D0DF] hover:bg-white/4"
-                )}
-                style={isActive ? { backgroundColor: "rgba(197,160,89,0.08)" } : {}}
+                title={collapsed ? item.name : undefined}
+                className="flex items-center transition-colors duration-150 relative group"
+                style={{
+                  padding: collapsed ? "10px 0" : "9px 16px",
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  gap: collapsed ? 0 : 10,
+                  margin: "1px 8px",
+                  borderRadius: 6,
+                  backgroundColor: isActive ? "rgba(200,169,106,0.08)" : "transparent",
+                  color: isActive ? "#FFFFFF" : "#666666",
+                  textDecoration: "none",
+                  borderLeft: isActive ? "2px solid #C8A96A" : "2px solid transparent",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+                    e.currentTarget.style.color = "#B0B0B0";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.color = "#666666";
+                  }
+                }}
               >
-                <item.icon className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-[#C5A059]" : "")} />
+                <item.icon
+                  className="flex-shrink-0"
+                  style={{
+                    width: 15,
+                    height: 15,
+                    color: isActive ? "#C8A96A" : "currentColor",
+                  }}
+                />
                 {!collapsed && (
-                  <span className="text-sm font-light tracking-wide">{item.name}</span>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: isActive ? 500 : 400,
+                    letterSpacing: 0,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}>
+                    {item.name}
+                  </span>
+                )}
+
+                {/* Tooltip quando recolhido */}
+                {collapsed && (
+                  <span
+                    className="absolute left-full ml-2 px-2 py-1 text-xs rounded-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50"
+                    style={{
+                      backgroundColor: "#1A1A1A",
+                      border: "1px solid #2B2B2B",
+                      color: "#FFFFFF",
+                      fontSize: 12,
+                    }}
+                  >
+                    {item.name}
+                  </span>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* User Section */}
-        <div className="flex-shrink-0 p-2" style={{ borderTop: "1px solid #1A2030" }}>
+        {/* User section */}
+        <div style={{ borderTop: "1px solid #1E1E1E", padding: 8, flexShrink: 0 }}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-3 rounded-sm hover:bg-white/5",
-                  collapsed && "justify-center px-0"
-                )}
-                style={{ color: "#8A95AA" }}
+              <button
+                className="w-full flex items-center rounded-md transition-colors hover:bg-white/4"
+                style={{
+                  padding: collapsed ? "8px 0" : "8px 10px",
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  gap: 10,
+                  cursor: "pointer",
+                  border: "none",
+                  background: "transparent",
+                }}
               >
-                <Avatar className="h-8 w-8 border flex-shrink-0" style={{ borderColor: "rgba(197,160,89,0.25)" }}>
-                  <AvatarFallback style={{ backgroundColor: "rgba(197,160,89,0.12)", color: "#C5A059" }} className="text-xs">
+                <Avatar
+                  className="flex-shrink-0"
+                  style={{ width: 28, height: 28, border: "1px solid #2B2B2B" }}
+                >
+                  <AvatarFallback
+                    style={{
+                      backgroundColor: "rgba(200,169,106,0.08)",
+                      color: "#C8A96A",
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
                     {user?.full_name?.[0] || "P"}
                   </AvatarFallback>
                 </Avatar>
                 {!collapsed && (
                   <div className="text-left min-w-0">
-                    <p className="text-xs font-medium truncate" style={{ color: "#E8EDF5" }}>{user?.full_name || "Dra. Paloma"}</p>
-                    <p className="text-[10px] tracking-widest uppercase" style={{ color: "#4A5568" }}>{user?.role || "admin"}</p>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: "#FFFFFF", truncate: true }}>
+                      {user?.full_name || "Dra. Paloma"}
+                    </p>
+                    <p style={{ fontSize: 11, color: "#555555", letterSpacing: "0.04em" }}>
+                      {user?.role === "admin" ? "Administrador" : (user?.role || "Usuário")}
+                    </p>
                   </div>
                 )}
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52" style={{ backgroundColor: "#171D29", borderColor: "#252D3E", color: "#E8EDF5" }}>
-              <DropdownMenuItem className="cursor-pointer text-sm hover:bg-white/5" style={{ color: "#C8D0DF" }}>
+            <DropdownMenuContent
+              align="end"
+              className="w-48"
+              style={{
+                backgroundColor: "#1A1A1A",
+                borderColor: "#2B2B2B",
+                borderRadius: 8,
+              }}
+            >
+              <DropdownMenuItem
+                className="cursor-pointer"
+                style={{ color: "#B0B0B0", fontSize: 13 }}
+              >
                 <UserCircle className="mr-2 h-4 w-4" /> Meu Perfil
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer text-sm hover:bg-white/5" style={{ color: "#C8D0DF" }}>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                style={{ color: "#B0B0B0", fontSize: 13 }}
+              >
                 <Settings className="mr-2 h-4 w-4" /> Configurações
               </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ backgroundColor: "#252D3E" }} />
-              <DropdownMenuItem onClick={() => base44.auth.logout()} className="cursor-pointer text-sm" style={{ color: "#F87171" }}>
+              <DropdownMenuSeparator style={{ backgroundColor: "#2B2B2B" }} />
+              <DropdownMenuItem
+                onClick={() => base44.auth.logout()}
+                className="cursor-pointer"
+                style={{ color: "#EF4444", fontSize: 13 }}
+              >
                 <LogOut className="mr-2 h-4 w-4" /> Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -200,54 +324,99 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className={cn(
-        "min-h-screen transition-all duration-300 pt-[108px] lg:pt-0",
-        collapsed ? "lg:pl-[68px]" : "lg:pl-64"
-      )}>
-
-        {/* Top Bar */}
-        <header className="hidden lg:flex h-[120px] items-center justify-between px-8 sticky top-0 z-40"
-          style={{ backgroundColor: "#0F1521", borderBottom: "1px solid #1A2030" }}>
-
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <img
-              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
-              alt="Paloma Betoni"
-              style={{ height: 110, objectFit: "contain" }}
+      {/* ══ MAIN CONTENT ══ */}
+      <main
+        className="min-h-screen transition-all duration-200"
+        style={{
+          paddingLeft: `${sidebarWidth}px`,
+          paddingTop: 0,
+        }}
+      >
+        {/* ── Top bar — desktop ── */}
+        <header
+          className="hidden lg:flex items-center justify-between sticky top-0 z-40 glass-topbar"
+          style={{
+            height: TOPBAR_H,
+            borderBottom: "1px solid #1E1E1E",
+            padding: "0 32px",
+          }}
+        >
+          {/* Search */}
+          <div className="relative" style={{ width: 280 }}>
+            <Search
+              className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ left: 10, width: 14, height: 14, color: "#555555" }}
             />
-          </div>
-
-          <div className="relative max-w-xs w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#4A5568" }} />
             <Input
               placeholder="Buscar pacientes..."
-              className="pl-10 h-9 rounded-sm text-sm"
               style={{
-                backgroundColor: "#1A2030",
-                borderColor: "#252D3E",
-                color: "#C8D0DF",
+                paddingLeft: 32,
+                height: 34,
+                backgroundColor: "#121212",
+                borderColor: "#2B2B2B",
+                color: "#FFFFFF",
+                fontSize: 13,
+                borderRadius: 6,
               }}
             />
           </div>
 
-          <div className="flex items-center gap-5">
-            <Button variant="ghost" size="icon" className="relative rounded-sm hover:bg-white/5" style={{ color: "#5A6478" }}>
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#C5A059] rounded-full" />
-            </Button>
-            <div className="h-6 w-px" style={{ backgroundColor: "#1E2535" }} />
+          {/* Logo central */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+            <img
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
+              alt="Paloma Betoni"
+              style={{ height: 44, objectFit: "contain" }}
+            />
+          </div>
+
+          {/* Right side */}
+          <div className="flex items-center" style={{ gap: 16 }}>
+            <button
+              className="relative flex items-center justify-center rounded-md transition-colors hover:bg-white/5"
+              style={{
+                width: 34, height: 34,
+                color: "#555555",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+              }}
+            >
+              <Bell style={{ width: 15, height: 15 }} />
+              <span
+                className="absolute"
+                style={{
+                  top: 8, right: 8,
+                  width: 5, height: 5,
+                  backgroundColor: "#C8A96A",
+                  borderRadius: "50%",
+                }}
+              />
+            </button>
+
+            <div style={{ width: 1, height: 20, backgroundColor: "#1E1E1E" }} />
+
             <div className="text-right">
-              <p className="text-[10px] tracking-[0.12em] uppercase" style={{ color: "#4A5568" }}>Bem-vinda</p>
-              <p className="text-sm font-medium" style={{ fontFamily: "'Playfair Display', serif", color: "#E8EDF5" }}>
+              <p style={{ fontSize: 11, color: "#555555", letterSpacing: "0.07em", textTransform: "uppercase" }}>
+                Bem-vinda
+              </p>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "#FFFFFF" }}>
                 {user?.full_name || "Dra. Paloma Betoni"}
               </p>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <div className="p-4 lg:p-8 min-h-[calc(100vh-120px)]" style={{ backgroundColor: "#111620" }}>
+        {/* ── Page content ── */}
+        <div
+          className="min-h-[calc(100vh-56px)]"
+          style={{
+            backgroundColor: "#0A0A0A",
+            padding: "32px",
+          }}
+        >
+          {/* Mobile padding */}
+          <div className="lg:hidden" style={{ height: 52 }} />
           {children}
         </div>
       </main>
