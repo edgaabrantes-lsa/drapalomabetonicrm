@@ -342,29 +342,26 @@ export default function Financial() {
     return matchesType && matchesStatus;
   });
 
+  const fmtBRL = (n) => `R$ ${(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4" style={{ marginBottom: 8 }}>
         <div>
-          <h1 className="text-2xl font-serif text-white">Financeiro</h1>
-          <p className="text-gray-400">Controle de receitas e despesas</p>
+          <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", color: "#FFFFFF", margin: 0 }}>Financeiro</h1>
+          <p style={{ fontSize: 13, color: "#666666", marginTop: 4 }}>Controle de receitas e despesas</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="border-[#c9a55c]/30 text-[#c9a55c] hover:bg-[#c9a55c]/10">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black">
-                <Plus className="mr-2 h-4 w-4" />
+              <button style={{ background: "#C8A96A", color: "#000", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, padding: "8px 18px", height: 36, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
                 Nova Transação
-              </Button>
+              </button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogContent className="border text-white max-w-lg max-h-[90vh] overflow-hidden flex flex-col" style={{ backgroundColor: "#1A1A1A", borderColor: "#2B2B2B" }}>
               <DialogHeader className="flex-shrink-0">
-                <DialogTitle className="text-xl font-serif">
+                <DialogTitle style={{ fontSize: 16, fontWeight: 600, color: "#FFFFFF" }}>
                   {editingTransaction ? "Editar Transação" : "Nova Transação"}
                 </DialogTitle>
               </DialogHeader>
@@ -380,68 +377,27 @@ export default function Financial() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-[#12121a] border-[#1e1e2a]">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <ArrowUpCircle className="h-4 w-4 text-emerald-400" />
-              <p className="text-xs text-gray-500">Receita (Mês)</p>
-            </div>
-            <p className="text-2xl font-light text-emerald-400">
-              R$ {monthlyIncome.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#12121a] border-[#1e1e2a]">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <ArrowDownCircle className="h-4 w-4 text-red-400" />
-              <p className="text-xs text-gray-500">Despesas (Mês)</p>
-            </div>
-            <p className="text-2xl font-light text-red-400">
-              R$ {monthlyExpenses.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#12121a] border-[#1e1e2a]">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-[#c9a55c]" />
-              <p className="text-xs text-gray-500">Lucro (Mês)</p>
-            </div>
-            <p className={`text-2xl font-light ${monthlyIncome - monthlyExpenses >= 0 ? "text-[#c9a55c]" : "text-red-400"}`}>
-              R$ {(monthlyIncome - monthlyExpenses).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={`bg-[#12121a] border-[#1e1e2a] ${overdueCount > 0 ? "border-red-500/30" : ""}`}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="h-4 w-4 text-red-400" />
-              <p className="text-xs text-gray-500">Vencidos</p>
-            </div>
-            <p className={`text-2xl font-light ${overdueCount > 0 ? "text-red-400" : "text-white"}`}>
-              {overdueCount}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Receita (Mês)", value: fmtBRL(monthlyIncome),  accent: "#4ADE80" },
+          { label: "Despesas (Mês)", value: fmtBRL(monthlyExpenses), accent: "#EF4444" },
+          { label: "Lucro (Mês)", value: fmtBRL(monthlyIncome - monthlyExpenses), accent: monthlyIncome - monthlyExpenses >= 0 ? "#C8A96A" : "#EF4444" },
+          { label: "Vencidos", value: overdueCount, accent: overdueCount > 0 ? "#EF4444" : "#FFFFFF" },
+        ].map(s => (
+          <div key={s.label} style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", borderRadius: 8, padding: "16px 20px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666666", marginBottom: 8 }}>{s.label}</p>
+            <p style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em", color: s.accent }}>{s.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-[#1a1a25] border border-[#1e1e2a]">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-            Visão Geral
-          </TabsTrigger>
-          <TabsTrigger value="transactions" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-            Transações
-          </TabsTrigger>
-          <TabsTrigger value="receivables" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-            A Receber
-          </TabsTrigger>
-          <TabsTrigger value="payables" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-            A Pagar
-          </TabsTrigger>
+        <TabsList style={{ backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 6 }}>
+          <TabsTrigger value="overview" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Visão Geral</TabsTrigger>
+          <TabsTrigger value="transactions" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Transações</TabsTrigger>
+          <TabsTrigger value="receivables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Receber</TabsTrigger>
+          <TabsTrigger value="payables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Pagar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6 space-y-6">

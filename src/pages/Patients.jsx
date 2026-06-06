@@ -182,74 +182,82 @@ const PatientForm = ({ patient, onSave, onClose }) => {
   );
 };
 
+const statusBadgeStyle = {
+  active:   { color: "#4ADE80", bg: "rgba(74,222,128,0.08)", border: "rgba(74,222,128,0.2)" },
+  inactive: { color: "#666666", bg: "transparent",           border: "#2B2B2B" },
+  vip:      { color: "#C8A96A", bg: "rgba(200,169,106,0.08)", border: "rgba(200,169,106,0.2)" },
+};
+
 const PatientCard = ({ patient, onStartTreatment, onViewTreatments }) => {
   const age = patient.birth_date ? differenceInYears(new Date(), parseISO(patient.birth_date)) : null;
+  const st  = statusBadgeStyle[patient.status] || statusBadgeStyle.active;
 
   return (
-    <Card className="bg-[#12121a] border-[#1e1e2a] hover:border-[#c9a55c]/30 transition-all group">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-12 w-12 border border-[#c9a55c]/30 flex-shrink-0">
-            <AvatarImage src={patient.photo_url} />
-            <AvatarFallback className="bg-[#c9a55c]/20 text-[#c9a55c]">
-              {patient.full_name?.[0]?.toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="font-medium text-white truncate group-hover:text-[#c9a55c] transition-colors">
-                {patient.full_name}
-              </h3>
-              <Badge className={statusConfig[patient.status]?.color || statusConfig.active.color}>
-                {statusConfig[patient.status]?.label || "Ativo"}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
-              {age && <span>{age} anos</span>}
-              <span className="flex items-center gap-1">
-                <Phone className="h-3 w-3" />
-                {patient.phone}
-              </span>
-            </div>
-            {patient.tags?.length > 0 && (
-              <div className="flex gap-1 mt-2 flex-wrap">
-                {patient.tags.slice(0, 3).map((tag, i) => (
-                  <Badge key={i} variant="outline" className="text-xs border-[#1e1e2a] text-gray-500">{tag}</Badge>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5 flex-shrink-0">
-            <Button
-              size="sm"
-              onClick={(e) => { e.stopPropagation(); onStartTreatment(patient); }}
-              className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black text-xs h-7 px-3"
-            >
-              <Activity className="mr-1 h-3 w-3" />
-              Iniciar
-            </Button>
-            <Link to={`/DossiePatient?patient_id=${patient.id}`} onClick={(e) => e.stopPropagation()}>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="w-full text-[#c9a55c] hover:bg-[#c9a55c]/10 text-xs h-7 px-3"
-              >
-                <FolderOpen className="mr-1 h-3 w-3" />
-                Dossiê
-              </Button>
-            </Link>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => { e.stopPropagation(); onViewTreatments(patient); }}
-              className="text-gray-500 hover:bg-white/5 text-xs h-7 px-3"
-            >
-              Histórico
-            </Button>
-          </div>
+    <div style={{
+      backgroundColor: "#1A1A1A",
+      border: "1px solid #2B2B2B",
+      borderRadius: 8,
+      padding: "16px 20px",
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      fontFamily: "'Inter', system-ui, sans-serif",
+      transition: "border-color 0.15s",
+    }}
+    onMouseEnter={e => e.currentTarget.style.borderColor = "#3A3A3A"}
+    onMouseLeave={e => e.currentTarget.style.borderColor = "#2B2B2B"}
+    >
+      {/* Iniciais */}
+      <div style={{
+        width: 36, height: 36, borderRadius: 6, flexShrink: 0,
+        backgroundColor: "rgba(200,169,106,0.08)",
+        border: "1px solid rgba(200,169,106,0.2)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 14, fontWeight: 600, color: "#C8A96A",
+      }}>
+        {patient.full_name?.[0]?.toUpperCase()}
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {patient.full_name}
+          </p>
+          <span style={{
+            fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 4,
+            color: st.color, backgroundColor: st.bg, border: `1px solid ${st.border}`,
+            flexShrink: 0,
+          }}>
+            {statusConfig[patient.status]?.label || "Ativo"}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+        <p style={{ fontSize: 12, color: "#666666" }}>
+          {patient.phone}{age ? ` · ${age} anos` : ""}
+        </p>
+      </div>
+
+      {/* Ações */}
+      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+        <button
+          onClick={(e) => { e.stopPropagation(); onStartTreatment(patient); }}
+          style={{ background: "#C8A96A", color: "#000", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 600, padding: "5px 12px", cursor: "pointer" }}
+        >
+          Iniciar
+        </button>
+        <Link to={`/DossiePatient?patient_id=${patient.id}`} onClick={(e) => e.stopPropagation()} style={{ textDecoration: "none" }}>
+          <button style={{ background: "transparent", color: "#C8A96A", border: "1px solid rgba(200,169,106,0.3)", borderRadius: 5, fontSize: 12, fontWeight: 500, padding: "5px 12px", cursor: "pointer" }}>
+            Dossiê
+          </button>
+        </Link>
+        <button
+          onClick={(e) => { e.stopPropagation(); onViewTreatments(patient); }}
+          style={{ background: "transparent", color: "#666666", border: "1px solid #2B2B2B", borderRadius: 5, fontSize: 12, padding: "5px 12px", cursor: "pointer" }}
+        >
+          Histórico
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -306,12 +314,12 @@ export default function Patients() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-serif text-white">Pacientes</h1>
-          <p className="text-gray-400">Gerencie o cadastro de pacientes</p>
+          <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", color: "#FFFFFF", margin: 0 }}>Pacientes</h1>
+          <p style={{ fontSize: 13, color: "#666666", marginTop: 4 }}>Cadastro e gestão de pacientes</p>
         </div>
         <div className="flex gap-3">
           <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
@@ -356,19 +364,17 @@ export default function Patients() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total de Pacientes", value: stats.total, color: "text-white" },
-          { label: "Pacientes Ativos", value: stats.active, color: "text-emerald-400" },
-          { label: "Pacientes VIP", value: stats.vip, color: "text-[#c9a55c]" },
-          { label: "Novos Este Mês", value: stats.thisMonth, color: "text-white" },
+          { label: "Total de Pacientes", value: stats.total, accent: "#FFFFFF" },
+          { label: "Pacientes Ativos",   value: stats.active, accent: "#4ADE80" },
+          { label: "Pacientes VIP",      value: stats.vip, accent: "#C8A96A" },
+          { label: "Novos Este Mês",     value: stats.thisMonth, accent: "#FFFFFF" },
         ].map((s, i) => (
-          <Card key={i} className="bg-[#12121a] border-[#1e1e2a]">
-            <CardContent className="p-4">
-              <p className="text-xs text-gray-500">{s.label}</p>
-              <p className={`text-2xl font-light mt-1 ${s.color}`}>{s.value}</p>
-            </CardContent>
-          </Card>
+          <div key={i} style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", borderRadius: 8, padding: "16px 20px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666666", marginBottom: 8 }}>{s.label}</p>
+            <p style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em", color: s.accent, lineHeight: 1.1 }}>{s.value}</p>
+          </div>
         ))}
       </div>
 
@@ -397,7 +403,7 @@ export default function Patients() {
       </div>
 
       {/* Patient List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {filteredPatients.map((patient) => (
           <PatientCard
             key={patient.id}
@@ -435,12 +441,14 @@ export default function Patients() {
       )}
 
       {filteredPatients.length === 0 && !isLoading && (
-        <div className="text-center py-12">
-          <User className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">Nenhum paciente encontrado</p>
-          <Button onClick={() => setIsFormOpen(true)} className="mt-4 bg-[#c9a55c]/20 text-[#c9a55c] hover:bg-[#c9a55c]/30">
+        <div style={{ textAlign: "center", padding: "48px 0" }}>
+          <p style={{ fontSize: 14, color: "#666666", marginBottom: 16 }}>Nenhum paciente encontrado</p>
+          <button
+            onClick={() => setIsFormOpen(true)}
+            style={{ background: "rgba(200,169,106,0.1)", color: "#C8A96A", border: "1px solid rgba(200,169,106,0.25)", borderRadius: 6, fontSize: 13, padding: "8px 18px", cursor: "pointer" }}
+          >
             Cadastrar Primeiro Paciente
-          </Button>
+          </button>
         </div>
       )}
     </div>

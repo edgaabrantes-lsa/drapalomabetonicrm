@@ -1,51 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { T, S, STATUS_DOSSIE } from "@/lib/designTokens";
 
-import DossieCadastro from "@/components/dossie/DossieCadastro";
-import DossieProntuario from "@/components/dossie/DossieProntuario";
-import DossieImagensArquivos from "@/components/dossie/DossieImagensArquivos";
-import DossieDocumentacao from "@/components/dossie/DossieDocumentacao";
-import DossieFinanceiroTab from "@/components/dossie/DossieFinanceiroTab";
-import DossieContratos from "@/components/dossie/DossieContratos";
-import DossieObservacoes from "@/components/dossie/DossieObservacoes";
+import DossieCadastro         from "@/components/dossie/DossieCadastro";
+import DossieProntuario        from "@/components/dossie/DossieProntuario";
+import DossieImagensArquivos   from "@/components/dossie/DossieImagensArquivos";
+import DossieDocumentacao      from "@/components/dossie/DossieDocumentacao";
+import DossieFinanceiroTab     from "@/components/dossie/DossieFinanceiroTab";
+import DossieContratos         from "@/components/dossie/DossieContratos";
+import DossieObservacoes       from "@/components/dossie/DossieObservacoes";
 
 const ABAS = [
-  { id: "cadastro", label: "Cadastro" },
-  { id: "prontuario", label: "Prontuário" },
-  { id: "fotos", label: "Arquivo Fotográfico" },
-  { id: "juridico", label: "Documentação Jurídica" },
-  { id: "financeiro", label: "Financeiro" },
-  { id: "contratos_gerados", label: "Contratos Gerados" },
+  { id: "cadastro",            label: "Cadastro" },
+  { id: "prontuario",          label: "Prontuário" },
+  { id: "fotos",               label: "Arquivo Fotográfico" },
+  { id: "juridico",            label: "Documentação Jurídica" },
+  { id: "financeiro",          label: "Financeiro" },
+  { id: "contratos_gerados",   label: "Contratos Gerados" },
   { id: "contratos_assinados", label: "Contratos Assinados" },
-  { id: "observacoes", label: "Observações" }
+  { id: "observacoes",         label: "Observações" },
 ];
 
-const DOSSIE_STATUS = {
-  lead: { label: "Lead", color: "bg-blue-500/20 text-blue-400" },
-  avaliacao_agendada: { label: "Avaliação Agendada", color: "bg-yellow-500/20 text-yellow-400" },
-  avaliacao_realizada: { label: "Avaliação Realizada", color: "bg-orange-500/20 text-orange-400" },
-  em_tratamento: { label: "Em Tratamento", color: "bg-green-500/20 text-green-400" },
-  procedimento_realizado: { label: "Procedimento Realizado", color: "bg-emerald-500/20 text-emerald-400" },
-  em_acompanhamento: { label: "Em Acompanhamento", color: "bg-purple-500/20 text-purple-400" },
-  finalizado: { label: "Finalizado", color: "bg-gray-500/20 text-gray-400" },
-  inativo: { label: "Inativo", color: "bg-red-500/20 text-red-400" },
-  cancelado: { label: "Cancelado", color: "bg-red-700/20 text-red-600" }
-};
-
 export default function DossiePatient() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser,       setCurrentUser]       = useState(null);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
-  const [activeTab, setActiveTab] = useState("cadastro");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab,         setActiveTab]         = useState("cadastro");
+  const [searchTerm,        setSearchTerm]        = useState("");
 
-  // Read patient ID from URL if provided
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const pid = params.get("patient_id");
@@ -55,162 +37,218 @@ export default function DossiePatient() {
 
   const { data: patients = [] } = useQuery({
     queryKey: ["patients"],
-    queryFn: () => base44.entities.Patient.list("-created_date", 1000)
+    queryFn: () => base44.entities.Patient.list("-created_date", 1000),
   });
 
-  const selectedPatient = patients.find(p => p.id === selectedPatientId);
-
+  const selectedPatient  = patients.find(p => p.id === selectedPatientId);
   const filteredPatients = patients.filter(p =>
     p.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.phone?.includes(searchTerm)
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-0 min-h-[calc(100vh-160px)]">
+    <div style={{ display: "flex", flexDirection: "row", minHeight: "calc(100vh - 88px)", fontFamily: T.font }}>
 
-      {/* Sidebar de pacientes */}
-      <div className={`
-        ${selectedPatientId ? "hidden lg:flex" : "flex"}
-        flex-col w-full lg:w-72 xl:w-80 flex-shrink-0 border-r border-[#1A2030]
-      `} style={{ backgroundColor: "#0D1119" }}>
-        <div className="p-4 border-b border-[#1A2030]">
-          <h2 className="text-sm font-semibold text-white mb-3">Dossiê da Paciente</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#4A5568]" />
-            <Input
-              placeholder="Buscar paciente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-8 bg-[#1A2030] border-[#252D3E] text-white text-sm"
-            />
-          </div>
+      {/* ── Lista de pacientes ── */}
+      <aside
+        style={{
+          width: 260,
+          flexShrink: 0,
+          backgroundColor: T.bgSecondary,
+          borderRight: `1px solid ${T.border}`,
+          display: selectedPatientId ? "none" : "flex",
+          flexDirection: "column",
+        }}
+        className="lg:!flex"
+      >
+        {/* Search */}
+        <div style={{ padding: "16px 12px 12px", borderBottom: `1px solid ${T.border}` }}>
+          <p style={{ ...S.label, marginBottom: 12 }}>Dossiê da Paciente</p>
+          <input
+            type="text"
+            placeholder="Buscar paciente..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{
+              ...S.input,
+              fontSize: 13,
+              height: 34,
+            }}
+          />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {filteredPatients.map((p) => {
-            const status = DOSSIE_STATUS[p.dossie_status];
+        {/* Lista */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {filteredPatients.length === 0 && (
+            <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "32px 16px" }}>Nenhuma paciente encontrada</p>
+          )}
+          {filteredPatients.map(p => {
+            const st      = STATUS_DOSSIE[p.dossie_status];
+            const isActive = selectedPatientId === p.id;
             return (
               <button
                 key={p.id}
                 onClick={() => { setSelectedPatientId(p.id); setActiveTab("cadastro"); }}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3 text-left border-l-2 transition-all
-                  ${selectedPatientId === p.id
-                    ? "border-[#C5A059] bg-[#C5A059]/8"
-                    : "border-transparent hover:bg-white/4 hover:border-[#252D3E]"
-                  }
-                `}
-                style={selectedPatientId === p.id ? { backgroundColor: "rgba(197,160,89,0.08)" } : {}}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  border: "none",
+                  borderLeft: isActive ? `2px solid ${T.gold}` : "2px solid transparent",
+                  backgroundColor: isActive ? T.goldSubtle : "transparent",
+                  cursor: "pointer",
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.02)"; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
-                <Avatar className="h-8 w-8 border border-[#252D3E] flex-shrink-0">
-                  <AvatarFallback style={{ backgroundColor: "rgba(197,160,89,0.12)", color: "#C5A059" }} className="text-xs">
-                    {p.full_name?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-white truncate">{p.full_name}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {status && <span className={`text-[10px] px-1.5 py-0 rounded ${status.color}`}>{status.label}</span>}
-                    <span className="text-xs text-[#4A5568] truncate">{p.phone}</span>
-                  </div>
+                {/* Iniciais */}
+                <div style={{
+                  width: 30, height: 30, borderRadius: 6,
+                  backgroundColor: isActive ? T.goldSubtle : T.card,
+                  border: `1px solid ${isActive ? T.gold : T.border}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 600, color: isActive ? T.gold : T.textMuted,
+                  flexShrink: 0,
+                }}>
+                  {p.full_name?.[0]?.toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ ...S.value, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {p.full_name}
+                  </p>
+                  {st && (
+                    <span style={{
+                      ...S.badge(st.color, st.bg),
+                      marginTop: 3,
+                      fontSize: 10,
+                      padding: "1px 6px",
+                    }}>
+                      {st.label}
+                    </span>
+                  )}
                 </div>
               </button>
             );
           })}
         </div>
-      </div>
+      </aside>
 
-      {/* Área do dossiê */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* ── Área do dossiê ── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         {!selectedPatient ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-[#4A5568] text-sm">Selecione uma paciente para acessar o dossiê</p>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ ...S.label, marginBottom: 8 }}>Dossiê da Paciente</p>
+              <p style={S.pageSubtitle}>Selecione uma paciente na lista para acessar o dossiê</p>
             </div>
           </div>
         ) : (
           <>
             {/* Header da paciente */}
-            <div className="flex items-center gap-4 px-6 py-4 border-b border-[#1A2030]" style={{ backgroundColor: "#0F1521" }}>
-              <Button
-                variant="ghost"
-                size="sm"
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: "14px 24px",
+              borderBottom: `1px solid ${T.border}`,
+              backgroundColor: T.bgSecondary,
+              flexShrink: 0,
+            }}>
+              {/* Voltar — mobile */}
+              <button
                 onClick={() => setSelectedPatientId(null)}
-                className="lg:hidden text-[#8A95AA] text-xs"
+                className="lg:hidden"
+                style={{
+                  ...S.btnGhost,
+                  fontSize: 12,
+                  height: 30,
+                  padding: "4px 12px",
+                }}
               >
                 Voltar
-              </Button>
-              <Avatar className="h-10 w-10 border border-[#C5A059]/30 flex-shrink-0">
-                <AvatarFallback style={{ backgroundColor: "rgba(197,160,89,0.12)", color: "#C5A059" }}>
-                  {selectedPatient.full_name?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-white font-medium">{selectedPatient.full_name}</h2>
-                <div className="flex items-center gap-3 text-xs text-[#8A95AA]">
-                  <span>{selectedPatient.phone}</span>
-                  {selectedPatient.email && <span>{selectedPatient.email}</span>}
-                  {DOSSIE_STATUS[selectedPatient.dossie_status] && (
-                    <Badge className={`text-xs ${DOSSIE_STATUS[selectedPatient.dossie_status].color}`}>
-                      {DOSSIE_STATUS[selectedPatient.dossie_status].label}
-                    </Badge>
+              </button>
+
+              {/* Iniciais */}
+              <div style={{
+                width: 36, height: 36, borderRadius: 6,
+                backgroundColor: T.goldSubtle,
+                border: `1px solid ${T.goldBorder}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 14, fontWeight: 600, color: T.gold, flexShrink: 0,
+              }}>
+                {selectedPatient.full_name?.[0]?.toUpperCase()}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ ...S.value, fontSize: 15 }}>{selectedPatient.full_name}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 2, flexWrap: "wrap" }}>
+                  {selectedPatient.phone && (
+                    <span style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted }}>{selectedPatient.phone}</span>
                   )}
+                  {selectedPatient.email && (
+                    <span style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted }}>{selectedPatient.email}</span>
+                  )}
+                  {STATUS_DOSSIE[selectedPatient.dossie_status] && (() => {
+                    const st = STATUS_DOSSIE[selectedPatient.dossie_status];
+                    return (
+                      <span style={S.badge(st.color, st.bg)}>{st.label}</span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
 
-            {/* Abas */}
-            <div className="border-b border-[#1A2030] overflow-x-auto" style={{ backgroundColor: "#0F1521" }}>
-              <div className="flex min-w-max px-4">
-                {ABAS.map((aba) => (
-                  <button
-                    key={aba.id}
-                    onClick={() => setActiveTab(aba.id)}
-                    className={`
-                      px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all
-                      ${activeTab === aba.id
-                        ? "border-[#C5A059] text-[#C5A059]"
-                        : "border-transparent text-[#5A6478] hover:text-[#C8D0DF]"
-                      }
-                    `}
-                  >
-                    {aba.label}
-                  </button>
-                ))}
+            {/* Tabs */}
+            <div style={{
+              backgroundColor: T.bgSecondary,
+              borderBottom: `1px solid ${T.border}`,
+              overflowX: "auto",
+              flexShrink: 0,
+            }}>
+              <div style={{ display: "flex", padding: "0 24px", minWidth: "max-content" }}>
+                {ABAS.map(aba => {
+                  const isActive = activeTab === aba.id;
+                  return (
+                    <button
+                      key={aba.id}
+                      onClick={() => setActiveTab(aba.id)}
+                      style={{
+                        fontFamily: T.font,
+                        fontSize: 13,
+                        fontWeight: isActive ? 500 : 400,
+                        color: isActive ? T.textPrimary : T.textMuted,
+                        padding: "12px 16px",
+                        border: "none",
+                        borderBottom: isActive ? `2px solid ${T.gold}` : "2px solid transparent",
+                        backgroundColor: "transparent",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = T.textSecondary; }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = T.textMuted; }}
+                    >
+                      {aba.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Conteúdo da aba */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {activeTab === "cadastro" && (
-                <DossieCadastro
-                  patient={selectedPatient}
-                  onPatientUpdate={(updated) => {
-                    // Optimistic: refresh
-                  }}
-                />
-              )}
-              {activeTab === "prontuario" && (
-                <DossieProntuario patient={selectedPatient} currentUser={currentUser} />
-              )}
-              {activeTab === "fotos" && (
-                <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />
-              )}
-              {activeTab === "juridico" && (
-                <DossieDocumentacao patient={selectedPatient} currentUser={currentUser} />
-              )}
-              {activeTab === "financeiro" && (
-                <DossieFinanceiroTab patient={selectedPatient} currentUser={currentUser} />
-              )}
-              {activeTab === "contratos_gerados" && (
-                <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="gerados" />
-              )}
-              {activeTab === "contratos_assinados" && (
-                <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="assinados" />
-              )}
-              {activeTab === "observacoes" && (
-                <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />
-              )}
+            {/* Conteúdo */}
+            <div style={{ flex: 1, overflowY: "auto", padding: 24, backgroundColor: T.bgPrimary }}>
+              {activeTab === "cadastro"            && <DossieCadastro patient={selectedPatient} onPatientUpdate={() => {}} />}
+              {activeTab === "prontuario"          && <DossieProntuario patient={selectedPatient} currentUser={currentUser} />}
+              {activeTab === "fotos"               && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
+              {activeTab === "juridico"            && <DossieDocumentacao patient={selectedPatient} currentUser={currentUser} />}
+              {activeTab === "financeiro"          && <DossieFinanceiroTab patient={selectedPatient} currentUser={currentUser} />}
+              {activeTab === "contratos_gerados"   && <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="gerados" />}
+              {activeTab === "contratos_assinados" && <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="assinados" />}
+              {activeTab === "observacoes"         && <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />}
             </div>
           </>
         )}

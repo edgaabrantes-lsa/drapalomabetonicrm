@@ -287,71 +287,54 @@ const SupplyCard = ({ supply, onEdit, onAddBatch, onDelete, isAdmin }) => {
   const isLowStock = supply.current_stock <= (supply.minimum_stock || 5);
 
   return (
-    <Card className="bg-[#12121a] border-[#1e1e2a] hover:border-[#c9a55c]/30 transition-all">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="font-medium text-white">{supply.name}</h3>
-            <p className="text-xs text-gray-500">{supply.brand}</p>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-[#12121a] border-[#1e1e2a]">
-              <DropdownMenuItem onClick={() => onEdit(supply)} className="text-white hover:bg-[#c9a55c]/10">
-                <Edit className="mr-2 h-4 w-4" /> Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onAddBatch(supply)} className="text-white hover:bg-[#c9a55c]/10">
-                <ArrowDownCircle className="mr-2 h-4 w-4" /> Entrada
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-white hover:bg-[#c9a55c]/10">
-                <History className="mr-2 h-4 w-4" /> Histórico
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem
-                  onClick={() => onDelete(supply)}
-                  className="text-red-400 hover:bg-red-500/10 focus:text-red-400"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div style={{
+      backgroundColor: "#1A1A1A",
+      border: `1px solid ${isLowStock ? "rgba(251,191,36,0.3)" : "#2B2B2B"}`,
+      borderRadius: 8,
+      padding: 16,
+      fontFamily: "'Inter', system-ui, sans-serif",
+      transition: "border-color 0.15s",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: "#FFFFFF", marginBottom: 2 }}>{supply.name}</p>
+          <p style={{ fontSize: 12, color: "#666666" }}>{supply.brand || categoryLabels[supply.category] || supply.category}</p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button style={{ background: "transparent", border: "none", cursor: "pointer", color: "#666666", padding: "2px 4px", display: "flex", alignItems: "center" }}>
+              <MoreVertical style={{ width: 15, height: 15 }} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" style={{ backgroundColor: "#1A1A1A", borderColor: "#2B2B2B", borderRadius: 8 }}>
+            <DropdownMenuItem onClick={() => onEdit(supply)} style={{ color: "#B0B0B0", fontSize: 13, cursor: "pointer" }}>Editar</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAddBatch(supply)} style={{ color: "#B0B0B0", fontSize: 13, cursor: "pointer" }}>Entrada</DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem onClick={() => onDelete(supply)} style={{ color: "#EF4444", fontSize: 13, cursor: "pointer" }}>Excluir</DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-2xl font-light text-white">{supply.current_stock}</span>
-          <Badge className={categoryLabels[supply.category] ? "bg-[#c9a55c]/20 text-[#c9a55c]" : ""}>
-            {categoryLabels[supply.category] || supply.category}
-          </Badge>
-        </div>
-        
-        <p className="text-xs text-gray-500 mb-2">
-          {unitLabels[supply.unit] || supply.unit} • Mín: {supply.minimum_stock}
-        </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em", color: isLowStock ? "#FBBF24" : "#FFFFFF" }}>
+          {supply.current_stock}
+        </span>
+        <span style={{ fontSize: 11, color: "#666666" }}>{unitLabels[supply.unit] || supply.unit}</span>
+      </div>
 
-        <Progress 
-          value={stockPercentage} 
-          className="h-1.5 bg-[#1e1e2a]"
-        />
+      <div style={{ height: 2, backgroundColor: "#2B2B2B", borderRadius: 1, marginBottom: 8 }}>
+        <div style={{ height: 2, width: `${stockPercentage}%`, backgroundColor: isLowStock ? "#FBBF24" : "#C8A96A", borderRadius: 1, transition: "width 0.4s" }} />
+      </div>
 
-        {isLowStock && (
-          <div className="flex items-center gap-1 mt-2 text-xs text-orange-400">
-            <AlertTriangle className="h-3 w-3" />
-            Estoque baixo
-          </div>
-        )}
-
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 11, color: "#666666" }}>Mín: {supply.minimum_stock}</span>
         {supply.cost_per_unit > 0 && (
-          <p className="text-xs text-gray-500 mt-2">
-            Custo: R$ {supply.cost_per_unit.toFixed(2)}/{unitLabels[supply.unit] || supply.unit}
-          </p>
+          <span style={{ fontSize: 11, color: "#666666" }}>R$ {supply.cost_per_unit.toFixed(2)}/{unitLabels[supply.unit] || "un"}</span>
         )}
-      </CardContent>
-    </Card>
+      </div>
+      {isLowStock && <p style={{ fontSize: 11, color: "#FBBF24", marginTop: 6 }}>Estoque abaixo do mínimo</p>}
+    </div>
   );
 };
 
@@ -514,12 +497,12 @@ export default function Inventory() {
   const totalValue = supplies.reduce((sum, s) => sum + (s.current_stock * (s.cost_per_unit || 0)), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-serif text-white">Estoque</h1>
-          <p className="text-gray-400">Controle de insumos e materiais</p>
+          <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", color: "#FFFFFF", margin: 0 }}>Estoque</h1>
+          <p style={{ fontSize: 13, color: "#666666", marginTop: 4 }}>Controle de insumos e materiais</p>
         </div>
         <div className="flex gap-3">
           <Dialog open={isBatchFormOpen} onOpenChange={setIsBatchFormOpen}>
@@ -585,51 +568,26 @@ export default function Inventory() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-[#12121a] border-[#1e1e2a]">
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Total de Itens</p>
-            <p className="text-2xl font-light text-white mt-1">{supplies.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#12121a] border-[#1e1e2a]">
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Valor em Estoque</p>
-            <p className="text-2xl font-light text-[#c9a55c] mt-1">
-              R$ {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={`bg-[#12121a] border-[#1e1e2a] ${lowStockItems.length > 0 ? "border-orange-500/30" : ""}`}>
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Estoque Baixo</p>
-            <p className={`text-2xl font-light mt-1 ${lowStockItems.length > 0 ? "text-orange-400" : "text-white"}`}>
-              {lowStockItems.length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={`bg-[#12121a] border-[#1e1e2a] ${expiringBatches.length > 0 ? "border-red-500/30" : ""}`}>
-          <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Próx. Vencimento</p>
-            <p className={`text-2xl font-light mt-1 ${expiringBatches.length > 0 ? "text-red-400" : "text-white"}`}>
-              {expiringBatches.length}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Total de Itens",     value: supplies.length,    accent: "#FFFFFF" },
+          { label: "Valor em Estoque",   value: `R$ ${totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, accent: "#C8A96A" },
+          { label: "Estoque Baixo",      value: lowStockItems.length,  accent: lowStockItems.length > 0 ? "#FBBF24" : "#FFFFFF" },
+          { label: "Próx. Vencimento",   value: expiringBatches.length, accent: expiringBatches.length > 0 ? "#EF4444" : "#FFFFFF" },
+        ].map((s, i) => (
+          <div key={i} style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", borderRadius: 8, padding: "16px 20px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666666", marginBottom: 8 }}>{s.label}</p>
+            <p style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", color: s.accent, lineHeight: 1.1 }}>{s.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-[#1a1a25] border border-[#1e1e2a]">
-          <TabsTrigger value="supplies" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-            Insumos
-          </TabsTrigger>
-          <TabsTrigger value="batches" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-            Lotes
-          </TabsTrigger>
-          <TabsTrigger value="movements" className="data-[state=active]:bg-[#c9a55c]/20 data-[state=active]:text-[#c9a55c]">
-            Movimentações
-          </TabsTrigger>
+        <TabsList style={{ backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 6 }}>
+          <TabsTrigger value="supplies"  className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Insumos</TabsTrigger>
+          <TabsTrigger value="batches"   className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Lotes</TabsTrigger>
+          <TabsTrigger value="movements" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Movimentações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="supplies" className="mt-6">

@@ -4,434 +4,299 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { format, startOfMonth, endOfMonth, isToday, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Cell,
-  PieChart, Pie
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
+import { T, S } from "@/lib/designTokens";
 
-// ── Tokens LSA Dark ──────────────────────────────────────────────
-const T = {
-  pearl: "#111620",
-  white: "#171D29",
-  onyx: "#E8EDF5",
-  charcoal: "#8A95AA",
-  subtle: "#252D3E",
-  gold: "#C5A059",
-};
-
-// ── KPI Card ────────────────────────────────────────────────
-const StatCard = ({ title, value, subtitle, trend, trendValue, highlight = false }) => (
+/* ── KPI Card ── */
+const KpiCard = ({ title, value, subtitle, accent = false }) => (
   <div style={{
-    background: T.white,
-    border: `1px solid ${highlight ? T.gold : T.subtle}`,
-    borderBottom: `2px solid ${highlight ? T.gold : T.subtle}`,
-    borderRadius: 4,
-    padding: "28px 24px",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+    ...S.card,
+    borderLeft: accent ? `2px solid ${T.gold}` : `1px solid ${T.border}`,
+    borderRadius: 8,
   }}>
-    <p style={{
-      fontFamily: "Inter, sans-serif",
-      fontSize: 10,
-      letterSpacing: "0.18em",
-      textTransform: "uppercase",
-      color: "#999",
-      marginBottom: 12,
-    }}>{title}</p>
-    <p style={{
-      fontFamily: "Inter, sans-serif",
-      fontSize: 28,
-      fontWeight: 300,
-      color: T.onyx,
-      lineHeight: 1.1,
-    }}>{value}</p>
-    {subtitle && (
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: T.charcoal, marginTop: 6 }}>
-        {subtitle}
-      </p>
-    )}
-    {trend && (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
-    <span style={{ fontSize: 11, color: trend === "up" ? "#4CAF50" : "#E53935" }}>{trendValue}</span>
-    </div>
-    )}
+    <p style={S.label}>{title}</p>
+    <p style={{ ...S.valueLg, marginTop: 10, fontSize: 24 }}>{value}</p>
+    {subtitle && <p style={{ ...S.pageSubtitle, marginTop: 6 }}>{subtitle}</p>}
   </div>
 );
 
-// ── Appointment Row (Dashboard mini-list) ───────────────────
-const statusDot = {
-  confirmed: T.onyx,
-  scheduled: T.gold,
-  in_progress: T.gold,
-  completed: "#CCCCCC",
-  cancelled: "#E53935",
-  no_show: "#E53935",
-};
-
-const AppointmentRow = ({ appointment }) => (
-  <div style={{
-    display: "flex", alignItems: "center", gap: 16,
-    padding: "14px 0",
-    borderBottom: `1px solid ${T.subtle}`,
-  }}>
-    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "#BCBCBC", width: 40, flexShrink: 0 }}>
-      {format(parseISO(appointment.start_time), "HH:mm")}
-    </span>
-    <span style={{
-      width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-      backgroundColor: statusDot[appointment.status] || T.gold,
-    }} />
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <p style={{
-        fontFamily: "'Playfair Display', serif",
-        fontStyle: "italic",
-        fontSize: 15,
-        color: T.onyx,
-        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-      }}>{appointment.patient_name}</p>
-      <p style={{
-        fontFamily: "Inter, sans-serif", fontSize: 10,
-        letterSpacing: "0.1em", textTransform: "uppercase",
-        color: T.charcoal, marginTop: 2,
-      }}>{appointment.procedure_name}</p>
+/* ── Section block ── */
+const Section = ({ title, children, action }) => (
+  <div style={S.card}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <p style={S.sectionTitle}>{title}</p>
+      {action}
     </div>
-    {appointment.price > 0 && (
-      <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: T.onyx, flexShrink: 0 }}>
-        R$ {appointment.price.toLocaleString("pt-BR")}
+    {children}
+  </div>
+);
+
+/* ── Appointment row ── */
+const AppRow = ({ apt }) => {
+  let time = "—";
+  try { time = format(parseISO(apt.start_time), "HH:mm"); } catch {}
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 16,
+      padding: "11px 0",
+      borderBottom: `1px solid ${T.borderLight}`,
+    }}>
+      <span style={{ ...S.label, width: 36, flexShrink: 0, letterSpacing: 0, fontSize: 12, textTransform: "none", color: T.textMuted }}>
+        {time}
       </span>
-    )}
-  </div>
-);
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ ...S.value, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {apt.patient_name}
+        </p>
+        <p style={{ ...S.label, marginTop: 2, textTransform: "uppercase" }}>
+          {apt.procedure_name || "—"}
+        </p>
+      </div>
+      {apt.price > 0 && (
+        <span style={{ ...S.value, fontSize: 13, flexShrink: 0 }}>
+          R$ {apt.price.toLocaleString("pt-BR")}
+        </span>
+      )}
+    </div>
+  );
+};
 
-const SectionTitle = ({ children, subtitle }) => (
-  <div style={{ marginBottom: 20 }}>
-    <h2 style={{
-      fontFamily: "'Playfair Display', serif",
-      fontSize: 20, fontWeight: 500,
-      letterSpacing: "0.03em", color: T.onyx, margin: 0,
-    }}>{children}</h2>
-    {subtitle && <p style={{
-      fontFamily: "Inter, sans-serif", fontSize: 10,
-      letterSpacing: "0.12em", textTransform: "uppercase",
-      color: T.charcoal, marginTop: 4,
-    }}>{subtitle}</p>}
-  </div>
-);
+/* ── Chart tooltip ── */
+const ChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, padding: "10px 14px" }}>
+      <p style={{ ...S.label, marginBottom: 6 }}>{label}</p>
+      {payload.map(p => (
+        <p key={p.name} style={{ ...S.value, fontSize: 13, color: p.color }}>
+          {p.name}: R$ {Number(p.value).toLocaleString("pt-BR")}
+        </p>
+      ))}
+    </div>
+  );
+};
+
+const PIE_COLORS = [T.gold, "#4A4A4A", "#666666", "#888888", "#AAAAAA"];
 
 export default function Dashboard() {
-  const today = new Date();
+  const today      = new Date();
   const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
+  const monthEnd   = endOfMonth(today);
 
-  const { data: appointments = [] } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: () => base44.entities.Appointment.list("-start_time", 100),
-  });
-  const { data: patients = [] } = useQuery({
-    queryKey: ["patients"],
-    queryFn: () => base44.entities.Patient.list("-created_date", 1000),
-  });
-  const { data: transactions = [] } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list("-created_date", 1000),
-  });
-  const { data: leads = [] } = useQuery({
-    queryKey: ["leads"],
-    queryFn: () => base44.entities.Lead.list("-created_date", 100),
-  });
-  const { data: supplies = [] } = useQuery({
-    queryKey: ["supplies"],
-    queryFn: () => base44.entities.Supply.list(),
-  });
+  const { data: appointments = [] } = useQuery({ queryKey: ["appointments"], queryFn: () => base44.entities.Appointment.list("-start_time", 100) });
+  const { data: patients = [] }     = useQuery({ queryKey: ["patients"],     queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
+  const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-created_date", 1000) });
+  const { data: leads = [] }        = useQuery({ queryKey: ["leads"],        queryFn: () => base44.entities.Lead.list("-created_date", 100) });
+  const { data: supplies = [] }     = useQuery({ queryKey: ["supplies"],     queryFn: () => base44.entities.Supply.list() });
 
-  const todayAppointments = appointments.filter(a => {
-    try { return isToday(parseISO(a.start_time)); } catch { return false; }
-  });
-
-  const monthlyIncome = transactions
-    .filter(t => t.type === "income" && t.status === "paid")
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
-  const monthlyExpenses = transactions
-    .filter(t => t.type === "expense" && t.status === "paid")
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
-  const netProfit = monthlyIncome - monthlyExpenses;
-  const margin = monthlyIncome > 0 ? ((netProfit / monthlyIncome) * 100).toFixed(1) : "0.0";
-
-  const lowStockItems = supplies.filter(s => s.current_stock <= (s.minimum_stock || 5));
-  const newLeads = leads.filter(l => {
-    try {
-      const d = parseISO(l.created_date);
-      return d >= monthStart && d <= monthEnd;
-    } catch { return false; }
-  });
+  const todayApts   = appointments.filter(a => { try { return isToday(parseISO(a.start_time)); } catch { return false; } });
+  const income      = transactions.filter(t => t.type === "income"  && t.status === "paid").reduce((s, t) => s + (t.amount || 0), 0);
+  const expenses    = transactions.filter(t => t.type === "expense" && t.status === "paid").reduce((s, t) => s + (t.amount || 0), 0);
+  const profit      = income - expenses;
+  const margin      = income > 0 ? ((profit / income) * 100).toFixed(1) : "0.0";
+  const lowStock    = supplies.filter(s => s.current_stock <= (s.minimum_stock || 5));
+  const newLeads    = leads.filter(l => { try { const d = parseISO(l.created_date); return d >= monthStart && d <= monthEnd; } catch { return false; } });
 
   const revenueData = [
-    { name: "Jan", receita: 45000, despesas: 32000 },
-    { name: "Fev", receita: 52000, despesas: 28000 },
-    { name: "Mar", receita: 48000, despesas: 35000 },
-    { name: "Abr", receita: 61000, despesas: 30000 },
-    { name: "Mai", receita: 55000, despesas: 33000 },
-    { name: "Jun", receita: 67000, despesas: 29000 },
+    { mes: "Jan", receita: 45000, despesas: 32000 },
+    { mes: "Fev", receita: 52000, despesas: 28000 },
+    { mes: "Mar", receita: 48000, despesas: 35000 },
+    { mes: "Abr", receita: 61000, despesas: 30000 },
+    { mes: "Mai", receita: 55000, despesas: 33000 },
+    { mes: "Jun", receita: 67000, despesas: 29000 },
   ];
 
-  const procedureData = [
-    { name: "Botox", value: 35 },
-    { name: "Preenchimento", value: 25 },
-    { name: "Skinbooster", value: 20 },
-    { name: "Bioestimuladores", value: 15 },
-    { name: "Outros", value: 5 },
+  const procData = [
+    { name: "Toxina",         value: 35 },
+    { name: "Preenchimento",  value: 25 },
+    { name: "Skinbooster",    value: 20 },
+    { name: "Bioestimulador", value: 15 },
+    { name: "Outros",         value: 5  },
   ];
-  const pieColors = ["#121212", "#333", "#555", "#888", "#BBBBBB"];
+
+  const indicators = [
+    { label: "Taxa de Conversão",    value: 72 },
+    { label: "Satisfação",           value: 94 },
+    { label: "Meta Mensal",          value: 85 },
+  ];
+
+  const fmt = (n) => `R$ ${n.toLocaleString("pt-BR")}`;
 
   return (
-    <div style={{ fontFamily: "Inter, sans-serif", maxWidth: 1400 }}>
+    <div style={S.pageWrapper}>
 
-      {/* ── Header ──────────────────────────────────────── */}
-      <div style={{ marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
+      {/* ── Cabeçalho ── */}
+      <div style={S.pageHeader}>
         <div>
-          <h1 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 32, fontWeight: 500,
-            letterSpacing: "0.02em", color: T.onyx,
-            margin: 0,
-          }}>Performance Clínica</h1>
-          <p style={{
-            fontFamily: "Inter, sans-serif", fontSize: 12,
-            letterSpacing: "0.12em", textTransform: "uppercase",
-            color: T.charcoal, marginTop: 6,
-          }}>Visão geral de margem e saúde de caixa</p>
+          <h1 style={S.pageTitle}>Dashboard</h1>
+          <p style={S.pageSubtitle}>Visão geral de desempenho clínico e financeiro</p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Link to={createPageUrl("Agenda")}>
-            <button style={{
-              background: T.onyx, color: "#fff",
-              border: "none", borderRadius: 2,
-              fontFamily: "Inter, sans-serif", fontSize: 10,
-              letterSpacing: "0.12em", textTransform: "uppercase",
-              padding: "11px 22px", cursor: "pointer",
-            }}>
-              Nova Consulta
-            </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link to={createPageUrl("Agenda")} style={{ textDecoration: "none" }}>
+            <button style={S.btnPrimary}>Nova Consulta</button>
           </Link>
-          <Link to={createPageUrl("Patients")}>
-            <button style={{
-              background: "transparent", color: T.onyx,
-              border: `1px solid ${T.onyx}`, borderRadius: 2,
-              fontFamily: "Inter, sans-serif", fontSize: 10,
-              letterSpacing: "0.12em", textTransform: "uppercase",
-              padding: "10px 22px", cursor: "pointer",
-            }}>
-              Novo Paciente
-            </button>
+          <Link to={createPageUrl("Patients")} style={{ textDecoration: "none" }}>
+            <button style={S.btnGhost}>Novo Paciente</button>
           </Link>
         </div>
       </div>
 
-      {/* ── KPIs ────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 40 }}>
-        <StatCard
-          title="Agenda Hoje"
-          value={todayAppointments.length}
-          subtitle="consultas agendadas"
-          trend="up" trendValue="+2 vs ontem"
-        />
-        <StatCard
-          title="Pacientes Ativos"
-          value={patients.filter(p => p.status === "active").length}
-          subtitle="cadastros no sistema"
-          trend="up" trendValue="+5% este mês"
-        />
-        <StatCard
-          title="Lucro Líquido"
-          value={`R$ ${netProfit.toLocaleString("pt-BR")}`}
-          subtitle={`Receita: R$ ${monthlyIncome.toLocaleString("pt-BR")}`}
-          trend={netProfit >= 0 ? "up" : "down"}
-          trendValue={`Margem: ${margin}%`}
-          highlight
-        />
-        <StatCard
-          title="Margem Média por Cadeira"
-          value={`${margin}%`}
-          subtitle="margem líquida mensal"
-          trend={parseFloat(margin) >= 30 ? "up" : "down"}
-          trendValue={parseFloat(margin) >= 30 ? "Meta atingida" : "Abaixo da meta"}
-        />
-        <StatCard
-          title="Leads Novos"
-          value={newLeads.length}
-          subtitle="captados este mês"
-          trend="up" trendValue="+12% vs mês anterior"
-        />
+      {/* ── KPIs ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
+        <KpiCard title="Agenda Hoje" value={todayApts.length} subtitle="consultas marcadas" />
+        <KpiCard title="Pacientes Ativos" value={patients.filter(p => p.status === "active").length} subtitle="cadastros no sistema" />
+        <KpiCard title="Lucro Líquido" value={fmt(profit)} subtitle={`Receita: ${fmt(income)}`} accent />
+        <KpiCard title="Margem" value={`${margin}%`} subtitle="margem líquida do período" />
+        <KpiCard title="Leads do Mês" value={newLeads.length} subtitle="captados este mês" />
       </div>
 
-      {/* ── Charts Row ──────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 40 }}>
+      {/* ── Gráficos ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 12, marginBottom: 24 }}>
 
         {/* Receita vs Despesas */}
-        <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
-          <SectionTitle subtitle="Últimos 6 meses">Receita vs Despesas</SectionTitle>
-          <div style={{ height: 260 }}>
+        <div style={S.card}>
+          <p style={S.sectionTitle}>Receita vs Despesas</p>
+          <p style={{ ...S.pageSubtitle, marginBottom: 20 }}>Últimos 6 meses</p>
+          <div style={{ height: 240 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
+              <AreaChart data={revenueData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="gReceita" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={T.onyx} stopOpacity={0.08} />
-                    <stop offset="95%" stopColor={T.onyx} stopOpacity={0} />
+                  <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={T.gold} stopOpacity={0.15} />
+                    <stop offset="95%" stopColor={T.gold} stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="gDespesas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#888" stopOpacity={0.06} />
-                    <stop offset="95%" stopColor="#888" stopOpacity={0} />
+                  <linearGradient id="gD" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={T.textMuted} stopOpacity={0.1} />
+                    <stop offset="95%" stopColor={T.textMuted} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={T.subtle} />
-                <XAxis dataKey="name" tick={{ fontFamily: "Inter", fontSize: 10, fill: T.charcoal }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontFamily: "Inter", fontSize: 10, fill: T.charcoal }} axisLine={false} tickLine={false} tickFormatter={v => `R$${v / 1000}k`} />
-                <Tooltip
-                  contentStyle={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, fontFamily: "Inter", fontSize: 11 }}
-                  formatter={v => [`R$ ${v.toLocaleString("pt-BR")}`, ""]}
-                />
-                <Area type="monotone" dataKey="receita" stroke={T.onyx} strokeWidth={1.5} fillOpacity={1} fill="url(#gReceita)" name="Receita" />
-                <Area type="monotone" dataKey="despesas" stroke="#888" strokeWidth={1} fillOpacity={1} fill="url(#gDespesas)" name="Despesas" />
+                <CartesianGrid strokeDasharray="2 4" stroke={T.borderLight} vertical={false} />
+                <XAxis dataKey="mes" tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} tickFormatter={v => `${v/1000}k`} />
+                <Tooltip content={<ChartTooltip />} />
+                <Area type="monotone" dataKey="receita" name="Receita"  stroke={T.gold}      strokeWidth={1.5} fill="url(#gR)" />
+                <Area type="monotone" dataKey="despesas" name="Despesas" stroke={T.textMuted} strokeWidth={1}   fill="url(#gD)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Procedimentos Donut */}
-        <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
-          <SectionTitle subtitle="Distribuição">Procedimentos</SectionTitle>
-          <div style={{ height: 180 }}>
+        {/* Procedimentos */}
+        <div style={S.card}>
+          <p style={S.sectionTitle}>Procedimentos</p>
+          <p style={{ ...S.pageSubtitle, marginBottom: 12 }}>Distribuição do período</p>
+          <div style={{ height: 160 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={procedureData} cx="50%" cy="50%" innerRadius={48} outerRadius={75} paddingAngle={2} dataKey="value">
-                  {procedureData.map((_, i) => (
-                    <Cell key={i} fill={pieColors[i % pieColors.length]} />
-                  ))}
+                <Pie data={procData} cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={2} dataKey="value">
+                  {procData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, fontFamily: "Inter", fontSize: 11 }} formatter={v => [`${v}%`, ""]} />
+                <Tooltip
+                  contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, fontFamily: T.font, fontSize: 12 }}
+                  formatter={v => [`${v}%`]}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div style={{ marginTop: 12 }}>
-            {procedureData.map((item, i) => (
-              <div key={item.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+            {procData.map((item, i) => (
+              <div key={item.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: pieColors[i], display: "inline-block" }} />
-                  <span style={{ fontFamily: "Inter", fontSize: 11, color: T.charcoal }}>{item.name}</span>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: PIE_COLORS[i], flexShrink: 0 }} />
+                  <span style={{ fontFamily: T.font, fontSize: 12, color: T.textSecondary }}>{item.name}</span>
                 </div>
-                <span style={{ fontFamily: "Inter", fontSize: 11, color: T.onyx, fontWeight: 500 }}>{item.value}%</span>
+                <span style={{ fontFamily: T.font, fontSize: 12, fontWeight: 500, color: T.textPrimary }}>{item.value}%</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Bottom Row ──────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 40 }}>
+      {/* ── Linha inferior ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
 
-        {/* Agenda de Hoje */}
-        <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-            <SectionTitle subtitle="Lista de hoje">Agenda de Hoje</SectionTitle>
-            <Link to={createPageUrl("Agenda")}>
-              <button style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontFamily: "Inter", fontSize: 10,
-                letterSpacing: "0.1em", textTransform: "uppercase",
-                color: T.charcoal, display: "flex", alignItems: "center", gap: 4,
-              }}>
-                Ver tudo <ArrowRight size={11} />
-              </button>
+        {/* Agenda de hoje */}
+        <Section
+          title="Agenda de Hoje"
+          action={
+            <Link to={createPageUrl("Agenda")} style={{ textDecoration: "none" }}>
+              <span style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, cursor: "pointer" }}>Ver agenda</span>
             </Link>
-          </div>
-          {todayAppointments.length > 0 ? (
-            todayAppointments.slice(0, 6).map(apt => <AppointmentRow key={apt.id} appointment={apt} />)
-          ) : (
-            <div style={{ textAlign: "center", padding: "40px 0", color: T.charcoal }}>
-                  <p style={{ fontFamily: "Inter", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                Nenhuma consulta hoje
-              </p>
-            </div>
-          )}
-        </div>
+          }
+        >
+          {todayApts.length > 0
+            ? todayApts.slice(0, 6).map(a => <AppRow key={a.id} apt={a} />)
+            : <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "32px 0" }}>Nenhuma consulta hoje</p>
+          }
+        </Section>
 
-        {/* Leads + Alertas */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {lowStockItems.length > 0 && (
-            <div style={{
-              background: T.white, border: `1px solid #FFCDD2`,
-              borderLeft: "3px solid #E53935", borderRadius: 4,
-              padding: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
-            }}>
-              <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#E53935", marginBottom: 12 }}>
-                Estoque crítico
-              </p>
-              {lowStockItems.slice(0, 3).map(item => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontFamily: "Inter", fontSize: 12, color: T.onyx }}>{item.name}</span>
-                  <span style={{ fontFamily: "Inter", fontSize: 11, color: "#E53935" }}>{item.current_stock} {item.unit}</span>
+        {/* Leads + Estoque */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {lowStock.length > 0 && (
+            <div style={{ ...S.card, borderLeft: `2px solid ${T.danger}` }}>
+              <p style={{ ...S.label, color: T.danger, marginBottom: 12 }}>Estoque Abaixo do Mínimo</p>
+              {lowStock.slice(0, 3).map(item => (
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ fontFamily: T.font, fontSize: 13, color: T.textSecondary }}>{item.name}</span>
+                  <span style={{ fontFamily: T.font, fontSize: 12, color: T.danger }}>{item.current_stock} {item.unit}</span>
                 </div>
               ))}
             </div>
           )}
 
-          <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.03)", flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-              <SectionTitle subtitle="Este mês">Leads Recentes</SectionTitle>
-              <Link to={createPageUrl("CRM")}>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal }}>
-                  CRM →
-                </button>
+          <Section
+            title="Leads Recentes"
+            action={
+              <Link to={createPageUrl("CRM")} style={{ textDecoration: "none" }}>
+                <span style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, cursor: "pointer" }}>Ver CRM</span>
               </Link>
-            </div>
+            }
+          >
             {leads.slice(0, 4).map(lead => (
-              <div key={lead.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.subtle}` }}>
-                <span style={{
-                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                  background: lead.priority === "vip" ? T.gold : lead.priority === "high" ? "#E53935" : "#DDD",
-                }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 13, color: T.onyx }}>{lead.name}</p>
-                  <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: T.charcoal }}>
-                    {lead.interest?.slice(0, 2).join(", ") || "interesse a definir"}
+              <div key={lead.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.borderLight}` }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ ...S.value, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lead.name}</p>
+                  <p style={{ ...S.label, marginTop: 2, textTransform: "none", letterSpacing: 0, fontSize: 12 }}>
+                    {lead.interest?.slice(0, 2).join(", ") || "Interesse a definir"}
                   </p>
                 </div>
                 {lead.priority === "vip" && (
-                  <span style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: T.gold }}>VIP</span>
+                  <span style={{ fontFamily: T.font, fontSize: 10, fontWeight: 600, color: T.gold, letterSpacing: "0.08em" }}>VIP</span>
                 )}
               </div>
             ))}
-          </div>
+            {leads.length === 0 && <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "24px 0" }}>Nenhum lead cadastrado</p>}
+          </Section>
         </div>
       </div>
 
-      {/* ── Performance Indicators ───────────────────────── */}
-      <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
-        <SectionTitle subtitle="Métricas de qualidade">Indicadores de Performance</SectionTitle>
+      {/* ── Indicadores ── */}
+      <div style={S.card}>
+        <p style={{ ...S.sectionTitle, marginBottom: 24 }}>Indicadores de Performance</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
-          {[
-            { label: "Taxa de Conversão", value: 72 },
-            { label: "Satisfação do Paciente", value: 94 },
-            { label: "Meta Mensal", value: 85 },
-          ].map(item => (
+          {indicators.map(item => (
             <div key={item.label}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal }}>
-                  {item.label}
-                </span>
-                <span style={{ fontFamily: "Inter", fontSize: 13, fontWeight: 500, color: T.onyx }}>{item.value}%</span>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                <span style={S.label}>{item.label}</span>
+                <span style={{ ...S.value, fontSize: 13 }}>{item.value}%</span>
               </div>
-              <div style={{ height: 2, background: T.subtle, borderRadius: 1 }}>
-                <div style={{ height: 2, width: `${item.value}%`, background: item.value >= 90 ? T.onyx : T.gold, borderRadius: 1 }} />
+              <div style={{ height: 2, backgroundColor: T.borderLight, borderRadius: 1 }}>
+                <div style={{
+                  height: 2,
+                  width: `${item.value}%`,
+                  backgroundColor: item.value >= 90 ? T.success : T.gold,
+                  borderRadius: 1,
+                  transition: "width 0.6s ease",
+                }} />
               </div>
             </div>
           ))}
         </div>
       </div>
+
     </div>
   );
 }
