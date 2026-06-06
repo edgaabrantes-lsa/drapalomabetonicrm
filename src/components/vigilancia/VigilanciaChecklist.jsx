@@ -8,11 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  FileText, Building2, ClipboardList, Shield, Zap, Package,
-  Trash2, Lock, ChevronDown, ChevronRight, Upload, X, Check, Paperclip
+  ChevronDown, ChevronRight, Upload, X, Check, Paperclip
 } from "lucide-react";
-
-const ICON_MAP = { FileText, Building2, ClipboardList, Shield, Zap, Package, Trash2, Lock };
 
 function ItemRow({ secKey, itemLabel, savedItem, onSave }) {
   const [expanded, setExpanded] = useState(false);
@@ -164,7 +161,6 @@ export default function VigilanciaChecklist() {
   return (
     <div className="space-y-3">
       {SECTIONS.map(sec => {
-        const Icon = ICON_MAP[sec.icon] || FileText;
         const secItems = items.filter(i => i.section === sec.key);
         const done = secItems.filter(i => i.status === "concluido").length;
         const total = sec.items.length;
@@ -178,10 +174,6 @@ export default function VigilanciaChecklist() {
             {/* Section header */}
             <button className="w-full flex items-center gap-3 p-4 hover:bg-white/2 transition-colors text-left"
               onClick={() => setOpenSection(isOpen ? null : sec.key)}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${sec.color}20` }}>
-                <Icon className="h-4 w-4" style={{ color: sec.color }} />
-              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white">{sec.label}</p>
                 <div className="flex items-center gap-3 mt-1">

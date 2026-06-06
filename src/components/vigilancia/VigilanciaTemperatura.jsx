@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, Thermometer, Plus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Plus } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 const TEMP_MIN = 2;
@@ -57,8 +57,7 @@ export default function VigilanciaTemperatura() {
       {/* Gráfico */}
       <div className="rounded-2xl border p-5" style={{ backgroundColor: "#0f172a", borderColor: "#1e293b" }}>
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Thermometer className="h-4 w-4 text-blue-400" />
+          <div>
             <p className="text-sm font-medium text-white">Histórico de Temperatura</p>
           </div>
           <div className="flex items-center gap-2 text-xs" style={{ color: "#64748b" }}>

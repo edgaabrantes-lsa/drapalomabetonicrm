@@ -5,11 +5,8 @@ import { SECTIONS, STATUS_CONFIG, calcScore } from "./vigilanciaData";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  FileText, Building2, ClipboardList, Shield, Zap, Package,
-  Trash2, Lock, AlertTriangle, CheckCircle2, TrendingUp, Brain, ChevronRight
+  AlertTriangle, CheckCircle2, ChevronRight
 } from "lucide-react";
-
-const ICON_MAP = { FileText, Building2, ClipboardList, Shield, Zap, Package, Trash2, Lock };
 
 const ScoreRing = ({ score }) => {
   const color = score >= 90 ? "#10b981" : score >= 70 ? "#f59e0b" : "#ef4444";
@@ -139,7 +136,6 @@ Seja direto, técnico e prático. Formate com seções claras.`,
             <Button size="sm" variant="outline" onClick={handleAnaliseIA}
               disabled={aiLoading}
               className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
-              <Brain className="h-3 w-3 mr-1" />
               {aiLoading ? "Analisando..." : "Analisar com IA"}
             </Button>
           </div>
@@ -199,25 +195,20 @@ Seja direto, técnico e prático. Formate com seções claras.`,
 
       {/* Cards por seção */}
       <div>
-        <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: "#64748b" }}>
-          Conformidade por Seção
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {sectionScores.map(sec => {
-            const Icon = ICON_MAP[sec.icon] || FileText;
-            const barColor = sec.score >= 90 ? "#10b981" : sec.score >= 70 ? "#f59e0b" : "#ef4444";
-            return (
-              <button key={sec.key} onClick={() => onNavigate("checklist")}
-                className="rounded-2xl border p-4 text-left hover:border-blue-500/40 transition-all group"
-                style={{ backgroundColor: "#0f172a", borderColor: "#1e293b" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${sec.color}20` }}>
-                    <Icon className="h-4 w-4" style={{ color: sec.color }} />
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-blue-400 transition-colors" />
-                </div>
-                <p className="text-sm font-medium text-white mb-1">{sec.label}</p>
+      <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: "#64748b" }}>
+        Conformidade por Seção
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {sectionScores.map(sec => {
+          const barColor = sec.score >= 90 ? "#10b981" : sec.score >= 70 ? "#f59e0b" : "#ef4444";
+          return (
+            <button key={sec.key} onClick={() => onNavigate("checklist")}
+              className="rounded-2xl border p-4 text-left hover:border-blue-500/40 transition-all group"
+              style={{ backgroundColor: "#0f172a", borderColor: "#1e293b" }}>
+              <div className="flex items-center justify-between mb-3">
+                <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-blue-400 transition-colors ml-auto" />
+              </div>
+              <p className="text-sm font-medium text-white mb-1">{sec.label}</p>
                 <p className="text-xs mb-3" style={{ color: "#64748b" }}>
                   {sec.done} de {sec.total} concluídos
                 </p>
@@ -237,7 +228,6 @@ Seja direto, técnico e prático. Formate com seções claras.`,
         <div className="rounded-2xl border p-6 space-y-3"
           style={{ backgroundColor: "#0f172a", borderColor: "#1e40af" }}>
           <div className="flex items-center gap-2 mb-2">
-            <Brain className="h-5 w-5 text-blue-400" />
             <p className="text-sm font-semibold text-blue-300">Análise de Conformidade — Inteligência Artificial</p>
             <Button size="sm" variant="ghost" onClick={() => setAiReport(null)}
               className="ml-auto text-slate-500 hover:text-white text-xs">Fechar</Button>

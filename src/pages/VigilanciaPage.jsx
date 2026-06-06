@@ -6,23 +6,15 @@ import VigilanciaEquipamentos from "@/components/vigilancia/VigilanciaEquipament
 import VigilanciaRastreabilidade from "@/components/vigilancia/VigilanciaRastreabilidade";
 import VigilanciaTemperatura from "@/components/vigilancia/VigilanciaTemperatura";
 import VigilanciaTreinamentos from "@/components/vigilancia/VigilanciaTreinamentos";
-import { ShieldCheck } from "lucide-react";
-
 export default function VigilanciaPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
     <div className="space-y-6" style={{ minHeight: "100vh" }}>
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, #1e40af, #3b82f6)" }}>
-          <ShieldCheck className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-serif text-white">Vigilância Sanitária</h1>
-          <p className="text-sm" style={{ color: "#94a3b8" }}>Centro de Conformidade — Fiscalização e Auditoria</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-serif text-white">Vigilância Sanitária</h1>
+        <p className="text-sm" style={{ color: "#94a3b8" }}>Centro de Conformidade — Fiscalização e Auditoria</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

@@ -5,10 +5,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { format, startOfMonth, endOfMonth, isToday, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import {
-  Users, Calendar, DollarSign, TrendingUp, TrendingDown,
-  Clock, ArrowRight, Package, AlertTriangle, MessageSquare, Activity
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -58,12 +55,9 @@ const StatCard = ({ title, value, subtitle, trend, trendValue, highlight = false
       </p>
     )}
     {trend && (
-      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
-        {trend === "up"
-          ? <TrendingUp size={11} color="#4CAF50" />
-          : <TrendingDown size={11} color="#E53935" />}
-        <span style={{ fontSize: 11, color: trend === "up" ? "#4CAF50" : "#E53935" }}>{trendValue}</span>
-      </div>
+    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
+    <span style={{ fontSize: 11, color: trend === "up" ? "#4CAF50" : "#E53935" }}>{trendValue}</span>
+    </div>
     )}
   </div>
 );
@@ -358,8 +352,7 @@ export default function Dashboard() {
             todayAppointments.slice(0, 6).map(apt => <AppointmentRow key={apt.id} appointment={apt} />)
           ) : (
             <div style={{ textAlign: "center", padding: "40px 0", color: T.charcoal }}>
-              <Calendar size={28} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
-              <p style={{ fontFamily: "Inter", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                  <p style={{ fontFamily: "Inter", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Nenhuma consulta hoje
               </p>
             </div>
