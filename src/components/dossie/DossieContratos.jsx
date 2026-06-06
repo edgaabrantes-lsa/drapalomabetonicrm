@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import jsPDF from "jspdf";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 
 const STATUS_DOC = {
   assinado: { label: "Assinado", color: "bg-green-500/20 text-green-400" },
@@ -130,9 +131,9 @@ function generatePDF(patient, formData, selectedDocs) {
     endereco_clinica: formData.endereco_clinica || "",
     procedimento: formData.procedimento || "",
     descricao_procedimento: formData.descricao_procedimento || "",
-    valor_total: formData.valor_total || "0,00",
-    entrada: formData.entrada || "0,00",
-    parcelas: formData.num_parcelas > 1 ? `${formData.num_parcelas}x de R$ ${(parseFloat(formData.valor_total) / parseInt(formData.num_parcelas)).toFixed(2)}` : "Pagamento único",
+    valor_total: formData.valor_total ? parseFloat(formData.valor_total).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "0,00",
+    entrada: formData.entrada ? parseFloat(formData.entrada).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "0,00",
+    parcelas: formData.num_parcelas > 1 ? `${formData.num_parcelas}x de R$ ${(parseFloat(formData.valor_total) / parseInt(formData.num_parcelas)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "Pagamento único",
     forma_pagamento: formData.forma_pagamento || "",
     data_procedimento: formData.data_procedimento || "",
     data_emissao: format(new Date(), "dd/MM/yyyy"),
@@ -332,27 +333,41 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              ["Procedimento / Protocolo *", "procedimento"],
-              ["Descrição do Procedimento", "descricao_procedimento"],
-              ["Valor Total (R$) *", "valor_total"],
-              ["Entrada (R$)", "entrada"],
-              ["Nº de Parcelas", "num_parcelas"],
-              ["Forma de Pagamento *", "forma_pagamento"],
-              ["Data Prevista do Procedimento", "data_procedimento"],
-              ["Profissional Responsável *", "profissional_responsavel"],
-              ["CNPJ da Clínica", "cnpj_clinica"],
-              ["Endereço da Clínica", "endereco_clinica"]
-            ].map(([label, key]) => (
+              ["Procedimento / Protocolo *", "procedimento", "text"],
+              ["Descrição do Procedimento", "descricao_procedimento", "text"],
+              ["Nº de Parcelas", "num_parcelas", "text"],
+              ["Forma de Pagamento *", "forma_pagamento", "text"],
+              ["Data Prevista do Procedimento", "data_procedimento", "date"],
+              ["Profissional Responsável *", "profissional_responsavel", "text"],
+              ["CNPJ da Clínica", "cnpj_clinica", "text"],
+              ["Endereço da Clínica", "endereco_clinica", "text"]
+            ].map(([label, key, type]) => (
               <div key={key}>
                 <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">{label}</Label>
                 <Input
-                  type={key.includes("data") ? "date" : "text"}
+                  type={type}
                   value={gerarForm[key] || ""}
                   onChange={(e) => setGerarForm(p => ({ ...p, [key]: e.target.value }))}
                   className="mt-1 bg-[#1A2030] border-[#252D3E] text-white"
                 />
               </div>
             ))}
+            <div>
+              <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">Valor Total (R$) *</Label>
+              <CurrencyInput
+                value={gerarForm.valor_total}
+                onChange={(v) => setGerarForm(p => ({ ...p, valor_total: v }))}
+                className="mt-1 bg-[#1A2030] border-[#252D3E] text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">Entrada (R$)</Label>
+              <CurrencyInput
+                value={gerarForm.entrada}
+                onChange={(v) => setGerarForm(p => ({ ...p, entrada: v }))}
+                className="mt-1 bg-[#1A2030] border-[#252D3E] text-white"
+              />
+            </div>
             <div className="sm:col-span-2">
               <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">Observações Comerciais</Label>
               <Textarea value={gerarForm.observacoes} onChange={(e) => setGerarForm(p => ({ ...p, observacoes: e.target.value }))} rows={2} className="mt-1 bg-[#1A2030] border-[#252D3E] text-white" />

@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 
 export default function Pricing() {
   const [activeTab, setActiveTab] = useState("service");
@@ -127,11 +128,9 @@ export default function Pricing() {
                 {/* Supply Cost */}
                 <div>
                   <Label className="text-gray-300">Custo de Insumos (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
+                  <CurrencyInput
                     value={serviceData.supply_cost}
-                    onChange={(e) => setServiceData(prev => ({ ...prev, supply_cost: parseFloat(e.target.value) || 0 }))}
+                    onChange={(v) => setServiceData(prev => ({ ...prev, supply_cost: v }))}
                     className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Custo total dos insumos utilizados</p>
@@ -140,11 +139,9 @@ export default function Pricing() {
                 {/* Hour Cost */}
                 <div>
                   <Label className="text-gray-300">Custo Hora Profissional (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
+                  <CurrencyInput
                     value={serviceData.hour_cost}
-                    onChange={(e) => setServiceData(prev => ({ ...prev, hour_cost: parseFloat(e.target.value) || 0 }))}
+                    onChange={(v) => setServiceData(prev => ({ ...prev, hour_cost: v }))}
                     className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
                   />
                 </div>
@@ -314,11 +311,9 @@ export default function Pricing() {
                 {/* Unit Cost */}
                 <div>
                   <Label className="text-gray-300">Custo Unitário (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
+                  <CurrencyInput
                     value={productData.unit_cost}
-                    onChange={(e) => setProductData(prev => ({ ...prev, unit_cost: parseFloat(e.target.value) || 0 }))}
+                    onChange={(v) => setProductData(prev => ({ ...prev, unit_cost: v }))}
                     className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
                   />
                 </div>
@@ -326,11 +321,9 @@ export default function Pricing() {
                 {/* Freight */}
                 <div>
                   <Label className="text-gray-300">Frete/Transporte (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
+                  <CurrencyInput
                     value={productData.freight}
-                    onChange={(e) => setProductData(prev => ({ ...prev, freight: parseFloat(e.target.value) || 0 }))}
+                    onChange={(v) => setProductData(prev => ({ ...prev, freight: v }))}
                     className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
                   />
                 </div>

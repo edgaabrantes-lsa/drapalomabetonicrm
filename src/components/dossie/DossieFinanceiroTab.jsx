@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 
 const STATUS_FIN = {
   pendente: { label: "Pendente", color: "bg-yellow-500/20 text-yellow-400" },
@@ -121,11 +122,11 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
             </div>
             <div>
               <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">Valor Total (R$)</Label>
-              <Input type="number" value={form.valor_total} onChange={(e) => setForm(p => ({ ...p, valor_total: e.target.value }))} className="mt-1 bg-[#1A2030] border-[#252D3E] text-white" />
+              <CurrencyInput value={form.valor_total} onChange={(v) => setForm(p => ({ ...p, valor_total: v }))} className="mt-1 bg-[#1A2030] border-[#252D3E] text-white" />
             </div>
             <div>
               <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">Entrada (R$)</Label>
-              <Input type="number" value={form.entrada} onChange={(e) => setForm(p => ({ ...p, entrada: e.target.value }))} className="mt-1 bg-[#1A2030] border-[#252D3E] text-white" />
+              <CurrencyInput value={form.entrada} onChange={(v) => setForm(p => ({ ...p, entrada: v }))} className="mt-1 bg-[#1A2030] border-[#252D3E] text-white" />
             </div>
             <div>
               <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">Nº de Parcelas</Label>
@@ -245,7 +246,7 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
                   </div>
                   <div>
                     <Label className="text-[#8A95AA] text-xs">Valor (R$)</Label>
-                    <Input type="number" value={comprForm.valor} onChange={(e) => setComprForm(p => ({ ...p, valor: e.target.value }))} className="mt-1 bg-[#1A2030] border-[#252D3E] text-white text-xs h-8" />
+                    <CurrencyInput value={comprForm.valor} onChange={(v) => setComprForm(p => ({ ...p, valor: v }))} className="mt-1 bg-[#1A2030] border-[#252D3E] text-white text-xs h-8" />
                   </div>
                   <div>
                     <Label className="text-[#8A95AA] text-xs">Data do Pagamento</Label>

@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 import {
   AreaChart,
   Area,
@@ -141,13 +142,10 @@ const TransactionForm = ({ transaction, patients, onSave, onClose }) => {
         </div>
         <div>
           <Label className="text-gray-300">Valor (R$) *</Label>
-          <Input
-            type="number"
-            step="0.01"
+          <CurrencyInput
             value={formData.amount}
-            onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) }))}
+            onChange={(v) => setFormData(prev => ({ ...prev, amount: v }))}
             className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
-            required
           />
         </div>
         <div>

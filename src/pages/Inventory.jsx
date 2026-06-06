@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,11 +130,9 @@ const SupplyForm = ({ supply, onSave, onClose }) => {
         </div>
         <div>
           <Label className="text-gray-300">Custo por Unidade (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
+          <CurrencyInput
             value={formData.cost_per_unit}
-            onChange={(e) => setFormData(prev => ({ ...prev, cost_per_unit: parseFloat(e.target.value) }))}
+            onChange={(v) => setFormData(prev => ({ ...prev, cost_per_unit: v }))}
             className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
           />
         </div>
@@ -234,11 +233,9 @@ const BatchForm = ({ supply, onSave, onClose }) => {
         </div>
         <div>
           <Label className="text-gray-300">Valor da Compra (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
+          <CurrencyInput
             value={formData.purchase_price}
-            onChange={(e) => setFormData(prev => ({ ...prev, purchase_price: parseFloat(e.target.value) }))}
+            onChange={(v) => setFormData(prev => ({ ...prev, purchase_price: v }))}
             className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
           />
         </div>

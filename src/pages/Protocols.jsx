@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 
 const durationOptions = [
   { value: 3, label: "3 meses" },
@@ -153,21 +154,17 @@ const ProtocolForm = ({ protocol, procedures, onSave, onClose }) => {
         </div>
         <div>
           <Label className="text-gray-300">Valor Total (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
+          <CurrencyInput
             value={formData.total_price}
-            onChange={(e) => setFormData(prev => ({ ...prev, total_price: parseFloat(e.target.value) }))}
+            onChange={(v) => setFormData(prev => ({ ...prev, total_price: v }))}
             className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
           />
         </div>
         <div>
           <Label className="text-gray-300">Custo Total (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
+          <CurrencyInput
             value={formData.total_cost}
-            onChange={(e) => setFormData(prev => ({ ...prev, total_cost: parseFloat(e.target.value) }))}
+            onChange={(v) => setFormData(prev => ({ ...prev, total_cost: v }))}
             className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
           />
         </div>
@@ -367,11 +364,9 @@ const AssignProtocolForm = ({ protocols, patients, onSave, onClose }) => {
         </div>
         <div>
           <Label className="text-gray-300">Valor (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
+          <CurrencyInput
             value={formData.total_value}
-            onChange={(e) => setFormData(prev => ({ ...prev, total_value: parseFloat(e.target.value) }))}
+            onChange={(v) => setFormData(prev => ({ ...prev, total_value: v }))}
             className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1"
           />
         </div>

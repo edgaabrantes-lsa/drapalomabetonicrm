@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Search, Edit, Trash2, DollarSign, TrendingUp } from "lucide-react";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 import {
   Select,
   SelectContent,
@@ -275,20 +276,20 @@ function ProtocoloForm({ protocolo, onSubmit, onCancel }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm mb-2 block" style={{ color: "#B0BBCF" }}>Valor Mínimo (R$)</label>
-            <Input
-              type="number"
+            <CurrencyInput
               value={formData.valor_min}
-              onChange={(e) => setFormData({ ...formData, valor_min: Number(e.target.value) })}
+              onChange={(v) => setFormData({ ...formData, valor_min: v })}
               style={{ backgroundColor: "#1A2030", borderColor: "#252D3E", color: "#E8EDF5" }}
+              className="flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-sm md:text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
           <div>
             <label className="text-sm mb-2 block" style={{ color: "#B0BBCF" }}>Valor Máximo (R$)</label>
-            <Input
-              type="number"
+            <CurrencyInput
               value={formData.valor_max}
-              onChange={(e) => setFormData({ ...formData, valor_max: Number(e.target.value) })}
+              onChange={(v) => setFormData({ ...formData, valor_max: v })}
               style={{ backgroundColor: "#1A2030", borderColor: "#252D3E", color: "#E8EDF5" }}
+              className="flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-sm md:text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
         </div>
