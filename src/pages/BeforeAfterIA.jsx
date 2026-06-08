@@ -210,7 +210,7 @@ function CameraCapture({ onCapture, onCancel }) {
 }
 
 /* ─────────────────────────────────────
-   SLIDER ANTES / DEPOIS
+   SLIDER ANTES / DEPOIS — contain, sem corte
 ───────────────────────────────────────*/
 function BeforeAfterSlider({ before, after }) {
   const [pos, setPos] = useState(50);
@@ -225,8 +225,9 @@ function BeforeAfterSlider({ before, after }) {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative overflow-hidden rounded-xl select-none cursor-col-resize"
-      style={{ touchAction: "none", aspectRatio: "1 / 1" }}
+    <div ref={containerRef}
+      className="relative select-none cursor-col-resize rounded-xl overflow-hidden bg-black"
+      style={{ touchAction: "none", width: "100%", lineHeight: 0 }}
       onMouseDown={e => { dragging.current = true; updatePos(e.clientX); }}
       onMouseMove={e => { if (dragging.current) updatePos(e.clientX); }}
       onMouseUp={() => { dragging.current = false; }}
@@ -235,22 +236,101 @@ function BeforeAfterSlider({ before, after }) {
       onTouchMove={e => { if (dragging.current) updatePos(e.touches[0].clientX); }}
       onTouchEnd={() => { dragging.current = false; }}
     >
-      <img src={after} alt="Depois" className="absolute inset-0 w-full h-full" style={{ objectFit: "cover", objectPosition: "top center" }} />
-      <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
-        <img src={before} alt="Antes" className="absolute inset-0 w-full h-full" style={{ objectFit: "cover", objectPosition: "top center" }} />
+      {/* Imagem DEPOIS — base, ocupa 100% da largura sem corte */}
+      <img
+        src={after}
+        alt="Depois"
+        style={{ display: "block", width: "100%", height: "auto", maxHeight: "80vh", objectFit: "contain" }}
+        draggable={false}
+      />
+
+      {/* Imagem ANTES — sobreposta, clipada pela esquerda */}
+      <div
+        className="absolute inset-0"
+        style={{ clipPath: `inset(0 ${100 - pos}% 0 0)`, overflow: "hidden" }}
+      >
+        <img
+          src={before}
+          alt="Antes"
+          style={{ display: "block", width: "100%", height: "auto", maxHeight: "80vh", objectFit: "contain" }}
+          draggable={false}
+        />
       </div>
-      {/* Divisor */}
-      <div className="absolute top-0 bottom-0 w-0.5 bg-white/80 shadow-lg pointer-events-none"
-        style={{ left: `${pos}%` }}>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center gap-0.5">
+
+      {/* Linha divisória */}
+      <div
+        className="absolute top-0 bottom-0 pointer-events-none"
+        style={{ left: `${pos}%`, width: 2, background: "rgba(255,255,255,0.85)", boxShadow: "0 0 8px rgba(0,0,0,0.6)" }}
+      >
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-xl flex items-center justify-center gap-0.5">
           <ArrowLeft className="h-3 w-3 text-gray-600" />
           <ArrowRight className="h-3 w-3 text-gray-600" />
         </div>
       </div>
-      <div className="absolute bottom-2 left-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
-        style={{ background: "rgba(0,0,0,0.65)" }}>ANTES</div>
-      <div className="absolute bottom-2 right-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
-        style={{ background: "rgba(0,0,0,0.65)" }}>DEPOIS</div>
+
+      {/* Labels */}
+      <div className="absolute bottom-3 left-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
+        style={{ background: "rgba(0,0,0,0.65)", pointerEvents: "none" }}>ANTES</div>
+      <div className="absolute bottom-3 right-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
+        style={{ background: "rgba(0,0,0,0.65)", pointerEvents: "none" }}>DEPOIS</div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────
+   VISUALIZADOR LADO A LADO
+───────────────────────────────────────*/
+function SideBySideView({ before, after }) {
+  return (
+    <div className="grid grid-cols-2 gap-2 w-full">
+      <div className="relative rounded-xl overflow-hidden bg-black">
+        <img src={before} alt="Antes"
+          style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
+        />
+        <div className="absolute bottom-2 left-2 text-xs font-semibold text-white px-2 py-0.5 rounded"
+          style={{ background: "rgba(0,0,0,0.65)" }}>ANTES</div>
+      </div>
+      <div className="relative rounded-xl overflow-hidden bg-black">
+        <img src={after} alt="Depois"
+          style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
+        />
+        <div className="absolute bottom-2 right-2 text-xs font-semibold text-white px-2 py-0.5 rounded"
+          style={{ background: "rgba(0,0,0,0.65)" }}>DEPOIS</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────
+   MODAL FULLSCREEN
+───────────────────────────────────────*/
+function FullscreenModal({ image, onClose }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.95)" }}
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center z-10"
+        style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <img
+        src={image}
+        alt="Imagem completa"
+        style={{ maxWidth: "95vw", maxHeight: "95vh", objectFit: "contain", borderRadius: 8 }}
+        onClick={e => e.stopPropagation()}
+        draggable={false}
+      />
     </div>
   );
 }
@@ -272,6 +352,8 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   const [error, setError] = useState("");
   const [savedToRecord, setSavedToRecord] = useState(false);
   const [savingRecord, setSavingRecord] = useState(false);
+  const [viewMode, setViewMode] = useState("slider");
+  const [fullscreen, setFullscreen] = useState(false);
   const fileInputRef = useRef(null);
 
   const processFile = (file, src = "upload") => {
@@ -441,6 +523,8 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
     setError("");
     setSavedToRecord(false);
     setSavingRecord(false);
+    setViewMode("slider");
+    setFullscreen(false);
   };
 
   // ── STEP: source ──
@@ -592,26 +676,59 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   // ── STEP: result ──
   if (step === "result") return (
     <div className="space-y-4">
-      {/* Slider antes/depois — limitado em desktop para evitar scroll */}
-      {originalImageUrl && generatedImage ? (
-        <div>
-          <p className="text-[10px] uppercase tracking-widest mb-2 text-center" style={{ color: T.muted }}>
-            Arraste para comparar
-          </p>
-          {/* Desktop: max-height 60vh | Mobile: natural */}
-          <div className="rounded-xl overflow-hidden"
-            style={{ border: `1px solid ${T.border}`, maxHeight: "60vh" }}>
-            <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
+      {/* Controles de modo de exibição */}
+      {originalImageUrl && generatedImage && (
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+            {[
+              { id: "slider", label: "Slider" },
+              { id: "sidebyside", label: "Lado a Lado" },
+            ].map(m => (
+              <button
+                key={m.id}
+                onClick={() => setViewMode(m.id)}
+                className="px-4 py-2 text-xs font-medium transition-colors"
+                style={{
+                  background: viewMode === m.id ? T.gold : T.card,
+                  color: viewMode === m.id ? "#111620" : T.muted,
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
+          <button
+            onClick={() => setFullscreen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
+            style={{ background: T.card, border: `1px solid ${T.border}`, color: T.muted }}
+          >
+            <Eye className="h-3.5 w-3.5" /> Ver Imagem Completa
+          </button>
+        </div>
+      )}
+
+      {/* Visualizador */}
+      {originalImageUrl && generatedImage ? (
+        <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", background: "#000" }}>
+          {viewMode === "slider"
+            ? <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
+            : <SideBySideView before={originalImageUrl} after={generatedImage} />
+          }
         </div>
       ) : generatedImage ? (
-        <div className="rounded-xl overflow-hidden flex items-center justify-center"
-          style={{ border: `1px solid ${T.border}`, maxHeight: "60vh" }}>
-          <img src={generatedImage} alt="Simulação"
-            className="block"
-            style={{ maxHeight: "60vh", maxWidth: "100%", width: "auto", objectFit: "contain" }} />
+        <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", background: "#000" }}>
+          <img
+            src={generatedImage}
+            alt="Simulação"
+            style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
+          />
         </div>
       ) : null}
+
+      {/* Modal fullscreen */}
+      {fullscreen && generatedImage && (
+        <FullscreenModal image={generatedImage} onClose={() => setFullscreen(false)} />
+      )}
 
       {/* Opções usadas */}
       <div className="flex flex-wrap gap-1.5">
