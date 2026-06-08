@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // ══════════════════════════════════════════════════════════════
-//  MODO CLÍNICO REALISTA v6 — Edição com Máscara Localizada
+//  MODO CLÍNICO REALISTA v8 — Edição Localizada Ultra-Realista
 //  Arquitetura: imagem original → máscara anatômica → edição restrita
 //  Apenas pixels da máscara são modificáveis pela OpenAI
+//  Negative prompt global obrigatório em todas as chamadas
 // ══════════════════════════════════════════════════════════════
 
 // Mapeamento de área → região anatômica em % da imagem (y_start, y_end, x_start, x_end)
@@ -44,99 +45,96 @@ const SYMMETRY_GUIDANCE = {
   papada: `Use facial contour reference only to ensure submental correction is centered and natural. Do NOT alter neck structure or jaw definition.`,
 };
 
-// Prompts ultra-conservadores por área
+// ──────────────────────────────────────────────────────────────
+//  NEGATIVE PROMPT GLOBAL — incluído em todas as chamadas
+// ──────────────────────────────────────────────────────────────
+const GLOBAL_NEGATIVE_PROMPT = `NEGATIVE PROMPT — ABSOLUTE PROHIBITIONS (apply to the entire image, no exceptions):
+Do not change eye color. Do not change eye shape. Do not change skin tone. Do not change facial identity. Do not change background. Do not change clothing. Do not change accessories. Do not change hair. Do not change beard. Do not change lips unless lips are the selected treatment area. Do not change eyebrows unless eyebrow area is the selected treatment area. Do not modify the whole face when only one treatment area is selected. Do not create an artificial face. Do not create a generic perfect face. Do not make the patient look like another person. Do not apply beauty filters. Do not regenerate the full face. Do not use full image synthesis. Do not change earrings, necklace or any jewelry. Do not change camera angle or framing. Do not change photo quality or lighting.`;
+
+// Prompts de edição localizada por área — baseados na imagem original como fonte dominante
 const AREA_PROMPTS = {
   full_face:
-    "Apply only minimal skin tone unification and subtle texture refinement across the face. Absolutely do NOT alter facial structure, eye shape, eyebrows, nose, lips, hairline, or any anatomical feature. Result must be indistinguishable from manual photo retouching.",
+    "Edit the original uploaded photo using localized, realistic, medical-aesthetic image editing. Apply only subtle facial harmonization based on this patient's own facial symmetry. Do not create a generic perfect face. Do not make the patient look like another person. Modify only minimal skin tone unification and subtle texture refinement. The result must be the same patient with clinically subtle, realistic improvements — the same original photo, taken in the same place, at the same moment, with only a subtle aesthetic refinement applied.",
   testa:
-    "Gently reduce horizontal forehead lines using skin texture editing only within the masked forehead region. Do NOT move or reshape eyebrows, hairline, or any feature. No Botox-frozen look.",
+    "Edit the original uploaded photo using localized image editing restricted to the forehead region only. Gently reduce horizontal forehead lines using skin texture editing only within the masked forehead region. Do not move or reshape eyebrows, hairline, or any other feature. No Botox-frozen look. The result must be the same original photo with only this specific improvement.",
   glabela:
-    "Slightly soften the glabellar vertical lines in the masked area between the eyebrows using texture editing only. Do NOT change eyebrow shape, thickness, arch, position, or surrounding structures.",
+    "Edit the original uploaded photo using localized image editing restricted to the glabellar region only. Slightly soften the vertical lines between the eyebrows in the masked area using texture editing only. Do not change eyebrow shape, thickness, arch, position, or surrounding structures. The result must be the same original photo with only this specific improvement.",
   pes_galinha:
-    "Lightly smooth crow's feet wrinkles at outer eye corners in the masked region only. Do NOT alter eye shape, eyelid, iris, pupil, or any surrounding structure.",
+    "Edit the original uploaded photo using localized image editing restricted to the outer eye corners only. Lightly smooth crow's feet wrinkles at the outer eye corners in the masked region only. Do not alter eye shape, eyelid, iris, pupil, or any surrounding structure. The result must be the same original photo with only this specific improvement.",
   olheiras:
-    "Gently reduce under-eye darkness and subtle puffiness in the masked infraorbital region using color/tone correction only. Do NOT alter eye shape, lower eyelid contour, cheekbone, or any surrounding tissue.",
+    "Edit the original uploaded photo using localized image editing restricted to the under-eye area only. Gently reduce under-eye darkness and subtle puffiness in the masked infraorbital region using color and tone correction only. Do not alter eye shape, lower eyelid contour, cheekbone, iris color, or any surrounding tissue. Preserve eye shape and eye color completely. The result must be the same original photo with only this specific improvement.",
   nariz:
-    "Very subtle nasal profile refinement: gently smooth minor dorsal irregularities and refine tip definition inside the masked nasal region only. Do NOT change overall nasal size, nostril width, eye spacing, or any adjacent structure.",
+    "Edit the original uploaded photo using localized image editing restricted to the nose region only. Apply very subtle nasal refinement: gently smooth minor dorsal irregularities and refine tip definition inside the masked nasal region only. Do not change overall nasal size, nostril width, eye spacing, face shape, or any adjacent structure. Do not create a generic perfect nose. Preserve the patient's nasal identity. The result must be the same original photo with only this specific improvement.",
   labios:
-    "Improve lip moisture, smooth minor surface lines, and very slightly enhance natural lip border clarity in the masked lip region only. Do NOT change lip shape, volume, philtrum, or surrounding skin.",
+    "Edit the original uploaded photo using localized image editing restricted to the lips only. Improve lip moisture, smooth minor surface lines, and very slightly enhance natural lip border clarity in the masked lip region only. Do not change lip shape, volume, philtrum, nose, cheeks, jaw, or surrounding skin. The result must be the same original photo with only this specific improvement.",
   melasma:
-    "Reduce hyperpigmentation and melasma patches in the masked facial regions using targeted tone correction only. Preserve all skin texture, pores, natural shadows, and micro-details. Do NOT change any anatomical structure or apply beauty filter.",
+    "Edit the original uploaded photo using localized image editing restricted to hyperpigmentation areas only. Reduce hyperpigmentation and melasma patches in the masked facial regions using targeted tone correction only. Preserve all natural skin texture, pores, natural shadows, and micro-details. Do not apply a beauty filter. Do not change any anatomical structure. The result must be the same original photo with only this specific improvement.",
   mandibula:
-    "Subtly refine the jawline shadow and skin texture along the masked mandibular region only. Do NOT alter bone structure, face width, or any facial proportion.",
+    "Edit the original uploaded photo using localized image editing restricted to the jawline area only. Subtly refine the jawline contour and skin texture along the masked mandibular region only. Do not alter bone structure, face width, eye area, nose, cheeks, or any facial proportion outside the jawline. Do not change the entire face. The result must be the same original photo with only this specific improvement.",
   mento:
-    "Slightly improve skin texture in the masked chin area only. Do NOT change chin projection, shape, or proportion relative to the rest of the face.",
+    "Edit the original uploaded photo using localized image editing restricted to the chin area only. Slightly improve skin texture and refine the chin contour in the masked chin area only. Do not change chin projection beyond a minimal subtle refinement. Do not alter the rest of the face. The result must be the same original photo with only this specific improvement.",
   mandibula_mento:
-    "Subtly refine skin texture along the masked jawline and chin area only. Do NOT alter bone structure, facial proportions, or any surrounding feature.",
+    "Edit the original uploaded photo using localized image editing restricted to the jawline and chin area only. Subtly refine skin texture along the masked jawline and chin area only. Do not alter bone structure, facial proportions, or any surrounding feature outside this region. The result must be the same original photo with only this specific improvement.",
   papada:
-    "Very gently reduce submental shadow and skin laxity appearance in the masked submentonian region. Do NOT change neck structure, jaw definition, or facial proportions.",
+    "Edit the original uploaded photo using localized image editing restricted to the submental region only. Very gently reduce submental shadow and skin laxity appearance in the masked submentonian region. Do not change neck structure, jaw definition, face shape, or facial proportions. The result must be the same original photo with only this specific improvement.",
 };
 
-// Prompt base com regras absolutas de preservação + simetria como referência
+// Prompt final com negative prompt global + regras de preservação + simetria como referência
 function buildPrompt(options) {
   if (!options || options.length === 0) options = ["full_face"];
-  const areas = options.map(o => AREA_PROMPTS[o] || AREA_PROMPTS.full_face).join("\n");
+  const areaInstruction = options.map(o => AREA_PROMPTS[o] || AREA_PROMPTS.full_face).join("\n");
   const symmetryRefs = options.map(o => SYMMETRY_GUIDANCE[o] || SYMMETRY_GUIDANCE.full_face).join("\n");
   const areaLabels = options.map(o => AREA_MASKS[o]?.label || o).join(", ");
 
-  return `You are a MEDICAL-GRADE aesthetic photo retouching specialist operating in CLINICAL REALISTIC MODE with SYMMETRY-GUIDED precision.
+  return `You are a senior medical-aesthetic photo retouching specialist. You perform LOCALIZED image editing — NOT full face regeneration.
 
-TARGET AREAS (edit ONLY pixels inside the provided mask): ${areaLabels}
+━━━━ EDITING MODE ━━━━
+Use image editing mode. The original uploaded image is the dominant source. Modify only the pixels inside the provided mask. Leave all pixels outside the mask completely unchanged.
 
-━━━━ DECISION PRIORITY ORDER (strictly follow this hierarchy) ━━━━
-1. PRESERVE facial identity — the patient must remain 100% recognizable
-2. PRESERVE individual anatomy — respect the patient's unique anatomical features
-3. PRESERVE personal characteristics — expression, unique traits, natural asymmetries
-4. PRESERVE facial expression — unchanged
-5. USE symmetry/proportion as subtle reference only (see below)
-6. APPLY the requested aesthetic correction in the masked area only
+━━━━ SELECTED TREATMENT AREA ━━━━
+${areaLabels}
 
-━━━━ CORRECTION INSTRUCTIONS — inside mask only ━━━━
-${areas}
+━━━━ EDITING INSTRUCTIONS FOR SELECTED AREA ━━━━
+${areaInstruction}
 
-━━━━ FACIAL SYMMETRY AS CLINICAL REFERENCE ━━━━
-Use the following symmetry and proportion principles ONLY as a subtle orientation guide.
-These principles must NEVER override the patient's individual anatomy or identity.
-If ANY conflict arises between symmetry and identity preservation, identity ALWAYS wins.
+━━━━ MANDATORY PRESERVATION — THESE ELEMENTS MUST BE PIXEL-IDENTICAL TO THE ORIGINAL ━━━━
+• Eye color — NEVER change
+• Eye shape — NEVER change
+• Facial identity — NEVER change
+• Facial expression — NEVER change
+• Skin tone — NEVER change
+• Hair — color, style, texture, hairline unchanged
+• Beard and facial hair — exactly preserved
+• Eyebrows — unchanged (exception: only if eyebrow area is selected)
+• Lips — unchanged (exception: only if lips area is selected)
+• Clothing — exactly preserved
+• Accessories, earrings, necklace, jewelry — exactly preserved
+• Background — exactly preserved
+• Environment — exactly preserved
+• Lighting and shadows — exactly preserved
+• Camera angle and framing — exactly preserved
+• Photo quality — exactly preserved
+
+━━━━ DECISION PRIORITY ORDER ━━━━
+1. Preserve facial identity
+2. Preserve individual anatomy
+3. Preserve personal characteristics and natural asymmetries
+4. Preserve facial expression
+5. Use facial symmetry and golden ratio only as subtle technical references
+6. Apply the requested aesthetic correction in the selected area only
+If facial symmetry conflicts with patient identity: patient identity always prevails.
+
+━━━━ FACIAL SYMMETRY AS SUBTLE CLINICAL REFERENCE ONLY ━━━━
 ${symmetryRefs}
 
-━━━━ ABSOLUTE IDENTITY PRESERVATION RULES ━━━━
-Every element below must remain PIXEL-IDENTICAL to the original:
-• Eyes: exact shape, iris color, pupil, eyelid fold, inter-ocular distance
-• Eyebrows: exact shape, thickness, arch, height, color
-• Eyelashes: unchanged
-• Nose shape: NEVER altered (exception: nariz mask only, minor dorsal)
-• Mouth and lips: unchanged (exception: labios mask only)
-• Beard and facial hair: exactly preserved
-• Hair: hairline, color, style, texture unchanged
-• Ears and accessories: unchanged
-• Background, lighting, shadows: unchanged
-• Camera angle and framing: unchanged
-• Facial expression: unchanged
-• Bone structure and proportions: NEVER changed
-• Skin texture OUTSIDE mask: preserved
-
-━━━━ FORBIDDEN ACTIONS ━━━━
-✗ Do NOT create a perfect face, perfect nose, or idealized facial structure
-✗ Do NOT create a model, celebrity, or filtered appearance
-✗ Do NOT apply golden ratio as a transformation target — only as a subtle reference
-✗ Do NOT change eye shape or inter-ocular distance
-✗ Do NOT change eyebrow shape or position
-✗ Do NOT alter nose unless nariz mask
-✗ Do NOT alter lips unless labios mask
-✗ Do NOT change hairline
-✗ Do NOT change jaw structure unless mandibula/mento mask
-✗ Do NOT apply beauty filter or skin smoothing outside mask
-✗ Do NOT create a new face or idealized version
-✗ Do NOT harmonize the whole face when only a specific area is masked
-
 ━━━━ QUALITY STANDARD ━━━━
-• Transformation intensity: MINIMAL (10-20% of possible change)
-• Realism: MAXIMUM — result must look like expert manual retouching
-• Symmetry application: SUBTLE — perceived only as natural harmony, not reconstruction
-• A professional viewing BEFORE and AFTER must think: "Same person, same photo, lightly improved"
-• A patient must remain 100% recognizable — this is an aesthetic evolution, not a transformation
-• Final result must convey: "This is the same person, harmonized within their own natural anatomy"`;
+• Transformation intensity: MINIMAL (10-20% of what is technically possible)
+• Realism: MAXIMUM — result must look like professional manual medical retouching
+• The person must be immediately recognizable as the exact same person
+• A professional viewing BEFORE and AFTER must think: "Same person, same photo, same moment — only the selected area was lightly improved"
+• Final result must convey: "This is the same person, with a subtle, realistic and clinically plausible aesthetic improvement"
+
+${GLOBAL_NEGATIVE_PROMPT}`;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -439,7 +437,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v7_masked_symmetry_guided",
+      ai_prompt_version: "v8_localized_ultra_realistic",
     });
     simulationId = simulation.id;
 
@@ -602,7 +600,7 @@ Deno.serve(async (req) => {
       generated_image_url,
       status: "completed",
       technical_report: technicalReport,
-      facial_analysis_snapshot: { simulation_options: finalOptions, mask_used: true, prompt_version: "v7", symmetry_guided: true },
+      facial_analysis_snapshot: { simulation_options: finalOptions, mask_used: true, prompt_version: "v8", symmetry_guided: true, localized_editing: true },
       image_metadata: { format: "png", width: 1024, height: 1024 },
     });
 
@@ -620,14 +618,14 @@ Deno.serve(async (req) => {
       console.log("Aviso: log de auditoria falhou:", e.message);
     }
 
-    console.log("Simulação v7 (máscara + simetria como referência) concluída:", simulationId);
+    console.log("Simulação v8 (edição localizada ultra-realista) concluída:", simulationId);
 
     return Response.json({
       success: true,
       simulation_id: simulationId,
       generated_image_url,
       technical_report: technicalReport,
-      message: "Simulação gerada com sucesso (Modo Clínico Realista v7 — Simetria como Referência)",
+      message: "Simulação gerada com sucesso (Modo Clínico Realista v8 — Edição Localizada Ultra-Realista)",
     });
 
   } catch (error) {
