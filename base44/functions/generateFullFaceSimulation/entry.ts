@@ -1,19 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Prompts por opção de simulação
+// Prompts por opção de simulação — MODO CLÍNICO REALISTA
 const OPTION_PROMPTS = {
-  full_face: "Apply a complete Full Face harmonization: subtly improve facial symmetry, jawline definition, slight chin projection, minimal submental reduction, soft nasal refinement, natural skin texture improvement, and overall balanced appearance.",
-  testa: "Soften horizontal forehead lines and wrinkles, maintaining natural expression and skin texture.",
-  glabela: "Reduce the vertical frown lines between the eyebrows (glabellar lines), maintaining natural facial expression.",
-  pes_galinha: "Soften the crow's feet wrinkles at the outer corners of the eyes, keeping a natural and expressive look.",
-  mandibula: "Enhance the jawline definition and symmetry, maintaining natural anatomy. Subtle improvement only.",
-  mento: "Slightly improve chin projection and balance for better facial profile proportion. Natural and subtle.",
-  mandibula_mento: "Improve jawline definition and chin projection together for a more balanced facial contour.",
-  melasma: "Reduce the appearance of melasma, dark spots, and skin pigmentation irregularities. Maintain natural skin texture.",
-  olheiras: "Reduce the appearance of dark circles and under-eye hollows, maintaining natural facial expression.",
-  labios: "Add subtle lip hydration, definition, and slight natural volume. No dramatic augmentation.",
-  nariz: "Apply a subtle rhinomodeling simulation: refine nasal bridge, slightly improve tip definition.",
-  papada: "Reduce the appearance of a double chin and improve the submental contour. Realistic and natural.",
+  full_face: "Very subtly improve overall skin texture and tone uniformity only. Do NOT alter any facial structure, proportions, or features.",
+  testa: "Very gently reduce forehead lines using skin texture editing only. Do NOT move, reshape, or alter eyebrows, hairline, or any structural feature.",
+  glabela: "Slightly soften the vertical lines between the eyebrows using texture-only editing. Do NOT change eyebrow shape, thickness, or position.",
+  pes_galinha: "Lightly smooth crow's feet lines at the outer eye corners using texture editing only. Do NOT alter eye shape, size, or surrounding structures.",
+  mandibula: "Very subtly improve skin texture and shadow along the jawline only. Do NOT alter bone structure, jaw shape, or face width.",
+  mento: "Slightly improve skin texture in the chin area only. Do NOT change chin projection, shape, or proportion.",
+  mandibula_mento: "Very subtly refine skin texture along jawline and chin area only. Do NOT alter bone structure or facial proportions.",
+  melasma: "Reduce melasma patches and dark spots using skin tone correction only. Do NOT change skin texture, pore visibility, or any facial feature.",
+  olheiras: "Gently reduce under-eye darkness and puffiness using color correction only. Do NOT alter eye shape, lower eyelid, or surrounding skin structure.",
+  labios: "Very slightly improve lip moisture and surface texture. Do NOT change lip shape, volume, borders, or proportion.",
+  nariz: "Very subtle nasal skin texture refinement only. Do NOT alter nasal shape, size, tip, bridge, or width.",
+  papada: "Very gently reduce submental shadow and skin laxity appearance. Do NOT change facial structure, neck shape, or jaw definition.",
 };
 
 function buildPrompt(simulationOptions) {
@@ -23,23 +23,48 @@ function buildPrompt(simulationOptions) {
     .filter(p => p.trim().length > 3)
     .join("\n");
 
-  return `You are a professional aesthetic medicine simulation AI. Generate a realistic, natural "before and after" facial simulation.
+  return `You are a professional medical-aesthetic retouching specialist. Your task is to produce a CLINICAL REALISTIC simulation that looks like a photograph lightly retouched by an expert Photoshop artist — NOT an AI-generated image.
 
 Create a SIDE-BY-SIDE comparison image:
-- LEFT SIDE: Original "ANTES" (Before) photo — UNCHANGED, exactly as provided
-- RIGHT SIDE: Enhanced "DEPOIS" (After) simulation with requested improvements
+- LEFT SIDE: The original photo labeled "ANTES" — completely UNCHANGED, pixel-perfect copy
+- RIGHT SIDE: The same photo with ONLY the requested minimal corrections, labeled "DEPOIS"
 
-IMPROVEMENTS TO APPLY (right side only):
+REQUESTED CORRECTIONS (right side only — apply with maximum conservatism):
 ${improvements}
 
-CRITICAL RULES:
-- MUST maintain exact same person's identity, ethnicity, and age
-- Keep original clothing, hair, background, eye color
-- NO artificial, plastic, or over-filtered appearance
-- NO dramatic structural changes or extreme rejuvenation
-- Result must look like a real clinical photograph
-- Add small "ANTES" label on left side and "DEPOIS" on right side
-- Add footer text: "Simulação Estética IA — Resultado Ilustrativo"`;
+ABSOLUTE PRESERVATION RULES — these elements must be PIXEL-IDENTICAL between left and right:
+- Eyes: exact same shape, iris color, iris size, pupil, eyelid fold, eye distance
+- Eyebrows: exact same shape, thickness, arch, position, color
+- Eyelashes: exact same length and curl
+- Nose: exact same shape, width, tip, bridge, nostrils
+- Mouth and lips: exact same shape, volume, borders, philtrum
+- Beard and facial hair: exactly preserved
+- Hair: exact same hairline, style, color, texture
+- Ears: unchanged
+- Clothing and accessories: unchanged
+- Background and scenery: unchanged
+- Lighting and shadows: unchanged
+- Camera angle and framing: unchanged
+- Facial expression: unchanged
+- Skin texture and pore pattern: preserved except in specifically requested zones
+- Bone structure and facial proportions: NEVER altered
+
+FORBIDDEN ALTERATIONS — if any of these occur, the result is invalid:
+- Any change to eye shape or inter-ocular distance
+- Any change to eyebrow shape or thickness
+- Any change to nose shape or size
+- Any change to lip shape or volume
+- Any change to hairline
+- Any structural change to jawbone or mandible
+- Any change to overall facial proportions
+
+QUALITY STANDARD:
+- Realism = maximum
+- Transformation intensity = minimal/conservative
+- Result must be indistinguishable from a manual professional retouch
+- A viewer must think: "This is the exact same photograph, slightly improved" — NOT "This was created by AI"
+- Add small "ANTES" label on left and "DEPOIS" label on right
+- Add footer: "Simulação Estética IA — Resultado Ilustrativo"`;
 }
 
 function buildTechnicalReport(simulationOptions) {
@@ -107,7 +132,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v4",
+      ai_prompt_version: "v5_clinical_realistic",
     });
     simulationId = simulation.id;
 
