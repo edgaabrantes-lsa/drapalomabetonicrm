@@ -226,7 +226,7 @@ function BeforeAfterSlider({ before, after }) {
 
   return (
     <div ref={containerRef} className="relative overflow-hidden rounded-xl select-none cursor-col-resize"
-      style={{ touchAction: "none" }}
+      style={{ touchAction: "none", aspectRatio: "1 / 1" }}
       onMouseDown={e => { dragging.current = true; updatePos(e.clientX); }}
       onMouseMove={e => { if (dragging.current) updatePos(e.clientX); }}
       onMouseUp={() => { dragging.current = false; }}
@@ -235,9 +235,9 @@ function BeforeAfterSlider({ before, after }) {
       onTouchMove={e => { if (dragging.current) updatePos(e.touches[0].clientX); }}
       onTouchEnd={() => { dragging.current = false; }}
     >
-      <img src={after} alt="Depois" className="w-full block" />
+      <img src={after} alt="Depois" className="absolute inset-0 w-full h-full" style={{ objectFit: "cover", objectPosition: "top center" }} />
       <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
-        <img src={before} alt="Antes" className="w-full block" />
+        <img src={before} alt="Antes" className="absolute inset-0 w-full h-full" style={{ objectFit: "cover", objectPosition: "top center" }} />
       </div>
       {/* Divisor */}
       <div className="absolute top-0 bottom-0 w-0.5 bg-white/80 shadow-lg pointer-events-none"
