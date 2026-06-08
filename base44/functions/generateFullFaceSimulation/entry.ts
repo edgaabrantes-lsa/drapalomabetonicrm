@@ -23,6 +23,27 @@ const AREA_MASKS = {
   full_face:       { y: [0.03, 0.97], x: [0.03, 0.97], label: "Full Face" },
 };
 
+// ──────────────────────────────────────────────────────────────
+//  REFERÊNCIA DE SIMETRIA FACIAL — usado como orientação discreta
+//  Prioridade: Identidade > Anatomia individual > Simetria facial
+//  A simetria serve apenas para calibrar a direção do refinamento,
+//  NUNCA para transformar ou substituir as características do paciente.
+// ──────────────────────────────────────────────────────────────
+const SYMMETRY_GUIDANCE = {
+  full_face: `Use facial harmony principles (golden ratio proportions, bilateral symmetry) ONLY as a subtle reference to guide minimal skin tone and texture uniformity. Do NOT use symmetry to restructure, rebalance, or alter any anatomical feature. The patient's individual anatomy always takes absolute precedence over any ideal proportion.`,
+  testa: `Use facial proportion reference only to ensure the forehead texture correction is uniform across both sides. Do NOT alter forehead height or hairline position to match any ideal proportion.`,
+  glabela: `Use bilateral symmetry only to ensure the texture softening is even across both glabellar lines. Do NOT change eyebrow spacing or height to match a golden ratio standard.`,
+  pes_galinha: `Use bilateral facial symmetry only to ensure crow's feet smoothing is equally applied to both eye corners. Do NOT alter eye spacing, eye size, or orbital structure.`,
+  olheiras: `Use bilateral symmetry only to ensure under-eye correction is uniform on both sides. Do NOT alter orbital bone contour, eye shape, or inter-ocular distance.`,
+  nariz: `Use nasal proportion reference (golden ratio nasal width ~1/5 of face) ONLY as a subtle guide to refine minor dorsal irregularities and tip definition within this patient's own nasal anatomy. Do NOT reshape the nose to match a generic ideal. Do NOT change nasal width, nostril shape, or overall nasal size. The patient's nasal identity must remain fully recognizable.`,
+  labios: `Use lip proportion reference only to ensure the surface clarity enhancement is balanced between upper and lower lip. Do NOT alter lip size, projection, or cupid's bow to match any aesthetic standard.`,
+  melasma: `Use skin tone uniformity as reference only for even pigmentation correction across both sides of the face. Do NOT use any aesthetic standard to alter skin texture or facial structure.`,
+  mandibula: `Use facial contour symmetry only as a guide to ensure the jawline texture refinement is consistent on both sides. Do NOT alter jaw width, angle, or bone structure to match any ideal proportion.`,
+  mento: `Use the facial thirds proportion (forehead, mid-face, lower face) only as a subtle reference to ensure the chin texture correction is positioned naturally. Do NOT alter chin projection or shape to match a golden ratio ideal.`,
+  mandibula_mento: `Use facial contour symmetry only as reference for balanced jawline and chin texture refinement. Do NOT alter bone structure or facial proportions to match any aesthetic standard.`,
+  papada: `Use facial contour reference only to ensure submental correction is centered and natural. Do NOT alter neck structure or jaw definition.`,
+};
+
 // Prompts ultra-conservadores por área
 const AREA_PROMPTS = {
   full_face:
@@ -51,18 +72,33 @@ const AREA_PROMPTS = {
     "Very gently reduce submental shadow and skin laxity appearance in the masked submentonian region. Do NOT change neck structure, jaw definition, or facial proportions.",
 };
 
-// Prompt base com regras absolutas de preservação
+// Prompt base com regras absolutas de preservação + simetria como referência
 function buildPrompt(options) {
   if (!options || options.length === 0) options = ["full_face"];
   const areas = options.map(o => AREA_PROMPTS[o] || AREA_PROMPTS.full_face).join("\n");
+  const symmetryRefs = options.map(o => SYMMETRY_GUIDANCE[o] || SYMMETRY_GUIDANCE.full_face).join("\n");
   const areaLabels = options.map(o => AREA_MASKS[o]?.label || o).join(", ");
 
-  return `You are a MEDICAL-GRADE aesthetic photo retouching specialist operating in CLINICAL REALISTIC MODE.
+  return `You are a MEDICAL-GRADE aesthetic photo retouching specialist operating in CLINICAL REALISTIC MODE with SYMMETRY-GUIDED precision.
 
 TARGET AREAS (edit ONLY pixels inside the provided mask): ${areaLabels}
 
-CORRECTION INSTRUCTIONS — apply conservatively inside mask only:
+━━━━ DECISION PRIORITY ORDER (strictly follow this hierarchy) ━━━━
+1. PRESERVE facial identity — the patient must remain 100% recognizable
+2. PRESERVE individual anatomy — respect the patient's unique anatomical features
+3. PRESERVE personal characteristics — expression, unique traits, natural asymmetries
+4. PRESERVE facial expression — unchanged
+5. USE symmetry/proportion as subtle reference only (see below)
+6. APPLY the requested aesthetic correction in the masked area only
+
+━━━━ CORRECTION INSTRUCTIONS — inside mask only ━━━━
 ${areas}
+
+━━━━ FACIAL SYMMETRY AS CLINICAL REFERENCE ━━━━
+Use the following symmetry and proportion principles ONLY as a subtle orientation guide.
+These principles must NEVER override the patient's individual anatomy or identity.
+If ANY conflict arises between symmetry and identity preservation, identity ALWAYS wins.
+${symmetryRefs}
 
 ━━━━ ABSOLUTE IDENTITY PRESERVATION RULES ━━━━
 Every element below must remain PIXEL-IDENTICAL to the original:
@@ -81,6 +117,9 @@ Every element below must remain PIXEL-IDENTICAL to the original:
 • Skin texture OUTSIDE mask: preserved
 
 ━━━━ FORBIDDEN ACTIONS ━━━━
+✗ Do NOT create a perfect face, perfect nose, or idealized facial structure
+✗ Do NOT create a model, celebrity, or filtered appearance
+✗ Do NOT apply golden ratio as a transformation target — only as a subtle reference
 ✗ Do NOT change eye shape or inter-ocular distance
 ✗ Do NOT change eyebrow shape or position
 ✗ Do NOT alter nose unless nariz mask
@@ -94,8 +133,10 @@ Every element below must remain PIXEL-IDENTICAL to the original:
 ━━━━ QUALITY STANDARD ━━━━
 • Transformation intensity: MINIMAL (10-20% of possible change)
 • Realism: MAXIMUM — result must look like expert manual retouching
-• A professional looking at BEFORE and AFTER should think: "Same photograph, lightly improved"
-• A patient must remain 100% recognizable as the exact same person`;
+• Symmetry application: SUBTLE — perceived only as natural harmony, not reconstruction
+• A professional viewing BEFORE and AFTER must think: "Same person, same photo, lightly improved"
+• A patient must remain 100% recognizable — this is an aesthetic evolution, not a transformation
+• Final result must convey: "This is the same person, harmonized within their own natural anatomy"`;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -347,7 +388,7 @@ function flattenUint8Arrays(arrays) {
 // ──────────────────────────────────────────────────────────────
 function buildTechnicalReport(options) {
   const labels = options.map(o => AREA_MASKS[o]?.label || o).join(", ");
-  return `Simulação clínica com máscara localizada nas áreas: ${labels}. Apenas os pixels da região anatômica definida foram editados. Identidade facial, estrutura óssea, olhos, sobrancelhas e demais características preservadas integralmente. Resultado meramente ilustrativo para apoio visual em consulta estética. Não representa promessa de resultado clínico.`;
+  return `Simulação clínica com máscara localizada nas áreas: ${labels}. Apenas os pixels da região anatômica definida foram editados. Princípios de simetria facial e proporção áurea utilizados como referência técnica discreta para calibrar o refinamento. Identidade facial, anatomia individual, estrutura óssea, olhos, sobrancelhas e demais características preservadas integralmente. Resultado meramente ilustrativo para apoio visual em consulta estética. Não representa promessa de resultado clínico.`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -398,7 +439,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v6_masked_clinical",
+      ai_prompt_version: "v7_masked_symmetry_guided",
     });
     simulationId = simulation.id;
 
@@ -561,7 +602,7 @@ Deno.serve(async (req) => {
       generated_image_url,
       status: "completed",
       technical_report: technicalReport,
-      facial_analysis_snapshot: { simulation_options: finalOptions, mask_used: true, prompt_version: "v6" },
+      facial_analysis_snapshot: { simulation_options: finalOptions, mask_used: true, prompt_version: "v7", symmetry_guided: true },
       image_metadata: { format: "png", width: 1024, height: 1024 },
     });
 
@@ -579,14 +620,14 @@ Deno.serve(async (req) => {
       console.log("Aviso: log de auditoria falhou:", e.message);
     }
 
-    console.log("Simulação v6 (com máscara) concluída:", simulationId);
+    console.log("Simulação v7 (máscara + simetria como referência) concluída:", simulationId);
 
     return Response.json({
       success: true,
       simulation_id: simulationId,
       generated_image_url,
       technical_report: technicalReport,
-      message: "Simulação gerada com sucesso (Modo Clínico Realista v6)",
+      message: "Simulação gerada com sucesso (Modo Clínico Realista v7 — Simetria como Referência)",
     });
 
   } catch (error) {
