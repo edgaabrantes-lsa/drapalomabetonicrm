@@ -262,7 +262,7 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
         file_name: fileName,
         data_criacao: new Date().toISOString(),
         criado_por: currentUser?.full_name || currentUser?.email || "Sistema",
-        versao: 1,
+        versao: String("1.0"),
         observacoes: `Documentos incluídos: ${docsGerados}`
       });
 
@@ -289,7 +289,7 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
         data_criacao: new Date().toISOString(),
         data_assinatura: uploadForm.data_assinatura ? new Date(uploadForm.data_assinatura).toISOString() : null,
         criado_por: currentUser?.full_name || currentUser?.email || "Sistema",
-        versao: 1,
+        versao: String("1.0"),
         observacoes: uploadForm.observacoes
       });
     } finally {

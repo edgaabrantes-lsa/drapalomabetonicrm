@@ -88,7 +88,7 @@ export default function DossieDocumentacao({ patient, currentUser }) {
         file_name,
         data_criacao: new Date().toISOString(),
         criado_por: currentUser?.full_name || currentUser?.email || "Sistema",
-        versao: "1.0"
+        versao: String("1.0")
       });
     } finally {
       setUploading(false);
@@ -230,7 +230,7 @@ export default function DossieDocumentacao({ patient, currentUser }) {
                     onClick={() => setAssinaturaDoc({
                       ...doc,
                       conteudo: doc.observacoes || "",
-                      versao: String(doc.versao || doc.versao_atual || doc.documento_versao || "1.0")
+                      versao: String(doc.versao ?? "1.0")
                     })}
                   >
                     ✍ Assinar
