@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
@@ -210,12 +211,32 @@ function CameraCapture({ onCapture, onCancel }) {
 }
 
 /* ─────────────────────────────────────
-   SLIDER ANTES / DEPOIS — contain, sem corte
+   SLIDER ANTES / DEPOIS — alinhamento perfeito, sem corte
+   Técnica: ambas as imagens ficam em position:absolute sobre
+   um container com aspect-ratio determinado pela imagem DEPOIS.
+   O clipPath na camada ANTES garante corte sem desalinhamento.
 ───────────────────────────────────────*/
 function BeforeAfterSlider({ before, after }) {
   const [pos, setPos] = useState(50);
+  const [containerH, setContainerH] = useState(0);
   const containerRef = useRef(null);
+  const afterImgRef = useRef(null);
   const dragging = useRef(false);
+
+  // Calcular altura do container baseado na imagem carregada
+  const updateHeight = useCallback(() => {
+    const img = afterImgRef.current;
+    const container = containerRef.current;
+    if (!img || !container || !img.naturalWidth) return;
+    const ratio = img.naturalHeight / img.naturalWidth;
+    const h = container.offsetWidth * ratio;
+    setContainerH(Math.min(h, window.innerHeight * 0.78));
+  }, []);
+
+  useLayoutEffect(() => {
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, [updateHeight]);
 
   const updatePos = useCallback((clientX) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -224,55 +245,79 @@ function BeforeAfterSlider({ before, after }) {
     setPos(p);
   }, []);
 
+  const imgStyle = {
+    position: "absolute",
+    top: 0, left: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+    display: "block",
+    userSelect: "none",
+  };
+
   return (
-    <div ref={containerRef}
-      className="relative select-none cursor-col-resize rounded-xl overflow-hidden bg-black"
-      style={{ touchAction: "none", width: "100%", lineHeight: 0 }}
+    <div
+      ref={containerRef}
+      className="relative select-none cursor-col-resize bg-black w-full"
+      style={{
+        touchAction: "none",
+        height: containerH > 0 ? containerH : "auto",
+        minHeight: containerH > 0 ? undefined : 240,
+        overflow: "hidden",
+      }}
       onMouseDown={e => { dragging.current = true; updatePos(e.clientX); }}
       onMouseMove={e => { if (dragging.current) updatePos(e.clientX); }}
       onMouseUp={() => { dragging.current = false; }}
       onMouseLeave={() => { dragging.current = false; }}
-      onTouchStart={e => { dragging.current = true; updatePos(e.touches[0].clientX); }}
-      onTouchMove={e => { if (dragging.current) updatePos(e.touches[0].clientX); }}
+      onTouchStart={e => { e.preventDefault(); dragging.current = true; updatePos(e.touches[0].clientX); }}
+      onTouchMove={e => { e.preventDefault(); if (dragging.current) updatePos(e.touches[0].clientX); }}
       onTouchEnd={() => { dragging.current = false; }}
     >
-      {/* Imagem DEPOIS — base, ocupa 100% da largura sem corte */}
+      {/* Imagem DEPOIS — camada base */}
       <img
+        ref={afterImgRef}
         src={after}
         alt="Depois"
-        style={{ display: "block", width: "100%", height: "auto", maxHeight: "80vh", objectFit: "contain" }}
+        style={imgStyle}
         draggable={false}
+        onLoad={updateHeight}
       />
 
-      {/* Imagem ANTES — sobreposta, clipada pela esquerda */}
+      {/* Imagem ANTES — sobreposta com clipPath exato */}
       <div
-        className="absolute inset-0"
-        style={{ clipPath: `inset(0 ${100 - pos}% 0 0)`, overflow: "hidden" }}
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: "100%", height: "100%",
+          clipPath: `inset(0 ${100 - pos}% 0 0)`,
+        }}
       >
         <img
           src={before}
           alt="Antes"
-          style={{ display: "block", width: "100%", height: "auto", maxHeight: "80vh", objectFit: "contain" }}
+          style={imgStyle}
           draggable={false}
         />
       </div>
 
-      {/* Linha divisória */}
+      {/* Linha divisória + handle */}
       <div
         className="absolute top-0 bottom-0 pointer-events-none"
-        style={{ left: `${pos}%`, width: 2, background: "rgba(255,255,255,0.85)", boxShadow: "0 0 8px rgba(0,0,0,0.6)" }}
+        style={{ left: `${pos}%`, width: 2, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", boxShadow: "0 0 12px rgba(0,0,0,0.7)" }}
       >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-xl flex items-center justify-center gap-0.5">
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white shadow-2xl flex items-center justify-center gap-0.5"
+          style={{ border: "2px solid #C5A059" }}
+        >
           <ArrowLeft className="h-3 w-3 text-gray-600" />
           <ArrowRight className="h-3 w-3 text-gray-600" />
         </div>
       </div>
 
       {/* Labels */}
-      <div className="absolute bottom-3 left-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
-        style={{ background: "rgba(0,0,0,0.65)", pointerEvents: "none" }}>ANTES</div>
-      <div className="absolute bottom-3 right-3 text-xs font-semibold text-white px-2 py-0.5 rounded"
-        style={{ background: "rgba(0,0,0,0.65)", pointerEvents: "none" }}>DEPOIS</div>
+      <div className="absolute bottom-3 left-3 text-xs font-bold text-white px-2.5 py-1 rounded-full pointer-events-none"
+        style={{ background: "rgba(0,0,0,0.72)", letterSpacing: "0.06em" }}>ANTES</div>
+      <div className="absolute bottom-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full pointer-events-none"
+        style={{ background: "rgba(197,160,89,0.92)", color: "#111620", letterSpacing: "0.06em" }}>DEPOIS</div>
     </div>
   );
 }

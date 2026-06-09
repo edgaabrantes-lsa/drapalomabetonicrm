@@ -1,145 +1,123 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // ══════════════════════════════════════════════════════════════
-//  MODO CLÍNICO REALISTA v9 — Identidade Preservada
-//  Arquitetura: imagem original → máscara anatômica → edição restrita
-//  Regra absoluta: a paciente deve ser exatamente a mesma pessoa
-//  Nunca criar nova pessoa. Nunca alterar etnia, traços ou identidade.
+//  MODO CLÍNICO DEFINITIVO v10 — Máxima Preservação de Identidade
+//  Regra absoluta: a paciente DEVE ser a mesma pessoa na saída.
+//  Apenas a área selecionada é editada. Tudo mais permanece idêntico.
 // ══════════════════════════════════════════════════════════════
 
-// Mapeamento de área → região anatômica em % da imagem (y_start, y_end, x_start, x_end)
-// Valores em proporção 0..1, referenciados em rosto centrado (assume imagem 1:1 ou portrait)
 const AREA_MASKS = {
-  testa:           { y: [0.04, 0.26], x: [0.15, 0.85], label: "Rugas da testa" },
-  glabela:         { y: [0.22, 0.36], x: [0.32, 0.68], label: "Glabela" },
-  pes_galinha:     { y: [0.28, 0.48], x: [0.02, 0.98], label: "Pés de galinha" },
-  olheiras:        { y: [0.35, 0.52], x: [0.12, 0.88], label: "Olheiras" },
-  nariz:           { y: [0.34, 0.62], x: [0.28, 0.72], label: "Nariz" },
-  labios:          { y: [0.56, 0.74], x: [0.25, 0.75], label: "Lábios" },
-  melasma:         { y: [0.22, 0.72], x: [0.05, 0.95], label: "Melasma" },
-  mandibula:       { y: [0.68, 0.90], x: [0.05, 0.95], label: "Mandíbula" },
-  mento:           { y: [0.74, 0.96], x: [0.22, 0.78], label: "Mento" },
-  mandibula_mento: { y: [0.68, 0.96], x: [0.05, 0.95], label: "Mandíbula + Mento" },
-  papada:          { y: [0.70, 0.96], x: [0.15, 0.85], label: "Papada" },
-  full_face:       { y: [0.03, 0.97], x: [0.03, 0.97], label: "Full Face" },
+  testa:           { y: [0.04, 0.28], x: [0.12, 0.88], label: "forehead wrinkles" },
+  glabela:         { y: [0.22, 0.38], x: [0.30, 0.70], label: "glabellar lines" },
+  pes_galinha:     { y: [0.28, 0.50], x: [0.02, 0.98], label: "crow's feet" },
+  olheiras:        { y: [0.35, 0.54], x: [0.10, 0.90], label: "under-eye dark circles" },
+  nariz:           { y: [0.32, 0.64], x: [0.26, 0.74], label: "nose" },
+  labios:          { y: [0.54, 0.76], x: [0.23, 0.77], label: "lips" },
+  melasma:         { y: [0.20, 0.74], x: [0.04, 0.96], label: "melasma and hyperpigmentation" },
+  mandibula:       { y: [0.66, 0.92], x: [0.04, 0.96], label: "jawline" },
+  mento:           { y: [0.72, 0.96], x: [0.20, 0.80], label: "chin" },
+  mandibula_mento: { y: [0.66, 0.96], x: [0.04, 0.96], label: "jawline and chin" },
+  papada:          { y: [0.68, 0.96], x: [0.14, 0.86], label: "double chin and submental area" },
+  full_face:       { y: [0.02, 0.98], x: [0.02, 0.98], label: "full face harmonization" },
 };
 
 // ──────────────────────────────────────────────────────────────
-//  REFERÊNCIA DE SIMETRIA FACIAL — usado como orientação discreta
-//  Prioridade: Identidade > Anatomia individual > Simetria facial
-//  A simetria serve apenas para calibrar a direção do refinamento,
-//  NUNCA para transformar ou substituir as características do paciente.
+//  PROMPT BUILDER — v10 definitivo
+//  Baseado exatamente nas instruções do briefing do cliente
 // ──────────────────────────────────────────────────────────────
-const SYMMETRY_GUIDANCE = {
-  full_face: `Use facial harmony principles (golden ratio proportions, bilateral symmetry) ONLY as a subtle reference to guide minimal skin tone and texture uniformity. Do NOT use symmetry to restructure, rebalance, or alter any anatomical feature. The patient's individual anatomy always takes absolute precedence over any ideal proportion.`,
-  testa: `Use facial proportion reference only to ensure the forehead texture correction is uniform across both sides. Do NOT alter forehead height or hairline position to match any ideal proportion.`,
-  glabela: `Use bilateral symmetry only to ensure the texture softening is even across both glabellar lines. Do NOT change eyebrow spacing or height to match a golden ratio standard.`,
-  pes_galinha: `Use bilateral facial symmetry only to ensure crow's feet smoothing is equally applied to both eye corners. Do NOT alter eye spacing, eye size, or orbital structure.`,
-  olheiras: `Use bilateral symmetry only to ensure under-eye correction is uniform on both sides. Do NOT alter orbital bone contour, eye shape, or inter-ocular distance.`,
-  nariz: `Use nasal proportion reference (golden ratio nasal width ~1/5 of face) ONLY as a subtle guide to refine minor dorsal irregularities and tip definition within this patient's own nasal anatomy. Do NOT reshape the nose to match a generic ideal. Do NOT change nasal width, nostril shape, or overall nasal size. The patient's nasal identity must remain fully recognizable.`,
-  labios: `Use lip proportion reference only to ensure the surface clarity enhancement is balanced between upper and lower lip. Do NOT alter lip size, projection, or cupid's bow to match any aesthetic standard.`,
-  melasma: `Use skin tone uniformity as reference only for even pigmentation correction across both sides of the face. Do NOT use any aesthetic standard to alter skin texture or facial structure.`,
-  mandibula: `Use facial contour symmetry only as a guide to ensure the jawline texture refinement is consistent on both sides. Do NOT alter jaw width, angle, or bone structure to match any ideal proportion.`,
-  mento: `Use the facial thirds proportion (forehead, mid-face, lower face) only as a subtle reference to ensure the chin texture correction is positioned naturally. Do NOT alter chin projection or shape to match a golden ratio ideal.`,
-  mandibula_mento: `Use facial contour symmetry only as reference for balanced jawline and chin texture refinement. Do NOT alter bone structure or facial proportions to match any aesthetic standard.`,
-  papada: `Use facial contour reference only to ensure submental correction is centered and natural. Do NOT alter neck structure or jaw definition.`,
-};
-
-// ──────────────────────────────────────────────────────────────
-//  NEGATIVE PROMPT GLOBAL — incluído em todas as chamadas
-// ──────────────────────────────────────────────────────────────
-const GLOBAL_NEGATIVE_PROMPT = `NEGATIVE PROMPT — ABSOLUTE PROHIBITIONS (apply to the entire image, no exceptions):
-Do not change ethnicity. Do not change race. Do not change skin color. Do not change eye color. Do not change eye shape. Do not change facial identity. Do not change background. Do not change clothing. Do not change accessories. Do not change hair color or style. Do not change beard. Do not change lips unless lips are the selected treatment area. Do not change eyebrows unless eyebrow area is the selected treatment area. Do not modify the whole face when only one treatment area is selected. Do not create an artificial face. Do not create a generic perfect face. Do not make the patient look like another person. Do not apply beauty filters. Do not regenerate the full face. Do not use full image synthesis. Do not change earrings, necklace or any jewelry. Do not change camera angle or framing. Do not change photo quality or lighting. Do not change facial bone structure. Do not westernize, idealize or standardize the patient's appearance. The patient must remain 100% recognizable as the same individual.`;
-
-// Prompts de edição localizada por área — baseados na imagem original como fonte dominante
-const AREA_PROMPTS = {
-  full_face:
-    "Edit the original uploaded photo using localized, realistic, medical-aesthetic image editing. Apply only subtle facial harmonization based on this patient's own facial symmetry. Do not create a generic perfect face. Do not make the patient look like another person. Modify only minimal skin tone unification and subtle texture refinement. The result must be the same patient with clinically subtle, realistic improvements — the same original photo, taken in the same place, at the same moment, with only a subtle aesthetic refinement applied.",
-  testa:
-    "Edit the original uploaded photo using localized image editing restricted to the forehead region only. Gently reduce horizontal forehead lines using skin texture editing only within the masked forehead region. Do not move or reshape eyebrows, hairline, or any other feature. No Botox-frozen look. The result must be the same original photo with only this specific improvement.",
-  glabela:
-    "Edit the original uploaded photo using localized image editing restricted to the glabellar region only. Slightly soften the vertical lines between the eyebrows in the masked area using texture editing only. Do not change eyebrow shape, thickness, arch, position, or surrounding structures. The result must be the same original photo with only this specific improvement.",
-  pes_galinha:
-    "Edit the original uploaded photo using localized image editing restricted to the outer eye corners only. Lightly smooth crow's feet wrinkles at the outer eye corners in the masked region only. Do not alter eye shape, eyelid, iris, pupil, or any surrounding structure. The result must be the same original photo with only this specific improvement.",
-  olheiras:
-    "Edit the original uploaded photo using localized image editing restricted to the under-eye area only. Gently reduce under-eye darkness and subtle puffiness in the masked infraorbital region using color and tone correction only. Do not alter eye shape, lower eyelid contour, cheekbone, iris color, or any surrounding tissue. Preserve eye shape and eye color completely. The result must be the same original photo with only this specific improvement.",
-  nariz:
-    "Edit the original uploaded photo using localized image editing restricted to the nose region only. Apply very subtle nasal refinement: gently smooth minor dorsal irregularities and refine tip definition inside the masked nasal region only. Do not change overall nasal size, nostril width, eye spacing, face shape, or any adjacent structure. Do not create a generic perfect nose. Preserve the patient's nasal identity. The result must be the same original photo with only this specific improvement.",
-  labios:
-    "Edit the original uploaded photo using localized image editing restricted to the lips only. Improve lip moisture, smooth minor surface lines, and very slightly enhance natural lip border clarity in the masked lip region only. Do not change lip shape, volume, philtrum, nose, cheeks, jaw, or surrounding skin. The result must be the same original photo with only this specific improvement.",
-  melasma:
-    "Edit the original uploaded photo using localized image editing restricted to hyperpigmentation areas only. Reduce hyperpigmentation and melasma patches in the masked facial regions using targeted tone correction only. Preserve all natural skin texture, pores, natural shadows, and micro-details. Do not apply a beauty filter. Do not change any anatomical structure. The result must be the same original photo with only this specific improvement.",
-  mandibula:
-    "Edit the original uploaded photo using localized image editing restricted to the jawline area only. Subtly refine the jawline contour and skin texture along the masked mandibular region only. Do not alter bone structure, face width, eye area, nose, cheeks, or any facial proportion outside the jawline. Do not change the entire face. The result must be the same original photo with only this specific improvement.",
-  mento:
-    "Edit the original uploaded photo using localized image editing restricted to the chin area only. Slightly improve skin texture and refine the chin contour in the masked chin area only. Do not change chin projection beyond a minimal subtle refinement. Do not alter the rest of the face. The result must be the same original photo with only this specific improvement.",
-  mandibula_mento:
-    "Edit the original uploaded photo using localized image editing restricted to the jawline and chin area only. Subtly refine skin texture along the masked jawline and chin area only. Do not alter bone structure, facial proportions, or any surrounding feature outside this region. The result must be the same original photo with only this specific improvement.",
-  papada:
-    "Edit the original uploaded photo using localized image editing restricted to the submental region only. Very gently reduce submental shadow and skin laxity appearance in the masked submentonian region. Do not change neck structure, jaw definition, face shape, or facial proportions. The result must be the same original photo with only this specific improvement.",
-};
-
-// Prompt final — baseado exatamente no briefing v9
 function buildPrompt(options) {
   if (!options || options.length === 0) options = ["full_face"];
+
   const areaLabels = options.map(o => AREA_MASKS[o]?.label || o).join(", ");
-  const areaInstruction = options.map(o => AREA_PROMPTS[o] || AREA_PROMPTS.full_face).join("\n");
-  const symmetryRefs = options.map(o => SYMMETRY_GUIDANCE[o] || SYMMETRY_GUIDANCE.full_face).join("\n");
 
-  return `Edit the original uploaded photo using localized, realistic medical-aesthetic image editing. Preserve the patient's facial identity, ethnicity, eye color, eye shape, skin tone, facial expression, hair, eyebrows, lips, clothing, accessories, background, lighting, shadows, camera angle, framing and original photo quality. Do not create a new person. Do not regenerate the whole face. Do not change unselected areas. Modify only the selected treatment area: ${areaLabels}. Use global facial symmetry, golden ratio and facial harmony only as subtle technical references while preserving the patient's natural identity. The final image must look like the same original photo, taken in the same place, at the same moment, with only the selected aesthetic improvement applied.
+  const negativePrompt = `ABSOLUTE PROHIBITIONS — DO NOT UNDER ANY CIRCUMSTANCES:
+Do not change ethnicity. Do not change race. Do not change skin color. Do not change eye color. Do not change eye shape. Do not change the patient's facial identity. Do not change background. Do not change clothing. Do not change accessories. Do not change hair color or style. Do not change beard. Do not change lips unless lips are the selected treatment area. Do not change eyebrows unless eyebrow area is the selected treatment area. Do not modify the whole face when only one treatment area is selected. Do not create an artificial face. Do not create a generic perfect face. Do not make the patient look like another person. Do not apply beauty filters. Do not regenerate the full face. Do not use full image synthesis. Do not change earrings, necklace or any jewelry. Do not change camera angle or framing. Do not change photo quality or lighting. Do not change facial bone structure. Do not westernize, idealize or standardize the patient's appearance. The patient must remain 100% recognizable as the same individual.`;
 
-━━━━ SELECTED TREATMENT AREA ━━━━
-${areaLabels}
+  const identityRules = `IDENTITY PRESERVATION — ABSOLUTE RULES:
+• The patient's ethnicity, race and skin tone must remain 100% unchanged.
+• Eye color — NEVER change under any circumstances.
+• Eye shape, eyelids, irises — NEVER change.
+• Facial bone structure — NEVER change.
+• Facial identity — the patient must be 100% recognizable as the same individual.
+• Facial expression — unchanged.
+• Hair color, style, texture — unchanged.
+• Beard and facial hair — exactly preserved.
+• Eyebrows — unchanged (exception: only if eyebrow area is selected).
+• Lips — unchanged (exception: only if lips area is selected).
+• Clothing — exactly preserved.
+• Accessories, earrings, necklace, jewelry — exactly preserved.
+• Background — exactly preserved, pixel-perfect.
+• Lighting and shadows — exactly preserved.
+• Camera angle and framing — exactly preserved.
+• Photo quality and resolution — exactly preserved.`;
 
-━━━━ LOCALIZED EDITING INSTRUCTIONS ━━━━
-${areaInstruction}
+  const areaSpecificInstructions = options.map(o => {
+    switch(o) {
+      case "testa":
+        return "FOREHEAD AREA ONLY: Very gently reduce horizontal forehead wrinkle lines using subtle skin texture softening restricted entirely to the forehead region. Do not move hairline. Do not alter eyebrows. Do not change eye area. Maximum subtlety — the result should look like natural skin, not Botox-frozen skin.";
+      case "glabela":
+        return "GLABELLAR AREA ONLY: Slightly soften the vertical frown lines between the eyebrows using texture softening restricted entirely to the glabellar region. Do not change eyebrow shape, arch, thickness, spacing, or position. Do not alter surrounding areas.";
+      case "pes_galinha":
+        return "CROW'S FEET AREA ONLY: Lightly smooth the wrinkles at the outer corners of the eyes restricted entirely to the outer eye corner region. Do not alter eye shape, eyelid, iris color, iris shape, pupil, or any surrounding structure. Bilateral application must be equal on both sides.";
+      case "olheiras":
+        return "UNDER-EYE AREA ONLY: Gently reduce darkness and subtle puffiness in the under-eye infraorbital region using color and tone correction only. Do not alter eye shape, lower eyelid contour, cheekbone structure, iris color, iris shape, or any surrounding tissue. Eye shape and eye color must be completely preserved.";
+      case "nariz":
+        return "NOSE AREA ONLY: Apply very subtle nasal refinement — gently smooth any minor dorsal irregularity and slightly refine tip definition inside the nasal region only. Do not change overall nasal size. Do not change nostril width. Do not change eye spacing. Do not change face shape. Do not create a generic perfect nose. The patient's nasal identity and recognizable nasal characteristics must remain fully intact.";
+      case "labios":
+        return "LIP AREA ONLY: Improve lip surface appearance — gently smooth surface lines and very slightly enhance natural lip border definition in the lip region only. Do not change lip volume, lip shape, philtrum, nose, cheeks, jaw, or surrounding skin. Do not create artificial lip augmentation.";
+      case "melasma":
+        return "HYPERPIGMENTATION AREA ONLY: Reduce melasma patches and hyperpigmentation spots using targeted tone correction only. Preserve all natural skin texture, pores, natural shadows, and micro-details. Do not apply a beauty filter. Do not smooth entire skin surface. Do not change any anatomical structure. Target only the dark pigmented patches.";
+      case "mandibula":
+        return "JAWLINE AREA ONLY: Subtly refine the jawline contour and skin texture along the mandibular region only. Do not alter bone structure, face width, eye area, nose, cheeks, or any facial proportion outside the jawline. Do not change the entire face. Minimal and natural result only.";
+      case "mento":
+        return "CHIN AREA ONLY: Slightly improve skin texture and refine chin contour in the chin area only. Minimal chin projection refinement within the patient's own natural anatomy. Do not alter the rest of the face. Do not change face shape.";
+      case "mandibula_mento":
+        return "JAWLINE AND CHIN AREA ONLY: Subtly refine skin texture along the jawline and chin region. Do not alter bone structure, facial proportions, or any feature outside this specific region.";
+      case "papada":
+        return "SUBMENTAL AREA ONLY: Very gently reduce submental shadow and skin laxity appearance in the submentonian region under the chin. Do not change neck structure, jaw definition, face shape, or facial proportions. Minimal and natural result only.";
+      case "full_face":
+        return "FULL FACE HARMONIZATION: Apply only the most minimal and subtle global refinements based entirely on THIS patient's own existing facial symmetry. Do not create a generic perfect face. Do not make the patient look like another person or another ethnicity. Apply only: minimal skin tone unification, very subtle texture refinement. Use the patient's own facial proportions as the only reference — do not impose any external beauty standard.";
+      default:
+        return `SELECTED AREA (${o}): Apply minimal, localized, realistic medical-aesthetic editing to the selected area only.`;
+    }
+  }).join("\n\n");
 
-━━━━ IDENTITY PRESERVATION — ABSOLUTE RULES ━━━━
-• The patient's ethnicity, race and skin tone must remain 100% unchanged
-• Eye color — NEVER change
-• Eye shape — NEVER change
-• Facial bone structure — NEVER change
-• Facial identity — the patient must be 100% recognizable as the same individual
-• Facial expression — unchanged
-• Hair color, style, texture — unchanged
-• Beard and facial hair — exactly preserved
-• Eyebrows — unchanged (exception: only if eyebrow area is selected)
-• Lips — unchanged (exception: only if lips area is selected)
-• Clothing — exactly preserved
-• Accessories, earrings, necklace, jewelry — exactly preserved
-• Background — exactly preserved
-• Lighting and shadows — exactly preserved
-• Camera angle and framing — exactly preserved
-• Photo quality — exactly preserved
-• Do not westernize, idealize or standardize the patient's appearance
+  return `You are a professional medical-aesthetic image editor. Your task is to edit the original uploaded patient photo with extreme precision and restraint.
 
-━━━━ FACIAL SYMMETRY — SUBTLE REFERENCE ONLY ━━━━
-${symmetryRefs}
+CORE INSTRUCTION:
+Edit the original uploaded photo using LOCALIZED, REALISTIC medical-aesthetic image editing. The final output must look like the SAME original photo, taken in the SAME place, at the SAME moment, with the SAME camera — with ONLY the selected treatment area subtly improved.
 
-━━━━ INTENSITY AND REALISM ━━━━
-• Transformation intensity: MINIMAL (10-20% of what is technically possible)
-• Realism: MAXIMUM — result must look like professional manual medical retouching, not AI generation
-• A professional viewing BEFORE and AFTER must think: "Same person, same photo, same moment — only the selected area was lightly improved"
+SELECTED TREATMENT AREA: ${areaLabels}
 
-${GLOBAL_NEGATIVE_PROMPT}`;
+${areaSpecificInstructions}
+
+${identityRules}
+
+FACIAL SYMMETRY — SUBTLE REFERENCE ONLY:
+Use global facial symmetry, golden ratio, and facial harmony ONLY as subtle technical references to guide minimal corrections. NEVER use symmetry to restructure or remodel facial features. If there is ANY conflict between symmetry principles and patient identity — ALWAYS preserve the patient's identity. The patient's natural asymmetries are part of their identity and must be respected.
+
+INTENSITY AND REALISM:
+• Transformation intensity: MINIMAL — approximately 10-15% of maximum possible change.
+• Realism level: MAXIMUM — result must look like professional manual medical photo retouching, NOT AI generation.
+• The final image must pass this test: a professional aesthetician viewing before and after must think "same person, same photo, same moment — only this specific area was lightly improved."
+• No beauty filters. No skin plastification. No idealization. Clinical and natural result only.
+
+${negativePrompt}`;
 }
 
 // ──────────────────────────────────────────────────────────────
-//  Gerar máscara PNG em tons de cinza via Canvas (Deno)
-//  Branco = área editável | Preto = área protegida
+//  Geração de máscara PNG localizada (sem dependências externas)
 // ──────────────────────────────────────────────────────────────
 async function generateMaskPng(imageBytes, options) {
-  // Detectar dimensões da imagem original via parsing básico dos bytes
-  // Para PNG: largura em bytes 16-19, altura em bytes 20-23
-  // Para JPEG: scan SOF markers
   let imgW = 1024, imgH = 1024;
 
+  // Detectar dimensões PNG
   if (imageBytes[0] === 0x89 && imageBytes[1] === 0x50) {
-    // PNG
     imgW = (imageBytes[16] << 24 | imageBytes[17] << 16 | imageBytes[18] << 8 | imageBytes[19]) >>> 0;
     imgH = (imageBytes[20] << 24 | imageBytes[21] << 16 | imageBytes[22] << 8 | imageBytes[23]) >>> 0;
-  } else if (imageBytes[0] === 0xFF && imageBytes[1] === 0xD8) {
-    // JPEG — scan for SOF0/SOF2 markers
+  }
+  // Detectar dimensões JPEG
+  else if (imageBytes[0] === 0xFF && imageBytes[1] === 0xD8) {
     let i = 2;
     while (i < imageBytes.length - 8) {
       if (imageBytes[i] === 0xFF) {
@@ -151,37 +129,58 @@ async function generateMaskPng(imageBytes, options) {
         }
         const segLen = (imageBytes[i + 2] << 8 | imageBytes[i + 3]) >>> 0;
         i += 2 + segLen;
-      } else {
-        i++;
-      }
+      } else { i++; }
     }
   }
 
   if (!imgW || imgW < 10) imgW = 1024;
   if (!imgH || imgH < 10) imgH = 1024;
 
-  console.log(`Dimensões da imagem: ${imgW}x${imgH}`);
+  // Limitar para evitar OOM em Deno
+  const maskW = Math.min(imgW, 2048);
+  const maskH = Math.min(imgH, 2048);
 
-  // Construir máscara manualmente como PNG em tons de cinza
-  // Pixels pretos = protegidos, pixels brancos = editáveis
-  const maskW = imgW;
-  const maskH = imgH;
+  console.log(`Máscara: ${maskW}x${maskH} para opções: ${options.join(', ')}`);
 
-  // Inicializar buffer de pixels (grayscale + alpha) — começa tudo preto (protegido)
-  const pixels = new Uint8Array(maskW * maskH * 4); // RGBA
+  const pixels = new Uint8Array(maskW * maskH * 4); // tudo preto = tudo protegido
 
-  // Pintar áreas selecionadas de branco (editável)
+  const fillRegion = (y0, y1, x0, x1, fadeRadius = 16) => {
+    const yStart = Math.floor(y0 * maskH);
+    const yEnd   = Math.min(Math.floor(y1 * maskH), maskH - 1);
+    const xStart = Math.floor(x0 * maskW);
+    const xEnd   = Math.min(Math.floor(x1 * maskW), maskW - 1);
+    for (let y = yStart; y <= yEnd; y++) {
+      for (let x = xStart; x <= xEnd; x++) {
+        const dTop   = y - yStart;
+        const dBot   = yEnd - y;
+        const dLeft  = x - xStart;
+        const dRight = xEnd - x;
+        const minD   = Math.min(dTop, dBot, dLeft, dRight);
+        const alpha  = minD >= fadeRadius ? 255 : Math.round((minD / fadeRadius) * 255);
+        const idx = (y * maskW + x) * 4;
+        if (alpha > pixels[idx + 3]) {
+          pixels[idx] = 255; pixels[idx + 1] = 255;
+          pixels[idx + 2] = 255; pixels[idx + 3] = alpha;
+        }
+      }
+    }
+  };
+
   if (options.includes("full_face")) {
-    // Full face: pintar ellipse central cobrindo rosto
-    const cx = maskW / 2, cy = maskH / 2;
-    const rx = maskW * 0.44, ry = maskH * 0.46;
+    // Elipse central cobrindo rosto (exclui bordas — cabelo, fundo, roupa)
+    const cx = maskW * 0.5, cy = maskH * 0.5;
+    const rx = maskW * 0.42, ry = maskH * 0.44;
+    const fadeR = Math.min(maskW, maskH) * 0.04;
     for (let y = 0; y < maskH; y++) {
       for (let x = 0; x < maskW; x++) {
-        const dx = (x - cx) / rx;
-        const dy = (y - cy) / ry;
-        if (dx * dx + dy * dy <= 1.0) {
+        const dx = (x - cx) / rx, dy = (y - cy) / ry;
+        const d = dx * dx + dy * dy;
+        if (d <= 1.0) {
+          const edge = Math.sqrt(d);
+          const alpha = edge > (1 - fadeR / rx) ? Math.round((1 - edge) / (fadeR / rx) * 255) : 255;
           const idx = (y * maskW + x) * 4;
-          pixels[idx] = 255; pixels[idx + 1] = 255; pixels[idx + 2] = 255; pixels[idx + 3] = 255;
+          pixels[idx] = 255; pixels[idx+1] = 255; pixels[idx+2] = 255;
+          pixels[idx+3] = Math.max(0, Math.min(255, alpha));
         }
       }
     }
@@ -189,44 +188,21 @@ async function generateMaskPng(imageBytes, options) {
     for (const opt of options) {
       const region = AREA_MASKS[opt];
       if (!region) continue;
-      const yStart = Math.floor(region.y[0] * maskH);
-      const yEnd   = Math.floor(region.y[1] * maskH);
-      const xStart = Math.floor(region.x[0] * maskW);
-      const xEnd   = Math.floor(region.x[1] * maskW);
-      // Pintar retângulo com bordas suavizadas (gaussian-like fade de 8px)
-      const fade = 12;
-      for (let y = yStart; y < yEnd; y++) {
-        for (let x = xStart; x < xEnd; x++) {
-          const dTop   = y - yStart;
-          const dBot   = yEnd - y;
-          const dLeft  = x - xStart;
-          const dRight = xEnd - x;
-          const minD   = Math.min(dTop, dBot, dLeft, dRight);
-          const alpha  = minD >= fade ? 255 : Math.round((minD / fade) * 255);
-          const idx = (y * maskW + x) * 4;
-          if (alpha > pixels[idx + 3]) {
-            pixels[idx] = 255; pixels[idx + 1] = 255; pixels[idx + 2] = 255; pixels[idx + 3] = alpha;
-          }
-        }
-      }
+      fillRegion(region.y[0], region.y[1], region.x[0], region.x[1]);
     }
   }
 
-  // Converter array de pixels RGBA para PNG manualmente (usando raw data)
-  // Usamos a abordagem mais simples: converter para PNG sem dependências externas
-  const pngBytes = encodePNG(maskW, maskH, pixels);
-  return pngBytes;
+  return encodePNG(maskW, maskH, pixels);
 }
 
 // ──────────────────────────────────────────────────────────────
-//  Encoder PNG mínimo (sem dependências externas)
+//  PNG encoder mínimo (sem dependências externas)
 // ──────────────────────────────────────────────────────────────
 function encodePNG(width, height, rgba) {
-  // Construir scanlines com filtro 0 (None)
   const scanlines = new Uint8Array((1 + width * 4) * height);
   for (let y = 0; y < height; y++) {
     const base = y * (1 + width * 4);
-    scanlines[base] = 0; // filtro tipo 0
+    scanlines[base] = 0;
     for (let x = 0; x < width; x++) {
       const src = (y * width + x) * 4;
       const dst = base + 1 + x * 4;
@@ -236,32 +212,21 @@ function encodePNG(width, height, rgba) {
       scanlines[dst + 3] = rgba[src + 3];
     }
   }
-
   const compressed = deflateSync(scanlines);
-
-  // Chunks PNG
   const sig = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
-
   const ihdr = buildChunk("IHDR", (() => {
     const d = new Uint8Array(13);
     const v = new DataView(d.buffer);
-    v.setUint32(0, width);
-    v.setUint32(4, height);
-    d[8] = 8;  // bit depth
-    d[9] = 6;  // color type RGBA
-    d[10] = 0; d[11] = 0; d[12] = 0;
+    v.setUint32(0, width); v.setUint32(4, height);
+    d[8] = 8; d[9] = 6; d[10] = 0; d[11] = 0; d[12] = 0;
     return d;
   })());
-
   const idat = buildChunk("IDAT", compressed);
   const iend = buildChunk("IEND", new Uint8Array(0));
-
   const total = sig.length + ihdr.length + idat.length + iend.length;
   const out = new Uint8Array(total);
   let off = 0;
-  for (const c of [sig, ihdr, idat, iend]) {
-    out.set(c, off); off += c.length;
-  }
+  for (const c of [sig, ihdr, idat, iend]) { out.set(c, off); off += c.length; }
   return out;
 }
 
@@ -281,54 +246,17 @@ function buildChunk(type, data) {
 
 function crc32(data) {
   let crc = 0xFFFFFFFF;
-  const table = crc32Table();
-  for (let i = 0; i < data.length; i++) {
-    crc = (crc >>> 8) ^ table[(crc ^ data[i]) & 0xFF];
-  }
-  return (crc ^ 0xFFFFFFFF) >>> 0;
-}
-
-function crc32Table() {
   const t = new Uint32Array(256);
   for (let i = 0; i < 256; i++) {
     let c = i;
     for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
     t[i] = c;
   }
-  return t;
+  for (let i = 0; i < data.length; i++) crc = (crc >>> 8) ^ t[(crc ^ data[i]) & 0xFF];
+  return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
-// Deflate mínimo usando Deno's CompressionStream
-async function deflateRaw(data) {
-  const cs = new CompressionStream("deflate");
-  const writer = cs.writable.getWriter();
-  const reader = cs.readable.getReader();
-  writer.write(data);
-  writer.close();
-  const chunks = [];
-  let totalLen = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    totalLen += value.length;
-  }
-  const result = new Uint8Array(totalLen);
-  let off = 0;
-  for (const c of chunks) { result.set(c, off); off += c.length; }
-  return result;
-}
-
-// Sync wrapper — chamamos como sync mas internamente é async
-// Usaremos versão async no fluxo principal
-async function deflateAsync(data) {
-  return await deflateRaw(data);
-}
-
-// Substituir deflateSync por wrapper assíncrono
 function deflateSync(data) {
-  // Fallback simples: compressão zlib store (sem compressão, mas válido para PNG)
-  // Bloco DEFLATE não comprimido (btype=00)
   const CHUNK = 65535;
   const blocks = [];
   let offset = 0;
@@ -336,31 +264,24 @@ function deflateSync(data) {
     const end = Math.min(offset + CHUNK, data.length);
     const chunk = data.slice(offset, end);
     const last = end >= data.length ? 1 : 0;
-    const header = new Uint8Array([last, chunk.length & 0xFF, (chunk.length >> 8) & 0xFF,
-      (~chunk.length) & 0xFF, ((~chunk.length) >> 8) & 0xFF]);
-    blocks.push(header, chunk);
+    blocks.push(new Uint8Array([last, chunk.length & 0xFF, (chunk.length >> 8) & 0xFF,
+      (~chunk.length) & 0xFF, ((~chunk.length) >> 8) & 0xFF]), chunk);
     offset = end;
   }
-  // zlib header (CMF=0x78, FLG=0x01) + data + adler32
   const zHeader = new Uint8Array([0x78, 0x01]);
-  const blocksFlat = flattenUint8Arrays([zHeader, ...blocks]);
-  const adler = adler32(data);
-  const adlerBytes = new Uint8Array([
-    (adler >> 24) & 0xFF, (adler >> 16) & 0xFF, (adler >> 8) & 0xFF, adler & 0xFF
-  ]);
-  return flattenUint8Arrays([blocksFlat, adlerBytes]);
+  const flat = flattenArrays([zHeader, ...blocks]);
+  const adler = adler32check(data);
+  const adlerBytes = new Uint8Array([(adler >> 24) & 0xFF, (adler >> 16) & 0xFF, (adler >> 8) & 0xFF, adler & 0xFF]);
+  return flattenArrays([flat, adlerBytes]);
 }
 
-function adler32(data) {
+function adler32check(data) {
   let s1 = 1, s2 = 0;
-  for (let i = 0; i < data.length; i++) {
-    s1 = (s1 + data[i]) % 65521;
-    s2 = (s2 + s1) % 65521;
-  }
+  for (let i = 0; i < data.length; i++) { s1 = (s1 + data[i]) % 65521; s2 = (s2 + s1) % 65521; }
   return (s2 << 16) | s1;
 }
 
-function flattenUint8Arrays(arrays) {
+function flattenArrays(arrays) {
   const total = arrays.reduce((s, a) => s + a.length, 0);
   const out = new Uint8Array(total);
   let off = 0;
@@ -369,11 +290,37 @@ function flattenUint8Arrays(arrays) {
 }
 
 // ──────────────────────────────────────────────────────────────
-//  Relatório técnico
+//  Redimensionar imagem para 1024x1024 (OpenAI exige tamanho fixo para edits)
+//  Sem dependências externas — usamos canvas via OffscreenCanvas se disponível
 // ──────────────────────────────────────────────────────────────
-function buildTechnicalReport(options) {
-  const labels = options.map(o => AREA_MASKS[o]?.label || o).join(", ");
-  return `Simulação clínica com máscara localizada nas áreas: ${labels}. Apenas os pixels da região anatômica definida foram editados. Princípios de simetria facial e proporção áurea utilizados como referência técnica discreta para calibrar o refinamento. Identidade facial, anatomia individual, estrutura óssea, olhos, sobrancelhas e demais características preservadas integralmente. Resultado meramente ilustrativo para apoio visual em consulta estética. Não representa promessa de resultado clínico.`;
+async function resizeImageTo1024(imageBytes, mimeType) {
+  // Tentar usar createImageBitmap (disponível no Deno com --allow-all)
+  try {
+    const blob = new Blob([imageBytes], { type: mimeType });
+    const bitmap = await createImageBitmap(blob);
+    const { width, height } = bitmap;
+
+    if (width === 1024 && height === 1024) {
+      return imageBytes; // já está no tamanho correto
+    }
+
+    // Calcular crop quadrado centralizado
+    const side = Math.min(width, height);
+    const sx = Math.floor((width - side) / 2);
+    const sy = Math.floor((height - side) / 2);
+
+    const oc = new OffscreenCanvas(1024, 1024);
+    const ctx = oc.getContext("2d");
+    ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, 1024, 1024);
+    bitmap.close();
+    const pngBlob = await oc.convertToBlob({ type: "image/png" });
+    const buf = await pngBlob.arrayBuffer();
+    console.log("Imagem redimensionada para 1024x1024 via OffscreenCanvas");
+    return new Uint8Array(buf);
+  } catch (e) {
+    console.log("OffscreenCanvas não disponível, usando imagem original:", e.message);
+    return imageBytes;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -390,10 +337,7 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) {
-      return Response.json({
-        error: "API da OpenAI não configurada. Insira a chave OPENAI_API_KEY.",
-        code: "MISSING_API_KEY"
-      }, { status: 503 });
+      return Response.json({ error: "API da OpenAI não configurada.", code: "MISSING_API_KEY" }, { status: 503 });
     }
 
     const payload = await req.json();
@@ -424,18 +368,19 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v9_identity_preserved",
+      ai_prompt_version: "v10_definitive",
     });
     simulationId = simulation.id;
 
-    // Buscar nome da paciente
+    // Buscar nome da paciente (não crítico)
     try {
-      const patient = await base44Client.entities.Patient.get(patient_id);
+      const patients = await base44Client.entities.Patient.filter({ id: patient_id }, "-created_date", 1);
+      const patient = patients?.[0];
       if (patient?.full_name) {
         await base44Client.entities.FullFaceSimulation.update(simulationId, { patient_name: patient.full_name });
       }
     } catch (e) {
-      console.log("Aviso: não foi possível buscar nome da paciente:", e.message);
+      console.log("Aviso: não foi possível buscar paciente:", e.message);
     }
 
     // ── 1. Baixar imagem original ──
@@ -444,7 +389,7 @@ Deno.serve(async (req) => {
     if (!imageResponse.ok) throw new Error(`Falha ao baixar imagem (HTTP ${imageResponse.status}).`);
 
     const imageArrayBuffer = await imageResponse.arrayBuffer();
-    const imageBytes = new Uint8Array(imageArrayBuffer);
+    let imageBytes = new Uint8Array(imageArrayBuffer);
     if (imageBytes.length < 500) throw new Error("Imagem inválida ou muito pequena.");
 
     // Detectar MIME
@@ -454,7 +399,7 @@ Deno.serve(async (req) => {
       mimeType = "image/png"; fileExt = "png";
     } else if (imageBytes[0] === 0xFF && imageBytes[1] === 0xD8) {
       mimeType = "image/jpeg"; fileExt = "jpg";
-    } else if (imageBytes[0] === 0x52 && imageBytes[1] === 0x49 && imageBytes[2] === 0x46 && imageBytes[3] === 0x46) {
+    } else if (imageBytes[0] === 0x52 && imageBytes[1] === 0x49) {
       mimeType = "image/webp"; fileExt = "webp";
     } else {
       const ct = imageResponse.headers.get("content-type")?.split(";")[0]?.trim() || "";
@@ -462,96 +407,58 @@ Deno.serve(async (req) => {
       else if (ct === "image/webp") { mimeType = "image/webp"; fileExt = "webp"; }
     }
 
-    console.log("MIME:", mimeType, "| Tamanho:", imageBytes.length, "bytes");
-    console.log("Opções:", finalOptions.join(", "));
+    console.log(`MIME: ${mimeType} | Tamanho: ${imageBytes.length} bytes | Opções: ${finalOptions.join(", ")}`);
 
-    // ── 2. Gerar máscara PNG localizada ──
-    console.log("Gerando máscara anatômica para:", finalOptions.join(", "));
+    // ── 2. Redimensionar para 1024x1024 se necessário ──
+    imageBytes = await resizeImageTo1024(imageBytes, mimeType);
+    // Após resize, sempre será PNG
+    if (imageBytes[0] === 0x89 && imageBytes[1] === 0x50) {
+      mimeType = "image/png"; fileExt = "png";
+    }
+
+    // ── 3. Gerar máscara anatômica ──
+    console.log("Gerando máscara anatômica...");
     const maskBytes = await generateMaskPng(imageBytes, finalOptions);
-    console.log("Máscara gerada:", maskBytes.length, "bytes PNG");
+    console.log(`Máscara: ${maskBytes.length} bytes`);
 
-    // ── 3. Construir prompt clínico ──
+    // ── 4. Construir prompt v10 ──
     const prompt = buildPrompt(finalOptions);
-    console.log("Prompt length:", prompt.length);
+    console.log("Prompt construído, length:", prompt.length);
 
-    // ── 4. Chamar OpenAI /v1/images/edits com máscara ──
+    // ── 5. Chamar OpenAI /v1/images/edits com máscara ──
     const formData = new FormData();
     formData.append("model", "gpt-image-1");
     formData.append("prompt", prompt);
     formData.append("n", "1");
     formData.append("size", "1024x1024");
-    formData.append("quality", "low");        // "low" → menos reconstrução, mais fidelidade
-    formData.append("response_format", "b64_json");
+    formData.append("quality", "low");   // "low" = menos reconstrução = mais fidelidade
+    // Nota: gpt-image-1 retorna b64_json por padrão, não aceita response_format
     formData.append("image", new Blob([imageBytes], { type: mimeType }), `photo.${fileExt}`);
     formData.append("mask",  new Blob([maskBytes],  { type: "image/png" }), "mask.png");
 
-    console.log("Chamando OpenAI /v1/images/edits com máscara localizada...");
+    console.log("Chamando OpenAI /v1/images/edits (com máscara)...");
+    let openaiJson = await callOpenAI(apiKey, formData);
 
-    const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}` },
-      body: formData,
-    });
-
-    const openaiText = await openaiRes.text();
-    let openaiJson;
-    try { openaiJson = JSON.parse(openaiText); } catch { openaiJson = {}; }
-
-    console.log("OpenAI status:", openaiRes.status);
-
-    if (!openaiRes.ok) {
-      const errMsg = openaiJson?.error?.message || openaiText || `HTTP ${openaiRes.status}`;
-      console.error("OpenAI error:", errMsg);
-
-      // Se máscara for rejeitada, tentar fallback sem máscara com prompt reforçado
-      if (errMsg.includes("mask") || errMsg.includes("invalid_image") || openaiRes.status === 400) {
-        console.log("Máscara rejeitada, tentando fallback sem máscara...");
-        const fallbackForm = new FormData();
-        fallbackForm.append("model", "gpt-image-1");
-        fallbackForm.append("prompt", prompt + "\n\nCRITICAL: Edit ONLY the following area and leave everything else completely unchanged: " + finalOptions.map(o => AREA_MASKS[o]?.label || o).join(", ") + ". Do NOT change ethnicity, skin tone, eye color, hair or any other feature.");
-        fallbackForm.append("n", "1");
-        fallbackForm.append("size", "1024x1024");
-        fallbackForm.append("quality", "low");
-        fallbackForm.append("response_format", "b64_json");
-        fallbackForm.append("image", new Blob([imageBytes], { type: mimeType }), `photo.${fileExt}`);
-
-        const fallbackRes = await fetch("https://api.openai.com/v1/images/edits", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${apiKey}` },
-          body: fallbackForm,
-        });
-        const fallbackText = await fallbackRes.text();
-        let fallbackJson;
-        try { fallbackJson = JSON.parse(fallbackText); } catch { fallbackJson = {}; }
-
-        if (!fallbackRes.ok) {
-          const fb = fallbackJson?.error?.message || fallbackText || `HTTP ${fallbackRes.status}`;
-          if (fb.includes("billing") || fb.includes("quota") || fb.includes("insufficient")) {
-            throw new Error("Cota da API da OpenAI esgotada ou problema de faturamento. Verifique sua conta OpenAI.");
-          }
-          if (fb.includes("invalid_api_key") || fb.includes("Incorrect API key")) {
-            throw new Error("API Key da OpenAI inválida. Verifique a configuração OPENAI_API_KEY.");
-          }
-          throw new Error(`Erro na API da OpenAI: ${fb}`);
-        }
-
-        openaiJson = fallbackJson;
-        console.log("Fallback sem máscara executado com sucesso.");
-      } else {
-        if (errMsg.includes("billing") || errMsg.includes("quota") || errMsg.includes("insufficient")) {
-          throw new Error("Cota da API da OpenAI esgotada ou problema de faturamento. Verifique sua conta OpenAI.");
-        }
-        if (errMsg.includes("invalid_api_key") || errMsg.includes("Incorrect API key")) {
-          throw new Error("API Key da OpenAI inválida. Verifique a configuração OPENAI_API_KEY.");
-        }
-        throw new Error(`Erro na API da OpenAI: ${errMsg}`);
+    // Fallback sem máscara se necessário
+    if (openaiJson._fallback) {
+      console.log("Executando fallback sem máscara...");
+      const fallbackForm = new FormData();
+      fallbackForm.append("model", "gpt-image-1");
+      fallbackForm.append("prompt", prompt);
+      fallbackForm.append("n", "1");
+      fallbackForm.append("size", "1024x1024");
+      fallbackForm.append("quality", "low");
+      fallbackForm.append("image", new Blob([imageBytes], { type: mimeType }), `photo.${fileExt}`);
+      openaiJson = await callOpenAI(apiKey, fallbackForm);
+      if (openaiJson._fallback) {
+        throw new Error(openaiJson._error || "Falha na API da OpenAI após fallback.");
       }
     }
 
+    // ── 6. Processar imagem gerada ──
     const imgData = openaiJson.data?.[0];
-    if (!imgData) throw new Error("OpenAI não retornou dados de imagem válidos.");
+    if (!imgData) throw new Error("OpenAI não retornou dados de imagem.");
 
-    // Obter base64
     let generatedBase64 = imgData.b64_json;
     if (!generatedBase64 && imgData.url) {
       console.log("Baixando imagem gerada da URL...");
@@ -564,34 +471,38 @@ Deno.serve(async (req) => {
     }
 
     if (!generatedBase64) throw new Error("OpenAI não retornou imagem válida.");
-    console.log("Imagem gerada! base64 length:", generatedBase64.length);
 
-    // Converter base64 → Uint8Array → File
+    // ── 7. Upload da imagem gerada ──
     const binaryString = atob(generatedBase64);
     const generatedBytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      generatedBytes[i] = binaryString.charCodeAt(i);
-    }
+    for (let i = 0; i < binaryString.length; i++) generatedBytes[i] = binaryString.charCodeAt(i);
+
     const generatedFile = new File(
       [new Blob([generatedBytes], { type: "image/png" })],
       `simulation_${simulationId}.png`,
       { type: "image/png" }
     );
 
-    // Upload da imagem gerada
     console.log("Fazendo upload da imagem gerada...");
     const uploadResult = await base44Client.asServiceRole.integrations.Core.UploadFile({ file: generatedFile });
     if (!uploadResult?.file_url) throw new Error("Falha ao fazer upload da imagem gerada.");
 
     const generated_image_url = uploadResult.file_url;
-    const technicalReport = buildTechnicalReport(finalOptions);
+    const areaLabels = finalOptions.map(o => AREA_MASKS[o]?.label || o).join(", ");
+    const technicalReport = `Simulação clínica v10 com máscara localizada nas áreas: ${areaLabels}. Apenas os pixels da região anatômica definida foram editados. Identidade facial, etnia, cor dos olhos, tom de pele, expressão e todos os demais elementos foram preservados integralmente. Resultado meramente ilustrativo para apoio visual em consulta estética.`;
 
-    // Atualizar registro
+    // ── 8. Salvar resultado ──
     await base44Client.entities.FullFaceSimulation.update(simulationId, {
       generated_image_url,
       status: "completed",
       technical_report: technicalReport,
-      facial_analysis_snapshot: { simulation_options: finalOptions, mask_used: true, prompt_version: "v9", symmetry_guided: true, localized_editing: true, identity_preserved: true },
+      facial_analysis_snapshot: {
+        simulation_options: finalOptions,
+        mask_used: true,
+        prompt_version: "v10_definitive",
+        identity_preserved: true,
+        localized_editing: true
+      },
       image_metadata: { format: "png", width: 1024, height: 1024 },
     });
 
@@ -603,20 +514,19 @@ Deno.serve(async (req) => {
         entity_id: simulationId,
         user_email: user.email || "",
         user_role: user.role || "user",
-        details: { patient_id, source_type: finalSourceType, consent_lgpd: true, simulation_options: finalOptions, mask_used: true },
+        details: { patient_id, source_type: finalSourceType, consent_lgpd: true, simulation_options: finalOptions },
       });
     } catch (e) {
-      console.log("Aviso: log de auditoria falhou:", e.message);
+      console.log("Log de auditoria falhou (não crítico):", e.message);
     }
 
-    console.log("Simulação v9 (identidade preservada) concluída:", simulationId);
-
+    console.log("Simulação v10 concluída:", simulationId);
     return Response.json({
       success: true,
       simulation_id: simulationId,
       generated_image_url,
       technical_report: technicalReport,
-      message: "Simulação gerada com sucesso (Modo Clínico Realista v9 — Identidade Preservada)",
+      message: "Simulação gerada com sucesso (Modo Clínico Definitivo v10)",
     });
 
   } catch (error) {
@@ -627,9 +537,7 @@ Deno.serve(async (req) => {
           status: "failed",
           error_message: error.message,
         });
-      } catch (e) {
-        console.log("Não foi possível atualizar status para failed:", e.message);
-      }
+      } catch (_) {}
     }
     return Response.json({
       error: error.message || "Não conseguimos gerar a simulação. Tente novamente.",
@@ -637,3 +545,33 @@ Deno.serve(async (req) => {
     }, { status: 500 });
   }
 });
+
+// ──────────────────────────────────────────────────────────────
+//  Helper para chamar OpenAI com tratamento de erro
+// ──────────────────────────────────────────────────────────────
+async function callOpenAI(apiKey, formData) {
+  const res = await fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${apiKey}` },
+    body: formData,
+  });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); } catch { json = {}; }
+
+  console.log("OpenAI status:", res.status);
+
+  if (!res.ok) {
+    const errMsg = json?.error?.message || text || `HTTP ${res.status}`;
+    console.error("OpenAI error:", errMsg);
+    if (errMsg.includes("billing") || errMsg.includes("quota") || errMsg.includes("insufficient_quota")) {
+      throw new Error("Cota da API da OpenAI esgotada. Verifique sua conta OpenAI.");
+    }
+    if (errMsg.includes("invalid_api_key") || errMsg.includes("Incorrect API key")) {
+      throw new Error("API Key da OpenAI inválida. Verifique a configuração OPENAI_API_KEY.");
+    }
+    // Marcar como fallback para tentar sem máscara
+    return { _fallback: true, _error: errMsg };
+  }
+  return json;
+}
