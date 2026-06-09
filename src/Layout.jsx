@@ -79,7 +79,7 @@ export default function Layout({ children, currentPageName }) {
   const sidebarWidth = collapsed ? SIDEBAR_W_CLOSED : SIDEBAR_W_OPEN;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#0A0A0A", color: "#FFFFFF" }}>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden" style={{ backgroundColor: "#0A0A0A", color: "#FFFFFF" }}>
 
       {/* ── Mobile top bar ── */}
       <div
@@ -123,11 +123,11 @@ export default function Layout({ children, currentPageName }) {
       {/* ══ SIDEBAR ══ */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full flex flex-col glass-sidebar transition-all duration-200 ease-in-out",
+          "fixed top-0 left-0 z-50 h-full flex flex-col glass-sidebar transition-all duration-200 ease-in-out lg:w-[240px]",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
         style={{
-          width: sidebarWidth,
+          width: mobileOpen ? "min(240px, 85vw)" : sidebarWidth,
           borderRight: "1px solid #1E1E1E",
         }}
       >
@@ -328,12 +328,10 @@ export default function Layout({ children, currentPageName }) {
 
       {/* ══ MAIN CONTENT ══ */}
       <main
-        className="min-h-screen transition-all duration-200 lg:block"
+        className="min-h-screen w-full max-w-full overflow-x-hidden lg:ml-[240px]"
         style={{
-          paddingLeft: `max(0px, ${sidebarWidth}px)`,
+          paddingLeft: 0,
           paddingTop: 0,
-          width: "100%",
-          maxWidth: "100%",
         }}
       >
         {/* ── Top bar — desktop ── */}

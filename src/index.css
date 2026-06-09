@@ -182,6 +182,13 @@
   ::-webkit-scrollbar-thumb { background: #2B2B2B; border-radius: 2px; }
   ::-webkit-scrollbar-thumb:hover { background: #C8A96A; }
 
+  /* Remover scrollbar horizontal globalmente */
+  body.scrollbar-lock {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
   /* Remover scrollbar do Firefox em elementos específicos */
   .scrollbar-hide {
     -ms-overflow-style: none;  /* IE and Edge */
@@ -401,6 +408,21 @@ tbody td {
 .bg-primary-corp    { background-color: #0A0A0A; }
 .bg-card-corp       { background-color: #1A1A1A; }
 .border-corp        { border-color: #2B2B2B; }
+
+/* ── Mobile overflow protection ── */
+.mobile-safe {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+@media (max-width: 1024px) {
+  .mobile-safe {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
 
 /* ── Linha de destaque lateral esquerda ── */
 .corp-left-accent {
