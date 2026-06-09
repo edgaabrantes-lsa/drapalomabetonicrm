@@ -328,10 +328,12 @@ export default function Layout({ children, currentPageName }) {
 
       {/* ══ MAIN CONTENT ══ */}
       <main
-        className="min-h-screen transition-all duration-200"
+        className="min-h-screen transition-all duration-200 lg:block"
         style={{
-          paddingLeft: `${sidebarWidth}px`,
+          paddingLeft: `max(0px, ${sidebarWidth}px)`,
           paddingTop: 0,
+          width: "100%",
+          maxWidth: "100%",
         }}
       >
         {/* ── Top bar — desktop ── */}
@@ -411,15 +413,17 @@ export default function Layout({ children, currentPageName }) {
 
         {/* ── Page content ── */}
         <div
-          className="min-h-[calc(100vh-56px)]"
+          className="min-h-[calc(100vh-56px)] w-full max-w-full overflow-x-hidden"
           style={{
             backgroundColor: "#0A0A0A",
-            padding: "32px",
+            padding: "max(16px, 2vw)",
           }}
         >
           {/* Mobile padding */}
           <div className="lg:hidden" style={{ height: 52 }} />
-          {children}
+          <div className="w-full max-w-full min-w-0">
+            {children}
+          </div>
         </div>
       </main>
     </div>

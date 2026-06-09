@@ -73,6 +73,12 @@
     box-sizing: border-box;
   }
 
+  html, body, #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   html {
     color-scheme: dark;
     font-size: 14px;
@@ -88,6 +94,10 @@
     line-height: 1.6;
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
+  }
+
+  img, video, canvas, iframe {
+    max-width: 100%;
   }
 
   /* ── Tipografia corporativa ── */
@@ -165,6 +175,16 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #2B2B2B; border-radius: 2px; }
   ::-webkit-scrollbar-thumb:hover { background: #C8A96A; }
+
+  /* Remover scrollbar do Firefox em elementos específicos */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
 }
 
 /* ══════════════════════════════════════════

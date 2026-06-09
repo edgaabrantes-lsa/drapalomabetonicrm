@@ -60,7 +60,6 @@ export default function DossiePatient() {
     setShowSidebar(false);
   }
 
-  // ─── Sidebar (lista de pacientes) ─────────────────────────
   const PatientList = () => (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: "16px 12px 12px", borderBottom: `1px solid ${T.border}` }}>
@@ -75,6 +74,7 @@ export default function DossiePatient() {
             placeholder="Buscar paciente..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
+            className="w-full"
             style={{ ...S.input, paddingLeft: 30, fontSize: 13, height: 34 }}
           />
         </div>
@@ -136,16 +136,16 @@ export default function DossiePatient() {
   );
 
   return (
-    <>
-      {/* ── Mobile: overlay sidebar ── */}
+    <div className="w-full max-w-full min-w-0 overflow-x-hidden">
       {showSidebar && (
         <div
           style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.6)" }}
           onClick={() => setShowSidebar(false)}
         >
           <div
+            className="overflow-y-auto"
             style={{
-              position: "absolute", top: 0, left: 0, bottom: 0, width: 280,
+              position: "absolute", top: 0, left: 0, bottom: 0, width: "min(280px, 80vw)",
               backgroundColor: T.bgSecondary,
               borderRight: `1px solid ${T.border}`,
             }}
@@ -162,45 +162,26 @@ export default function DossiePatient() {
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "row", minHeight: "calc(100vh - 88px)", fontFamily: T.font }}>
-
-        {/* ── Desktop: sidebar fixa ── */}
-        <aside
-          className="hidden lg:flex"
-          style={{
-            width: 260,
-            flexShrink: 0,
-            backgroundColor: T.bgSecondary,
-            borderRight: `1px solid ${T.border}`,
-            flexDirection: "column",
-          }}
-        >
+      <div className="w-full max-w-full min-w-0" style={{ display: "flex", minHeight: "calc(100vh - 88px)", fontFamily: T.font }}>
+        <aside className="hidden lg:flex flex-col w-[260px] flex-shrink-0" style={{ backgroundColor: T.bgSecondary, borderRight: `1px solid ${T.border}` }}>
           <PatientList />
         </aside>
 
-        {/* ── Área do dossiê ── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
-
-          {/* ── Mobile: sem paciente selecionado ── */}
+        <div className="w-full max-w-full min-w-0 flex flex-col flex-1">
           {!selectedPatient && (
-            <div className="flex lg:hidden" style={{ flexDirection: "column", height: "100%" }}>
-              {/* Topbar mobile */}
+            <div className="flex lg:hidden flex-col w-full flex-1">
               <div style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "12px 16px", borderBottom: `1px solid ${T.border}`,
                 backgroundColor: T.bgSecondary, flexShrink: 0,
               }}>
-                <button
-                  onClick={() => setShowSidebar(true)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: T.textMuted, display: "flex" }}
-                >
+                <button onClick={() => setShowSidebar(true)} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMuted }}>
                   <Menu style={{ width: 20, height: 20 }} />
                 </button>
                 <p style={{ ...S.label, margin: 0 }}>Dossiê da Paciente</p>
               </div>
 
-              {/* Lista compacta mobile */}
-              <div style={{ flex: 1, overflowY: "auto" }}>
+              <div className="w-full max-w-full flex-1 overflow-y-auto">
                 <div style={{ padding: "12px 16px 8px" }}>
                   <div style={{ position: "relative" }}>
                     <Search style={{
@@ -212,6 +193,7 @@ export default function DossiePatient() {
                       placeholder="Buscar paciente..."
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full"
                       style={{ ...S.input, paddingLeft: 30, fontSize: 13, height: 38 }}
                     />
                   </div>
@@ -238,18 +220,14 @@ export default function DossiePatient() {
                       }}>
                         {p.full_name?.[0]?.toUpperCase()}
                       </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="min-w-0 flex-1">
                         <p style={{ ...S.value, fontSize: 14, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {p.full_name}
                         </p>
                         <p style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, margin: "2px 0 0" }}>
                           {p.phone || "Sem telefone"}
                         </p>
-                        {st && (
-                          <span style={{ ...S.badge(st.color, st.bg), marginTop: 4, fontSize: 10 }}>
-                            {st.label}
-                          </span>
-                        )}
+                        {st && <span style={{ ...S.badge(st.color, st.bg), marginTop: 4, fontSize: 10 }}>{st.label}</span>}
                       </div>
                       <ChevronLeft style={{ width: 14, height: 14, color: T.textMuted, transform: "rotate(180deg)", flexShrink: 0 }} />
                     </button>
@@ -259,40 +237,28 @@ export default function DossiePatient() {
             </div>
           )}
 
-          {/* ── Desktop: sem paciente selecionado ── */}
           {!selectedPatient && (
-            <div className="hidden lg:flex" style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <div className="hidden lg:flex flex-1 items-center justify-center">
               <div style={{ textAlign: "center" }}>
                 <p style={{ ...S.label, marginBottom: 8 }}>Dossiê da Paciente</p>
-                <p style={S.pageSubtitle}>Selecione uma paciente na lista para acessar o dossiê</p>
+                <p style={S.pageSubtitle}>Selecione uma paciente na lista</p>
               </div>
             </div>
           )}
 
-          {/* ── Dossiê aberto ── */}
           {selectedPatient && (
-            <>
-              {/* Header da paciente */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "10px 16px",
-                borderBottom: `1px solid ${T.border}`,
-                backgroundColor: T.bgSecondary, flexShrink: 0,
+            <div className="w-full max-w-full min-w-0 flex flex-col flex-1">
+              <div className="flex flex-wrap gap-3 md:gap-2 items-center p-3 md:p-2.5 border-b flex-shrink-0" style={{
+                borderColor: T.border,
+                backgroundColor: T.bgSecondary,
               }}>
-                {/* Botão voltar (mobile) */}
-                <button
-                  onClick={() => setSelectedPatientId(null)}
-                  className="flex lg:hidden"
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: T.textMuted, display: "flex", alignItems: "center", gap: 4,
-                    fontFamily: T.font, fontSize: 13, flexShrink: 0, padding: "4px 0",
-                  }}
-                >
+                <button onClick={() => setSelectedPatientId(null)} className="flex lg:hidden flex-shrink-0" style={{
+                  background: "none", border: "none", cursor: "pointer", color: T.textMuted,
+                  fontFamily: T.font, fontSize: 13, padding: "4px 0",
+                }}>
                   <ChevronLeft style={{ width: 16, height: 16 }} />
                 </button>
 
-                {/* Iniciais */}
                 <div style={{
                   width: 34, height: 34, borderRadius: 6, flexShrink: 0,
                   backgroundColor: T.goldSubtle, border: `1px solid ${T.goldBorder}`,
@@ -302,48 +268,33 @@ export default function DossiePatient() {
                   {selectedPatient.full_name?.[0]?.toUpperCase()}
                 </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="min-w-0 flex-1">
                   <p style={{ ...S.value, fontSize: 14, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {selectedPatient.full_name}
                   </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
-                    {selectedPatient.phone && (
-                      <span style={{ fontFamily: T.font, fontSize: 11, color: T.textMuted }}>{selectedPatient.phone}</span>
-                    )}
-                    {selectedPatient.email && (
-                      <span className="hidden sm:inline" style={{ fontFamily: T.font, fontSize: 11, color: T.textMuted }}>
-                        {selectedPatient.email}
-                      </span>
-                    )}
+                  <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                    {selectedPatient.phone && <span style={{ color: T.textMuted }}>{selectedPatient.phone}</span>}
+                    {selectedPatient.email && <span className="hidden sm:inline" style={{ color: T.textMuted }}>{selectedPatient.email}</span>}
                     {STATUS_DOSSIE[selectedPatient.dossie_status] && (() => {
                       const st = STATUS_DOSSIE[selectedPatient.dossie_status];
-                      return <span style={{ ...S.badge(st.color, st.bg), fontSize: 10 }}>{st.label}</span>;
+                      return <span style={{ ...S.badge(st.color, st.bg) }}>{st.label}</span>;
                     })()}
                   </div>
                 </div>
 
-                {/* Botão trocar paciente (mobile) */}
-                <button
-                  onClick={() => setShowSidebar(true)}
-                  className="flex lg:hidden"
-                  style={{
-                    background: "none", border: `1px solid ${T.border}`, cursor: "pointer",
-                    color: T.textMuted, borderRadius: 6, padding: "6px 10px", flexShrink: 0,
-                    fontFamily: T.font, fontSize: 11, display: "flex", alignItems: "center", gap: 4,
-                  }}
-                >
+                <button onClick={() => setShowSidebar(true)} className="flex lg:hidden flex-shrink-0" style={{
+                  background: "none", border: `1px solid ${T.border}`, cursor: "pointer",
+                  color: T.textMuted, borderRadius: 6, padding: "6px 10px",
+                  fontFamily: T.font, fontSize: 11, display: "flex", alignItems: "center", gap: 4,
+                }}>
                   <Menu style={{ width: 13, height: 13 }} />
                 </button>
               </div>
 
-              {/* Tabs — scroll horizontal no mobile */}
-              <div style={{
+              <div className="w-full overflow-x-auto scrollbar-hide flex-shrink-0" style={{
                 backgroundColor: T.bgSecondary,
                 borderBottom: `1px solid ${T.border}`,
-                overflowX: "auto",
-                flexShrink: 0,
                 WebkitOverflowScrolling: "touch",
-                scrollbarWidth: "none",
               }}>
                 <div style={{ display: "flex", padding: "0 8px", minWidth: "max-content" }}>
                   {ABAS.map(aba => {
@@ -353,17 +304,11 @@ export default function DossiePatient() {
                         key={aba.id}
                         onClick={() => setActiveTab(aba.id)}
                         style={{
-                          fontFamily: T.font,
-                          fontSize: 12,
-                          fontWeight: isActive ? 600 : 400,
+                          fontFamily: T.font, fontSize: 12, fontWeight: isActive ? 600 : 400,
                           color: isActive ? T.textPrimary : T.textMuted,
-                          padding: "10px 12px",
-                          border: "none",
+                          padding: "10px 12px", border: "none",
                           borderBottom: isActive ? `2px solid ${T.gold}` : "2px solid transparent",
-                          backgroundColor: "transparent",
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                          transition: "all 0.15s",
+                          backgroundColor: "transparent", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s",
                         }}
                       >
                         {aba.label}
@@ -373,9 +318,8 @@ export default function DossiePatient() {
                 </div>
               </div>
 
-              {/* Conteúdo */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "16px", backgroundColor: T.bgPrimary }}>
-                <div style={{ maxWidth: "100%" }}>
+              <div className="w-full max-w-full min-w-0 flex-1 overflow-y-auto" style={{ padding: "max(12px, 1.5vw)", backgroundColor: T.bgPrimary }}>
+                <div className="w-full max-w-full min-w-0">
                   {activeTab === "cadastro"            && <DossieCadastro patient={selectedPatient} onPatientUpdate={() => {}} />}
                   {activeTab === "prontuario"          && <DossieProntuario patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "fotos"               && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
@@ -389,10 +333,10 @@ export default function DossiePatient() {
                   {activeTab === "conformidade"        && <RelatorioConformidade patient={selectedPatient} />}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
