@@ -675,116 +675,164 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
 
   // ── STEP: result ──
   if (step === "result") return (
-    <div className="space-y-4">
-      {/* Controles de modo de exibição */}
+    <div className="space-y-8">
+
+      {/* ══ BLOCO 1 — COMPARAÇÃO ANTES E DEPOIS ══ */}
       {originalImageUrl && generatedImage && (
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-            {[
-              { id: "slider", label: "Slider" },
-              { id: "sidebyside", label: "Lado a Lado" },
-            ].map(m => (
-              <button
-                key={m.id}
-                onClick={() => setViewMode(m.id)}
-                className="px-4 py-2 text-xs font-medium transition-colors"
-                style={{
-                  background: viewMode === m.id ? T.gold : T.card,
-                  color: viewMode === m.id ? "#111620" : T.muted,
-                }}
-              >
-                {m.label}
-              </button>
-            ))}
+        <div className="space-y-3">
+          {/* Título do bloco */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.gold }}>
+                Comparação
+              </p>
+              <h2 className="text-base font-semibold" style={{ color: T.text }}>
+                Antes e Depois
+              </h2>
+            </div>
+            {/* Toggle slider / lado a lado */}
+            <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+              {[
+                { id: "slider", label: "Slider" },
+                { id: "sidebyside", label: "Lado a Lado" },
+              ].map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setViewMode(m.id)}
+                  className="px-4 py-2 text-xs font-medium transition-colors"
+                  style={{
+                    background: viewMode === m.id ? T.gold : T.card,
+                    color: viewMode === m.id ? "#111620" : T.muted,
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={() => setFullscreen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
-            style={{ background: T.card, border: `1px solid ${T.border}`, color: T.muted }}
-          >
-            <Eye className="h-3.5 w-3.5" /> Ver Imagem Completa
-          </button>
+
+          {/* Comparador */}
+          <div style={{ border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", background: "#000" }}>
+            {viewMode === "slider"
+              ? <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
+              : <SideBySideView before={originalImageUrl} after={generatedImage} />
+            }
+          </div>
         </div>
       )}
 
-      {/* Visualizador */}
-      {originalImageUrl && generatedImage ? (
-        <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", background: "#000" }}>
-          {viewMode === "slider"
-            ? <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
-            : <SideBySideView before={originalImageUrl} after={generatedImage} />
-          }
+      {/* Divider */}
+      {originalImageUrl && generatedImage && (
+        <div style={{ height: 1, background: T.border }} />
+      )}
+
+      {/* ══ BLOCO 2 — RESULTADO FINAL DA SIMULAÇÃO ══ */}
+      {generatedImage && (
+        <div className="space-y-4">
+          {/* Título do bloco */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.gold }}>
+                Resultado Final
+              </p>
+              <h2 className="text-base font-semibold" style={{ color: T.text }}>
+                Resultado Final da Simulação
+              </h2>
+            </div>
+            <button
+              onClick={() => setFullscreen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+              style={{ background: T.card, border: `1px solid ${T.border}`, color: T.muted }}
+            >
+              <Eye className="h-3.5 w-3.5" /> Tela Cheia
+            </button>
+          </div>
+
+          {/* Imagem final — centralizada, sem corte, sem zoom */}
+          <div
+            className="flex items-center justify-center w-full rounded-2xl overflow-hidden"
+            style={{ background: "#000", border: `1px solid ${T.border}` }}
+          >
+            <img
+              src={generatedImage}
+              alt="Resultado Final da Simulação"
+              style={{
+                display: "block",
+                maxWidth: "100%",
+                width: "100%",
+                height: "auto",
+                objectFit: "contain",
+              }}
+              draggable={false}
+            />
+          </div>
+
+          {/* Tags de áreas simuladas */}
+          <div className="flex flex-wrap gap-1.5">
+            {selectedOptions.map(id => {
+              const opt = SIMULATION_OPTIONS.find(o => o.id === id);
+              return opt ? (
+                <span key={id} className="text-xs px-2 py-0.5 rounded-full"
+                  style={{ background: `${T.gold}15`, color: T.gold, border: `1px solid ${T.gold}30` }}>
+                  {opt.label}
+                </span>
+              ) : null;
+            })}
+          </div>
+
+          {/* Relatório técnico */}
+          {technicalReport && (
+            <div className="p-4 rounded-xl" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+              <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: T.gold }}>Relatório Técnico</p>
+              <p className="text-xs leading-relaxed" style={{ color: T.muted }}>{technicalReport}</p>
+            </div>
+          )}
+
+          {/* Aviso legal */}
+          <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}>
+            <Shield className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs leading-relaxed" style={{ color: T.muted }}>
+              <span className="text-red-400 font-medium">Aviso Legal: </span>
+              Imagem meramente ilustrativa para apoio visual em consulta. Resultado real depende de avaliação profissional.
+            </p>
+          </div>
+
+          {/* ── Botões de ação ── */}
+          <div className="flex flex-wrap gap-3 pt-1">
+            <a
+              href={generatedImage}
+              download={`simulacao_${patient.full_name?.replace(/\s+/g, "_")}.png`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ background: T.gold, color: "#111620" }}
+            >
+              <Download className="h-4 w-4" /> Baixar
+            </a>
+
+            {savedToRecord ? (
+              <Button disabled variant="outline"
+                style={{ borderColor: "#34d39940", color: "#34d399", opacity: 0.8 }}>
+                <CheckCircle className="h-4 w-4 mr-2" /> Já salvo no prontuário
+              </Button>
+            ) : (
+              <Button onClick={handleSaveMedicalRecord} disabled={savingRecord}
+                variant="outline" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
+                {savingRecord
+                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+                  : <><FileText className="h-4 w-4 mr-2" /> Enviar para o Prontuário</>}
+              </Button>
+            )}
+
+            <Button onClick={reset} variant="outline" style={{ borderColor: T.border, color: T.muted }}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Nova Simulação
+            </Button>
+          </div>
         </div>
-      ) : generatedImage ? (
-        <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", background: "#000" }}>
-          <img
-            src={generatedImage}
-            alt="Simulação"
-            style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
-          />
-        </div>
-      ) : null}
+      )}
 
       {/* Modal fullscreen */}
       {fullscreen && generatedImage && (
         <FullscreenModal image={generatedImage} onClose={() => setFullscreen(false)} />
       )}
-
-      {/* Opções usadas */}
-      <div className="flex flex-wrap gap-1.5">
-        {selectedOptions.map(id => {
-          const opt = SIMULATION_OPTIONS.find(o => o.id === id);
-          return opt ? (
-            <span key={id} className="text-xs px-2 py-0.5 rounded-full"
-              style={{ background: `${T.gold}15`, color: T.gold, border: `1px solid ${T.gold}30` }}>
-              {opt.label}
-            </span>
-          ) : null;
-        })}
-      </div>
-
-      {technicalReport && (
-        <div className="p-4 rounded-xl" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-          <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: T.gold }}>Relatório</p>
-          <p className="text-xs leading-relaxed" style={{ color: T.muted }}>{technicalReport}</p>
-        </div>
-      )}
-
-      <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}>
-        <Shield className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs leading-relaxed" style={{ color: T.muted }}>
-          <span className="text-red-400 font-medium">Aviso Legal: </span>
-          Imagem meramente ilustrativa para apoio visual em consulta. Resultado real depende de avaliação profissional.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={reset} variant="outline" style={{ borderColor: T.border, color: T.muted }}>
-          <RefreshCw className="h-4 w-4 mr-2" /> Nova Simulação
-        </Button>
-        {generatedImage && (
-          savedToRecord ? (
-            <Button disabled variant="outline"
-              style={{ borderColor: "#34d39940", color: "#34d399", opacity: 0.8 }}>
-              <CheckCircle className="h-4 w-4 mr-2" /> Já salvo no prontuário
-            </Button>
-          ) : (
-            <Button onClick={handleSaveMedicalRecord} disabled={savingRecord}
-              variant="outline" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
-              {savingRecord
-                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
-                : <><FileText className="h-4 w-4 mr-2" /> Salvar no Prontuário</>}
-            </Button>
-          )
-        )}
-        {generatedImage && (
-          <a href={generatedImage} download={`simulacao_${patient.full_name?.replace(/\s+/g, "_")}.png`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium"
-            style={{ background: T.gold, color: "#111620" }}>
-            <Download className="h-4 w-4" /> Baixar Imagem
-          </a>
-        )}
-      </div>
     </div>
   );
 
