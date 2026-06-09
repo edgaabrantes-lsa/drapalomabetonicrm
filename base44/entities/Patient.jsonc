@@ -89,6 +89,29 @@
         }
       }
     },
+    "responsavel_legal": {
+      "type": "object",
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "cpf": {
+          "type": "string"
+        },
+        "rg": {
+          "type": "string"
+        },
+        "telefone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "parentesco": {
+          "type": "string"
+        }
+      }
+    },
     "photo_url": {
       "type": "string"
     },

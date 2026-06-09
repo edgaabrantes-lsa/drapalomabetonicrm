@@ -1,0 +1,61 @@
+{
+  "name": "PoliticaRetorno",
+  "type": "object",
+  "properties": {
+    "procedimento_nome": {
+      "type": "string"
+    },
+    "prazo_retorno_dias": {
+      "type": "number"
+    },
+    "prazo_revisao_dias": {
+      "type": "number"
+    },
+    "quantidade_retornos_incluidos": {
+      "type": "number",
+      "default": 1
+    },
+    "quantidade_revisoes_incluidas": {
+      "type": "number",
+      "default": 1
+    },
+    "periodo_avaliacao_dias": {
+      "type": "number"
+    },
+    "criterios_retoque": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    }
+  },
+  "required": [
+    "procedimento_nome"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

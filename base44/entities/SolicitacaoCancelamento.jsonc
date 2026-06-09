@@ -1,0 +1,94 @@
+{
+  "name": "SolicitacaoCancelamento",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "cancelamento",
+        "remarcacao",
+        "reembolso",
+        "credito"
+      ]
+    },
+    "motivo": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "aprovado",
+        "recusado",
+        "em_analise"
+      ],
+      "default": "pendente"
+    },
+    "aprovado_por": {
+      "type": "string"
+    },
+    "data_aprovacao": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "solicitado_por": {
+      "type": "string"
+    },
+    "procedimento_vinculado": {
+      "type": "string"
+    },
+    "valor_envolvido": {
+      "type": "number"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "tipo",
+    "motivo"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

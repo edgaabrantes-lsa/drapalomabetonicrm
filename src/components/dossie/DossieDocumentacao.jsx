@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import AssinaturaEletronicaModal from "@/components/governanca/AssinaturaEletronicaModal";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export default function DossieDocumentacao({ patient, currentUser }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [assinaturaDoc, setAssinaturaDoc] = useState(null);
   const [form, setForm] = useState({
     nome: "", tipo: "outro", status: "gerado",
     procedimento_vinculado: "", observacoes: "", file: null
@@ -92,6 +94,19 @@ export default function DossieDocumentacao({ patient, currentUser }) {
 
   return (
     <div className="space-y-4">
+      {assinaturaDoc && (
+        <AssinaturaEletronicaModal
+          documento={assinaturaDoc}
+          patient={patient}
+          currentUser={currentUser}
+          onClose={() => setAssinaturaDoc(null)}
+          onSigned={() => {
+            queryClient.invalidateQueries({ queryKey: ["dossie-docs", patient.id] });
+            queryClient.invalidateQueries({ queryKey: ["assinaturas", patient.id] });
+            setAssinaturaDoc(null);
+          }}
+        />
+      )}
       <div className="flex justify-end">
         <Button onClick={() => setShowForm(!showForm)} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black text-xs">
           Adicionar Documento
@@ -178,6 +193,16 @@ export default function DossieDocumentacao({ patient, currentUser }) {
                       <Button size="sm" variant="ghost" className="text-xs text-[#8A95AA] h-7 border border-[#252D3E]">Baixar</Button>
                     </a>
                   </>
+                )}
+                {doc.status !== "assinado" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs text-[#22c55e] h-7 border border-[#22c55e]/30 hover:bg-[#22c55e]/10"
+                    onClick={() => setAssinaturaDoc({ ...doc, conteudo: doc.observacoes || "" })}
+                  >
+                    ✍ Assinar
+                  </Button>
                 )}
                 <Select value={doc.status} onValueChange={(v) => handleUpdateStatus(doc, v)}>
                   <SelectTrigger className="h-7 bg-[#1A2030] border-[#252D3E] text-white text-xs w-36"><SelectValue /></SelectTrigger>

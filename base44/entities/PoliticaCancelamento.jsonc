@@ -1,0 +1,62 @@
+{
+  "name": "PoliticaCancelamento",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "regras_cancelamento": {
+      "type": "string"
+    },
+    "regras_remarcacao": {
+      "type": "string"
+    },
+    "regras_reembolso": {
+      "type": "string"
+    },
+    "regras_creditos": {
+      "type": "string"
+    },
+    "prazo_cancelamento_horas": {
+      "type": "number"
+    },
+    "percentual_reembolso": {
+      "type": "number"
+    },
+    "procedimentos_vinculados": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    }
+  },
+  "required": [
+    "nome"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

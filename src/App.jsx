@@ -11,6 +11,7 @@ import VigilanciaPage from './pages/VigilanciaPage';
 import FullFaceSimulations from './pages/FullFaceSimulations';
 import BeforeAfterIA from './pages/BeforeAfterIA.jsx';
 import DossiePatient from './pages/DossiePatient.jsx';
+import Governanca from './pages/Governanca.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -96,6 +97,13 @@ const AuthenticatedApp = () => {
       <Route path="/DossiePatient" element={
         <LayoutWrapper currentPageName="DossiePatient">
           <DossiePatient />
+        </LayoutWrapper>
+      } />
+
+      {/* Governança Documental */}
+      <Route path="/Governanca" element={
+        <LayoutWrapper currentPageName="Governanca">
+          <Governanca />
         </LayoutWrapper>
       } />
     </Routes>

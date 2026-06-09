@@ -1,0 +1,96 @@
+{
+  "name": "DocumentoTemplate",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "contrato_mestre",
+        "anexo_financeiro",
+        "consentimento",
+        "termo_lgpd",
+        "uso_imagem",
+        "politica_retorno",
+        "politica_cancelamento",
+        "outro"
+      ]
+    },
+    "versao_atual": {
+      "type": "string",
+      "default": "1.0"
+    },
+    "conteudo": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo",
+        "rascunho"
+      ],
+      "default": "ativo"
+    },
+    "criado_por": {
+      "type": "string"
+    },
+    "publicado_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "versoes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "versao": {
+            "type": "string"
+          },
+          "conteudo": {
+            "type": "string"
+          },
+          "criado_por": {
+            "type": "string"
+          },
+          "publicado_em": {
+            "type": "string"
+          },
+          "motivo_alteracao": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "procedimentos_vinculados": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "nome",
+    "tipo"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

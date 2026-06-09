@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ResponsavelLegalForm from "@/components/governanca/ResponsavelLegalForm";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -204,6 +205,28 @@ export default function DossieCadastro({ patient, onPatientUpdate }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Responsável Legal */}
+      <div>
+        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#C5A059] mb-3">Responsável Legal</h3>
+        {editing ? (
+          <ResponsavelLegalForm
+            data={formData.responsavel_legal || {}}
+            onChange={(v) => setFormData(p => ({ ...p, responsavel_legal: v }))}
+          />
+        ) : formData.responsavel_legal?.nome ? (
+          <div className="bg-[#1A2030] border border-[#252D3E] rounded-lg p-4">
+            <p className="text-white text-sm font-medium">{formData.responsavel_legal.nome}</p>
+            <p className="text-[#8A95AA] text-xs mt-1">
+              {formData.responsavel_legal.parentesco && <span>{formData.responsavel_legal.parentesco} • </span>}
+              {formData.responsavel_legal.cpf && <span>CPF: {formData.responsavel_legal.cpf} • </span>}
+              {formData.responsavel_legal.telefone && <span>{formData.responsavel_legal.telefone}</span>}
+            </p>
+          </div>
+        ) : (
+          <p className="text-[#8A95AA] text-sm">Nenhum responsável legal cadastrado</p>
+        )}
       </div>
 
       {/* Observações */}

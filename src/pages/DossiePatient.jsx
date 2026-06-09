@@ -10,16 +10,22 @@ import DossieDocumentacao      from "@/components/dossie/DossieDocumentacao";
 import DossieFinanceiroTab     from "@/components/dossie/DossieFinanceiroTab";
 import DossieContratos         from "@/components/dossie/DossieContratos";
 import DossieObservacoes       from "@/components/dossie/DossieObservacoes";
+import StatusDocumental        from "@/components/governanca/StatusDocumental";
+import HistoricoAssinaturas    from "@/components/governanca/HistoricoAssinaturas";
+import RelatorioConformidade   from "@/components/governanca/RelatorioConformidade";
 
 const ABAS = [
   { id: "cadastro",            label: "Cadastro" },
   { id: "prontuario",          label: "Prontuário" },
   { id: "fotos",               label: "Arquivo Fotográfico" },
   { id: "juridico",            label: "Documentação Jurídica" },
+  { id: "status_documental",   label: "Status Documental" },
+  { id: "assinaturas",         label: "Assinaturas" },
   { id: "financeiro",          label: "Financeiro" },
   { id: "contratos_gerados",   label: "Contratos Gerados" },
   { id: "contratos_assinados", label: "Contratos Assinados" },
   { id: "observacoes",         label: "Observações" },
+  { id: "conformidade",        label: "Rel. Conformidade" },
 ];
 
 export default function DossiePatient() {
@@ -249,6 +255,9 @@ export default function DossiePatient() {
               {activeTab === "contratos_gerados"   && <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="gerados" />}
               {activeTab === "contratos_assinados" && <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="assinados" />}
               {activeTab === "observacoes"         && <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />}
+              {activeTab === "status_documental"   && <StatusDocumental patient={selectedPatient} />}
+              {activeTab === "assinaturas"         && <HistoricoAssinaturas patient={selectedPatient} />}
+              {activeTab === "conformidade"        && <RelatorioConformidade patient={selectedPatient} />}
             </div>
           </>
         )}

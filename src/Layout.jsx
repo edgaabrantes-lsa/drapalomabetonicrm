@@ -56,6 +56,7 @@ const navigation = [
   { name: "Antes e Depois",      href: "BeforeAfterIA",     icon: ScanFace },
   { name: "Dossiê da Paciente",  href: "DossiePatient",     icon: FolderOpen },
   { name: "Vigilância Sanitária",href: "VigilanciaPage",    icon: ShieldCheck },
+  { name: "Governança Doc.",     href: "Governanca",         icon: ShieldCheck },
   { name: "Triagem IA",          href: "Intake",            icon: ClipboardList },
   { name: "Configurações",       href: "Settings",          icon: Settings },
 ];
