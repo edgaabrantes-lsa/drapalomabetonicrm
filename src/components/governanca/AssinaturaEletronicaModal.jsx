@@ -94,42 +94,48 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
   async function handleSalvar() {
     if (!hasSignature || !assinanteNome || !assinanteCpf || !declarouLeitura || !concordouTermos) return;
     setSaving(true);
-    const canvas = canvasRef.current;
-    const assinaturaDataUrl = canvas.toDataURL("image/png");
+    try {
+      const canvas = canvasRef.current;
+      const assinaturaDataUrl = canvas.toDataURL("image/png");
 
-    // Gerar hash simples do documento
-    const hashInput = `${documento.id}-${documento.versao || "1.0"}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
-    let hash = 0;
-    for (let i = 0; i < hashInput.length; i++) {
-      hash = ((hash << 5) - hash) + hashInput.charCodeAt(i);
-      hash |= 0;
-    }
-    const documentoHash = `DOC-${Math.abs(hash).toString(36).toUpperCase()}`;
+      // Converter base64 para blob e upload
+      const blob = await fetch(assinaturaDataUrl).then(r => r.blob());
+      const file = new File([blob], "assinatura.png", { type: "image/png" });
+      const uploadRes = await base44.integrations.Core.UploadFile({ file });
 
-    const payload = {
-      patient_id: patient.id,
-      patient_name: patient.full_name,
-      documento_id: documento.id,
-      documento_nome: documento.nome,
-      documento_tipo: documento.tipo,
-      documento_versao: documento.versao || "1.0",
-      documento_hash: documentoHash,
-      assinatura_data_url: assinaturaDataUrl,
-      assinante_nome: assinanteNome,
-      assinante_cpf: assinanteCpf,
-      assinante_tipo: tipoAssinante,
-      responsavel_parentesco: tipoAssinante === "responsavel_legal" ? responsavelParentesco : "",
-      declarou_leitura: declarouLeitura,
-      concordou_termos: concordouTermos,
-      data_assinatura: now.toISOString(),
-      usuario_responsavel_id: currentUser?.id,
-      usuario_responsavel_nome: currentUser?.full_name,
-      dispositivo: navigator.userAgent?.substring(0, 100),
-      ip_address: "capturado-no-registro",
-      status: "assinado",
-    };
+      // Gerar hash simples do documento
+      const hashInput = `${documento.id}-${documento.versao || "1.0"}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
+      let hash = 0;
+      for (let i = 0; i < hashInput.length; i++) {
+        hash = ((hash << 5) - hash) + hashInput.charCodeAt(i);
+        hash |= 0;
+      }
+      const documentoHash = `DOC-${Math.abs(hash).toString(36).toUpperCase()}`;
 
-    await base44.entities.AssinaturaEletronica.create(payload);
+      const payload = {
+        patient_id: patient.id,
+        patient_name: patient.full_name,
+        documento_id: documento.id,
+        documento_nome: documento.nome,
+        documento_tipo: documento.tipo,
+        documento_versao: documento.versao || "1.0",
+        documento_hash: documentoHash,
+        assinatura_data_url: uploadRes.file_url,
+        assinante_nome: assinanteNome,
+        assinante_cpf: assinanteCpf,
+        assinante_tipo: tipoAssinante,
+        responsavel_parentesco: tipoAssinante === "responsavel_legal" ? responsavelParentesco : "",
+        declarou_leitura: declarouLeitura,
+        concordou_termos: concordouTermos,
+        data_assinatura: now.toISOString(),
+        usuario_responsavel_id: currentUser?.id,
+        usuario_responsavel_nome: currentUser?.full_name,
+        dispositivo: navigator.userAgent?.substring(0, 100),
+        ip_address: "capturado-no-registro",
+        status: "assinado",
+      };
+
+      await base44.entities.AssinaturaEletronica.create(payload);
 
     // Atualizar status do documento
     if (documento.id) {
@@ -150,8 +156,13 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
       data_hora: now.toISOString(),
     });
 
-    setStep("confirmacao");
-    setSaving(false);
+      setStep("confirmacao");
+    } catch (error) {
+      console.error("Erro ao salvar assinatura:", error);
+      alert("Erro ao salvar assinatura: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setSaving(false);
+    }
     // Aguardar renderização da confirmação antes de notificar pai
     setTimeout(() => {
       if (onSigned) onSigned();
