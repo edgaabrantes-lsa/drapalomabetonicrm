@@ -177,12 +177,21 @@ Deno.serve(async (req) => {
         doc.text('ASSINATURA MANUSCRITA', 20, y);
         y += 5;
         
-        // Adicionar imagem da assinatura (base64)
-        const imgData = assinatura.assinatura_data_url;
+        // Baixar imagem da URL e converter para base64
+        const imgResponse = await fetch(assinatura.assinatura_data_url);
+        const imgBlob = await imgResponse.blob();
+        const imgArrayBuffer = await imgBlob.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(imgArrayBuffer)));
+        const imgData = `data:image/png;base64,${base64}`;
+        
         doc.addImage(imgData, 'PNG', 20, y, 80, 30);
         y += 35;
       } catch (e) {
-        console.log("Erro ao adicionar imagem:", e.message);
+        console.error("Erro ao adicionar imagem:", e.message);
+        doc.setTextColor(...gray);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Imagem da assinatura não disponível', 20, y);
+        y += 10;
       }
     }
 

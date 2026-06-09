@@ -92,18 +92,33 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
   }
 
   async function handleSalvar() {
-    if (!hasSignature || !assinanteNome || !assinanteCpf || !declarouLeitura || !concordouTermos) return;
+    if (!hasSignature || !assinanteNome.trim() || !assinanteCpf || !declarouLeitura || !concordouTermos) {
+      alert("Preencha todos os campos obrigatórios e desenhe sua assinatura.");
+      return;
+    }
+    
+    const cpfNumeros = assinanteCpf.replace(/\D/g, "");
+    if (cpfNumeros.length !== 11) {
+      alert("CPF inválido. Digite 11 números.");
+      return;
+    }
+
     setSaving(true);
     try {
       const canvas = canvasRef.current;
-      const assinaturaDataUrl = canvas.toDataURL("image/png");
+      if (!canvas) {
+        throw new Error("Canvas não encontrado");
+      }
 
-      // Converter base64 para blob e upload
+      const assinaturaDataUrl = canvas.toDataURL("image/png");
       const blob = await fetch(assinaturaDataUrl).then(r => r.blob());
       const file = new File([blob], "assinatura.png", { type: "image/png" });
+      
       const uploadRes = await base44.integrations.Core.UploadFile({ file });
+      if (!uploadRes.file_url) {
+        throw new Error("Falha no upload da assinatura");
+      }
 
-      // Gerar hash simples do documento
       const hashInput = `${documento.id}-${documento.versao || "1.0"}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
       let hash = 0;
       for (let i = 0; i < hashInput.length; i++) {
@@ -135,26 +150,24 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
         status: "assinado",
       };
 
-      await base44.entities.AssinaturaEletronica.create(payload);
+      const assinaturaCriada = await base44.entities.AssinaturaEletronica.create(payload);
 
-    // Atualizar status do documento
-    if (documento.id) {
-      await base44.entities.DossieDocumento.update(documento.id, {
-        status: "assinado",
-        data_assinatura: now.toISOString(),
+      if (documento.id) {
+        await base44.entities.DossieDocumento.update(documento.id, {
+          status: "assinado",
+          data_assinatura: now.toISOString(),
+        });
+      }
+
+      await base44.entities.DossieLog.create({
+        patient_id: patient.id,
+        patient_name: patient.full_name,
+        acao: `Documento assinado eletronicamente: ${documento.nome} v${documento.versao || "1.0"}`,
+        tipo: "documento",
+        usuario: currentUser?.full_name || "Sistema",
+        descricao: `Hash: ${documentoHash} | Assinante: ${assinanteNome} | CPF: ${assinanteCpf}`,
+        data_hora: now.toISOString(),
       });
-    }
-
-    // Log de auditoria
-    await base44.entities.DossieLog.create({
-      patient_id: patient.id,
-      patient_name: patient.full_name,
-      acao: `Documento assinado eletronicamente: ${documento.nome} v${documento.versao || "1.0"}`,
-      tipo: "documento",
-      usuario: currentUser?.full_name || "Sistema",
-      descricao: `Hash: ${documentoHash} | Assinante: ${assinanteNome} | CPF: ${assinanteCpf}`,
-      data_hora: now.toISOString(),
-    });
 
       setStep("confirmacao");
     } catch (error) {
@@ -163,7 +176,6 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
     } finally {
       setSaving(false);
     }
-    // Aguardar renderização da confirmação antes de notificar pai
     setTimeout(() => {
       if (onSigned) onSigned();
     }, 100);
