@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { format, parseISO } from "date-fns";
+import { FileDown } from "lucide-react";
 
 const TIPOS = {
   contrato_mestre: "Contrato Mestre",
@@ -35,6 +36,7 @@ export default function DossieDocumentacao({ patient, currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [assinaturaDoc, setAssinaturaDoc] = useState(null);
+  const [gerandoPdf, setGerandoPdf] = useState(null);
   const [form, setForm] = useState({
     nome: "", tipo: "outro", status: "gerado",
     procedimento_vinculado: "", observacoes: "", file: null
@@ -43,6 +45,11 @@ export default function DossieDocumentacao({ patient, currentUser }) {
   const { data: documentos = [] } = useQuery({
     queryKey: ["dossie-docs", patient.id],
     queryFn: () => base44.entities.DossieDocumento.filter({ patient_id: patient.id }, "-data_criacao", 100)
+  });
+
+  const { data: assinaturas = [] } = useQuery({
+    queryKey: ["assinaturas", patient.id],
+    queryFn: () => base44.entities.AssinaturaEletronica.filter({ patient_id: patient.id }, "-data_assinatura", 100)
   });
 
   const createMutation = useMutation({
@@ -90,6 +97,27 @@ export default function DossieDocumentacao({ patient, currentUser }) {
 
   const handleUpdateStatus = (doc, novoStatus) => {
     updateMutation.mutate({ id: doc.id, data: { status: novoStatus } });
+  };
+
+  const handleGerarPdf = async (assinatura) => {
+    setGerandoPdf(assinatura.id);
+    try {
+      const response = await base44.functions.invoke('gerarPdfAssinatura', { assinatura_id: assinatura.id });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Comprovante_Assinatura_${assinatura.documento_nome}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+      setGerandoPdf(null);
+    }
   };
 
   return (
@@ -194,7 +222,7 @@ export default function DossieDocumentacao({ patient, currentUser }) {
                     </a>
                   </>
                 )}
-                {doc.status !== "assinado" && (
+                {doc.status !== "assinado" ? (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -203,7 +231,21 @@ export default function DossieDocumentacao({ patient, currentUser }) {
                   >
                     ✍ Assinar
                   </Button>
-                )}
+                ) : (() => {
+                  const assinaturaVinculada = assinaturas.find(a => a.documento_id === doc.id);
+                  return (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs text-[#C5A059] h-7 border border-[#C5A059]/30 hover:bg-[#C5A059]/10"
+                      onClick={() => assinaturaVinculada && handleGerarPdf(assinaturaVinculada)}
+                      disabled={!assinaturaVinculada || gerandoPdf === assinaturaVinculada.id}
+                    >
+                      <FileDown className="w-3 h-3 mr-1" />
+                      {gerandoPdf === assinaturaVinculada?.id ? 'Gerando...' : 'PDF'}
+                    </Button>
+                  );
+                })()}
                 <Select value={doc.status} onValueChange={(v) => handleUpdateStatus(doc, v)}>
                   <SelectTrigger className="h-7 bg-[#1A2030] border-[#252D3E] text-white text-xs w-36"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-[#171D29] border-[#252D3E]">

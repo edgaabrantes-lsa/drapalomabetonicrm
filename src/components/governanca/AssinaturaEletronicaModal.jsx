@@ -150,9 +150,12 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
       data_hora: now.toISOString(),
     });
 
-    setSaving(false);
     setStep("confirmacao");
-    if (onSigned) onSigned();
+    setSaving(false);
+    // Aguardar renderização da confirmação antes de notificar pai
+    setTimeout(() => {
+      if (onSigned) onSigned();
+    }, 100);
   }
 
   const canProceed = declarouLeitura && concordouTermos;
