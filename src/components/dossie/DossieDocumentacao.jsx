@@ -99,6 +99,73 @@ export default function DossieDocumentacao({ patient, currentUser }) {
     updateMutation.mutate({ id: doc.id, data: { status: novoStatus } });
   };
 
+  const abrirImpressaoLocal = (doc) => {
+    const assinatura = assinaturas.find(a => a.documento_id === doc.id && a.status === 'assinado')
+      || assinaturas.find(a => a.patient_id === patient.id && a.status === 'assinado');
+
+    const dataAssinatura = assinatura?.data_assinatura
+      ? new Date(assinatura.data_assinatura).toLocaleString('pt-BR')
+      : '—';
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${doc.nome || 'Documento'}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #111; margin: 40px; }
+    h1 { font-size: 18px; text-align: center; }
+    h2 { font-size: 13px; color: #7a6030; margin-top: 28px; }
+    .header { text-align: center; border-bottom: 2px solid #c8a96a; padding-bottom: 16px; margin-bottom: 24px; }
+    .clinic-name { font-size: 20px; font-weight: bold; color: #c8a96a; }
+    .field { margin: 6px 0; }
+    .label { font-weight: bold; }
+    .sig-block { border: 1px solid #c8a96a; border-radius: 6px; padding: 16px; margin-top: 24px; background: #fffdf7; }
+    .sig-badge { background: #22c55e; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; margin-bottom: 12px; }
+    .hash { font-size: 10px; color: #999; word-break: break-all; margin-top: 8px; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="clinic-name">CLÍNICA DRA. PALOMA BETONI</div>
+    <div>Documento Clínico — Registro Eletrônico Certificado</div>
+  </div>
+  <h1>${doc.nome || 'Documento'}</h1>
+  <div class="field"><span class="label">Tipo:</span> ${doc.tipo || '—'} | <span class="label">Versão:</span> ${doc.versao || '1.0'} | <span class="label">Status:</span> ${doc.status || '—'}</div>
+  <h2>DADOS DA PACIENTE</h2>
+  <div class="field"><span class="label">Nome:</span> ${patient.full_name || '—'}</div>
+  <div class="field"><span class="label">CPF:</span> ${patient.document_number || '—'}</div>
+  <div class="field"><span class="label">Telefone:</span> ${patient.phone || '—'}</div>
+  ${doc.observacoes ? `<h2>OBSERVAÇÕES</h2><p>${doc.observacoes}</p>` : ''}
+  <div class="sig-block">
+    ${assinatura ? `<div class="sig-badge">DOCUMENTO ASSINADO ELETRONICAMENTE</div>` : `<div style="color:#c85a00;font-weight:bold;">ASSINATURA PENDENTE</div>`}
+    <h2 style="margin-top:8px;">ASSINATURA ELETRÔNICA</h2>
+    <div class="field">Assinado eletronicamente por <strong>${assinatura?.assinante_nome || '—'}</strong>, CPF <strong>${assinatura?.assinante_cpf || '—'}</strong>, em <strong>${dataAssinatura}</strong>, mediante aceite digital registrado na plataforma.</div>
+    <div class="field"><span class="label">Nome do Assinante:</span> ${assinatura?.assinante_nome || '—'}</div>
+    <div class="field"><span class="label">CPF:</span> ${assinatura?.assinante_cpf || '—'}</div>
+    <div class="field"><span class="label">Data/Hora:</span> ${dataAssinatura}</div>
+    <div class="field"><span class="label">Declarou Leitura:</span> ${assinatura?.declarou_leitura ? 'Sim' : 'Não'}</div>
+    <div class="field"><span class="label">Concordou com os Termos:</span> ${assinatura?.concordou_termos ? 'Sim' : 'Não'}</div>
+    <div class="field"><span class="label">Método:</span> Assinatura Digital Presencial (Canvas)</div>
+    <div class="field"><span class="label">Status:</span> ${assinatura ? 'Assinado Eletronicamente' : 'Pendente'}</div>
+    ${assinatura?.documento_hash ? `<div class="hash"><span class="label">Hash:</span> ${assinatura.documento_hash}</div>` : ''}
+    ${assinatura?.assinatura_data_url && assinatura.assinatura_data_url.startsWith('http')
+      ? `<div style="margin-top:12px;"><div class="label">Assinatura Manuscrita:</div><img src="${assinatura.assinatura_data_url}" style="max-width:280px;max-height:100px;border:1px solid #ddd;background:#fff;padding:4px;" /></div>`
+      : ''}
+  </div>
+  <p style="font-size:10px;color:#999;text-align:center;margin-top:32px;">Gerado em ${new Date().toLocaleString('pt-BR')} — Clínica Dra. Paloma Betoni</p>
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
+  };
+
   const handleGerarPdf = async (doc) => {
     setGerandoPdf(doc.id);
     try {
@@ -110,14 +177,14 @@ export default function DossieDocumentacao({ patient, currentUser }) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Contrato_${doc.nome.replace(/\s+/g, '_')}_${doc.status === 'assinado' ? 'Assinado' : 'Pendente'}.pdf`;
+      link.download = `Contrato_${(doc.nome || 'Documento').replace(/\s+/g, '_')}_${doc.status === 'assinado' ? 'Assinado' : 'Pendente'}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar PDF: ' + (error.message || 'Erro desconhecido'));
+      console.error('Erro PDF servidor, usando impressão local:', error);
+      abrirImpressaoLocal(doc);
     } finally {
       setGerandoPdf(null);
     }

@@ -1,7 +1,27 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { jsPDF } from 'npm:jspdf@4.0.0';
 
-// Gera o contrato completo com bloco de assinatura eletrônica embutido
+// Converte ArrayBuffer para base64 sem spread operator (evita stack overflow em imagens grandes)
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+// Sanitiza qualquer valor para string segura
+function s(value, fallback = '—') {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') return value.trim() || fallback;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'object') return fallback;
+  return String(value);
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -18,31 +38,37 @@ Deno.serve(async (req) => {
     }
 
     // 1. Buscar documento
-    const docs = await base44.entities.DossieDocumento.filter({ id: documento_id }, "-created_date", 1);
+    const docs = await base44.entities.DossieDocumento.filter({ id: documento_id }, '-created_date', 1);
     const documento = docs[0];
     if (!documento) {
       return Response.json({ error: 'Documento não encontrado' }, { status: 404 });
     }
 
     // 2. Buscar paciente
-    const patients = await base44.entities.Patient.filter({ id: patient_id }, "-created_date", 1);
+    const patients = await base44.entities.Patient.filter({ id: patient_id }, '-created_date', 1);
     const patient = patients[0];
 
-    // 3. Buscar assinatura vinculada (mais recente com status assinado)
-    const todasAssinaturas = await base44.entities.AssinaturaEletronica.filter(
-      { documento_id: documento_id, status: "assinado" },
-      "-data_assinatura",
-      5
-    );
-    // Fallback: buscar por patient_id também caso documento_id não encontre
-    let assinatura = todasAssinaturas[0];
-    if (!assinatura) {
-      const porPaciente = await base44.entities.AssinaturaEletronica.filter(
-        { patient_id: patient_id, status: "assinado" },
-        "-data_assinatura",
-        10
+    // 3. Buscar assinatura (mais recente com status assinado)
+    let assinatura = null;
+    try {
+      const porDocumento = await base44.entities.AssinaturaEletronica.filter(
+        { documento_id: documento_id, status: 'assinado' },
+        '-data_assinatura',
+        5
       );
-      assinatura = porPaciente.find(a => a.documento_id === documento_id) || porPaciente[0];
+      assinatura = porDocumento[0];
+
+      if (!assinatura) {
+        const porPaciente = await base44.entities.AssinaturaEletronica.filter(
+          { patient_id: patient_id, status: 'assinado' },
+          '-data_assinatura',
+          10
+        );
+        assinatura = porPaciente.find(a => a.documento_id === documento_id) || porPaciente[0] || null;
+      }
+    } catch (e) {
+      console.error('Erro ao buscar assinatura:', e.message);
+      assinatura = null;
     }
 
     // 4. Montar PDF
@@ -70,7 +96,7 @@ Deno.serve(async (req) => {
     doc.setFontSize(13);
     doc.setTextColor(...black);
     doc.setFont('helvetica', 'bold');
-    doc.text(documento.nome || 'Documento Clínico', pageWidth / 2, 42, { align: 'center' });
+    doc.text(s(documento.nome, 'Documento Clínico'), pageWidth / 2, 42, { align: 'center' });
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
@@ -83,8 +109,11 @@ Deno.serve(async (req) => {
       uso_imagem: 'Autorização de Uso de Imagem',
       contrato_assinado: 'Contrato Assinado',
       outro: 'Documento'
-    }[documento.tipo] || documento.tipo;
-    doc.text(`Tipo: ${tipoLabel}  |  Versão: ${documento.versao || '1.0'}  |  Emitido em: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth / 2, 50, { align: 'center' });
+    }[documento.tipo] || s(documento.tipo, 'Documento');
+    doc.text(
+      `Tipo: ${tipoLabel}  |  Versão: ${s(documento.versao, '1.0')}  |  Emitido em: ${new Date().toLocaleDateString('pt-BR')}`,
+      pageWidth / 2, 50, { align: 'center' }
+    );
 
     // ── LINHA DOURADA ──
     doc.setDrawColor(...gold);
@@ -105,20 +134,21 @@ Deno.serve(async (req) => {
       doc.setTextColor(...black);
       doc.setFont('helvetica', 'normal');
 
-      const endereco = patient.address
-        ? `${patient.address.street || ''}, ${patient.address.number || ''} — ${patient.address.city || ''}`
+      const addr = patient.address;
+      const endereco = addr
+        ? `${s(addr.street)}, ${s(addr.number)} — ${s(addr.city)}`
         : 'Não informado';
 
       const dadosPaciente = [
-        ['Nome', patient.full_name || '—'],
-        ['CPF', patient.document_number || '—'],
-        ['RG', patient.rg || '—'],
-        ['Telefone', patient.phone || '—'],
-        ['E-mail', patient.email || '—'],
+        ['Nome', s(patient.full_name)],
+        ['CPF', s(patient.document_number)],
+        ['Telefone', s(patient.phone)],
+        ['E-mail', s(patient.email)],
         ['Endereço', endereco],
       ];
 
       dadosPaciente.forEach(([label, valor]) => {
+        if (y > pageHeight - 20) { doc.addPage(); y = 20; }
         doc.setFont('helvetica', 'bold');
         doc.text(`${label}:`, 15, y);
         doc.setFont('helvetica', 'normal');
@@ -131,6 +161,7 @@ Deno.serve(async (req) => {
 
     // ── OBSERVAÇÕES / CONTEÚDO DO DOCUMENTO ──
     if (documento.observacoes) {
+      if (y > pageHeight - 40) { doc.addPage(); y = 20; }
       doc.setDrawColor(...gold);
       doc.setLineWidth(0.3);
       doc.line(15, y, pageWidth - 15, y);
@@ -145,19 +176,20 @@ Deno.serve(async (req) => {
       doc.setFontSize(9);
       doc.setTextColor(...black);
       doc.setFont('helvetica', 'normal');
-      const linhasObs = doc.splitTextToSize(documento.observacoes, pageWidth - 30);
+      const linhasObs = doc.splitTextToSize(s(documento.observacoes), pageWidth - 30);
       doc.text(linhasObs, 15, y);
       y += linhasObs.length * 6 + 8;
     }
 
     // ── PROCEDIMENTO ──
     if (documento.procedimento_vinculado) {
+      if (y > pageHeight - 20) { doc.addPage(); y = 20; }
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...black);
       doc.text('Procedimento:', 15, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(documento.procedimento_vinculado, 55, y);
+      doc.text(s(documento.procedimento_vinculado), 55, y);
       y += 10;
     }
 
@@ -173,13 +205,12 @@ Deno.serve(async (req) => {
     doc.line(15, y, pageWidth - 15, y);
     y += 10;
 
-    // Badge "ASSINADO ELETRONICAMENTE"
     if (assinatura) {
       doc.setFillColor(...green);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      const badgeText = '✓  DOCUMENTO ASSINADO ELETRONICAMENTE';
+      const badgeText = 'DOCUMENTO ASSINADO ELETRONICAMENTE';
       const badgeW = doc.getTextWidth(badgeText) + 16;
       doc.roundedRect(15, y - 4, badgeW, 10, 2, 2, 'F');
       doc.text(badgeText, 15 + badgeW / 2, y + 2.5, { align: 'center' });
@@ -188,7 +219,7 @@ Deno.serve(async (req) => {
       doc.setTextColor(200, 100, 50);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text('⚠  ASSINATURA PENDENTE', 15, y);
+      doc.text('ASSINATURA PENDENTE', 15, y);
       y += 12;
     }
 
@@ -208,7 +239,6 @@ Deno.serve(async (req) => {
     y += 10;
 
     if (assinatura) {
-      // Dados textuais da assinatura (camada Authentic/DocuSign)
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...black);
@@ -220,24 +250,22 @@ Deno.serve(async (req) => {
       const horaFmt = dataAssinatura.toLocaleTimeString('pt-BR');
 
       const linhaAuth = doc.splitTextToSize(
-        `Assinado eletronicamente por ${assinatura.assinante_nome || '—'}, CPF ${assinatura.assinante_cpf || '—'}, em ${dataFmt} às ${horaFmt}, mediante aceite digital registrado na plataforma Clínica Dra. Paloma Betoni, com identificação técnica vinculada ao documento.`,
+        `Assinado eletronicamente por ${s(assinatura.assinante_nome)}, CPF ${s(assinatura.assinante_cpf)}, em ${dataFmt} às ${horaFmt}, mediante aceite digital registrado na plataforma Clínica Dra. Paloma Betoni.`,
         pageWidth - 30
       );
       doc.text(linhaAuth, 15, y);
       y += linhaAuth.length * 6 + 8;
 
-      // Grade de dados
       const campos = [
-        ['Nome do Assinante', assinatura.assinante_nome || '—'],
-        ['CPF', assinatura.assinante_cpf || '—'],
+        ['Nome do Assinante', s(assinatura.assinante_nome)],
+        ['CPF', s(assinatura.assinante_cpf)],
         ['Tipo', assinatura.assinante_tipo === 'responsavel_legal'
           ? `Responsável Legal${assinatura.responsavel_parentesco ? ' — ' + assinatura.responsavel_parentesco : ''}`
           : 'Paciente'],
         ['Data da Assinatura', dataFmt],
         ['Hora', horaFmt],
-        ['Identificador (Hash)', assinatura.documento_hash || '—'],
-        ['Responsável Admin', assinatura.usuario_responsavel_nome || '—'],
-        ['IP / Dispositivo', (assinatura.ip_address || '—') + ' | ' + (assinatura.dispositivo ? assinatura.dispositivo.substring(0, 60) + '...' : '—')],
+        ['Identificador (Hash)', s(assinatura.documento_hash)],
+        ['Responsável Admin', s(assinatura.usuario_responsavel_nome)],
         ['Declarou Leitura', assinatura.declarou_leitura ? 'Sim' : 'Não'],
         ['Concordou com os Termos', assinatura.concordou_termos ? 'Sim' : 'Não'],
         ['Método', 'Assinatura Digital Presencial (Canvas)'],
@@ -245,10 +273,7 @@ Deno.serve(async (req) => {
       ];
 
       campos.forEach(([label, valor]) => {
-        if (y > pageHeight - 20) {
-          doc.addPage();
-          y = 20;
-        }
+        if (y > pageHeight - 20) { doc.addPage(); y = 20; }
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...gray);
@@ -263,10 +288,7 @@ Deno.serve(async (req) => {
       y += 8;
 
       // ── IMAGEM DA ASSINATURA ──
-      if (y > pageHeight - 60) {
-        doc.addPage();
-        y = 20;
-      }
+      if (y > pageHeight - 60) { doc.addPage(); y = 20; }
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
@@ -274,34 +296,61 @@ Deno.serve(async (req) => {
       doc.text('ASSINATURA MANUSCRITA:', 15, y);
       y += 6;
 
-      if (assinatura.assinatura_data_url) {
-        try {
-          // Download e conversão para base64
-          const imgResponse = await fetch(assinatura.assinatura_data_url);
-          const imgBlob = await imgResponse.blob();
-          const imgBuffer = await imgBlob.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
-          const imgData = `data:image/png;base64,${base64}`;
+      // Validar se a URL da assinatura é uma URL externa (não base64)
+      const sigUrl = assinatura.assinatura_data_url;
+      const isExternalUrl = typeof sigUrl === 'string' &&
+        (sigUrl.startsWith('http://') || sigUrl.startsWith('https://'));
+      const isBase64 = typeof sigUrl === 'string' && sigUrl.startsWith('data:image');
 
-          // Área de assinatura com fundo branco
+      let imagemCarregada = false;
+
+      if (isExternalUrl) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
+          const imgResponse = await fetch(sigUrl, { signal: controller.signal });
+          clearTimeout(timeout);
+
+          if (imgResponse.ok) {
+            const imgBuffer = await imgResponse.arrayBuffer();
+            // Verificar tamanho: máx 2MB para não causar problemas de memória
+            if (imgBuffer.byteLength < 2 * 1024 * 1024) {
+              const base64str = arrayBufferToBase64(imgBuffer);
+              const contentType = imgResponse.headers.get('content-type') || 'image/png';
+              const mimeType = contentType.includes('jpeg') || contentType.includes('jpg') ? 'JPEG' : 'PNG';
+              const imgData = `data:${contentType};base64,${base64str}`;
+
+              doc.setFillColor(255, 255, 255);
+              doc.roundedRect(15, y, 120, 40, 2, 2, 'F');
+              doc.setDrawColor(...gold);
+              doc.setLineWidth(0.5);
+              doc.roundedRect(15, y, 120, 40, 2, 2, 'S');
+              doc.addImage(imgData, mimeType, 17, y + 2, 116, 36);
+              y += 44;
+              imagemCarregada = true;
+            }
+          }
+        } catch (e) {
+          console.error('Erro ao carregar imagem externa:', e.message);
+        }
+      } else if (isBase64 && sigUrl.length < 500000) {
+        // Base64 diretamente, mas apenas se não for gigante
+        try {
+          const mimeType = sigUrl.includes('jpeg') || sigUrl.includes('jpg') ? 'JPEG' : 'PNG';
           doc.setFillColor(255, 255, 255);
           doc.roundedRect(15, y, 120, 40, 2, 2, 'F');
           doc.setDrawColor(...gold);
           doc.setLineWidth(0.5);
           doc.roundedRect(15, y, 120, 40, 2, 2, 'S');
-          doc.addImage(imgData, 'PNG', 17, y + 2, 116, 36);
+          doc.addImage(sigUrl, mimeType, 17, y + 2, 116, 36);
           y += 44;
+          imagemCarregada = true;
         } catch (e) {
-          console.error('Erro ao carregar imagem da assinatura:', e.message);
-          doc.setFillColor(245, 245, 245);
-          doc.roundedRect(15, y, 120, 20, 2, 2, 'F');
-          doc.setTextColor(...gray);
-          doc.setFont('helvetica', 'italic');
-          doc.setFontSize(8);
-          doc.text('Assinatura eletrônica registrada — imagem não disponível', 75, y + 11, { align: 'center' });
-          y += 24;
+          console.error('Erro ao inserir base64:', e.message);
         }
-      } else {
+      }
+
+      if (!imagemCarregada) {
         doc.setFillColor(245, 245, 245);
         doc.roundedRect(15, y, 120, 20, 2, 2, 'F');
         doc.setTextColor(...gray);
@@ -318,7 +367,7 @@ Deno.serve(async (req) => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...gray);
-      doc.text(`${assinatura.assinante_nome || '—'} — CPF ${assinatura.assinante_cpf || '—'}`, 15, y + 8);
+      doc.text(`${s(assinatura.assinante_nome)} — CPF ${s(assinatura.assinante_cpf)}`, 15, y + 8);
       y += 16;
 
     } else {
@@ -346,16 +395,19 @@ Deno.serve(async (req) => {
       doc.setTextColor(...gray);
       doc.setFont('helvetica', 'italic');
       doc.text(
-        `Clínica Dra. Paloma Betoni — Documento gerado em ${new Date().toLocaleString('pt-BR')} — Página ${p}/${totalPages}`,
+        `Clínica Dra. Paloma Betoni — Gerado em ${new Date().toLocaleString('pt-BR')} — Página ${p}/${totalPages}`,
         pageWidth / 2, pageHeight - 8, { align: 'center' }
       );
       if (assinatura?.documento_hash) {
-        doc.text(`Hash: ${assinatura.documento_hash}`, pageWidth / 2, pageHeight - 4, { align: 'center' });
+        doc.text(
+          `Hash: ${assinatura.documento_hash.substring(0, 60)}`,
+          pageWidth / 2, pageHeight - 4, { align: 'center' }
+        );
       }
     }
 
     const pdfBytes = doc.output('arraybuffer');
-    const nomeArquivo = `Contrato_${(documento.nome || 'Documento').replace(/\s+/g, '_')}_${assinatura ? 'Assinado' : 'Pendente'}.pdf`;
+    const nomeArquivo = `Contrato_${s(documento.nome, 'Documento').replace(/\s+/g, '_')}_${assinatura ? 'Assinado' : 'Pendente'}.pdf`;
 
     return new Response(pdfBytes, {
       status: 200,
@@ -366,7 +418,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Erro ao gerar contrato:', error);
+    console.error('Erro ao gerar contrato:', error.message, error.stack);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
