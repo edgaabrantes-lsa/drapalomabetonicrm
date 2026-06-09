@@ -31,12 +31,21 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    // Fundo transparente — exporta apenas o traço da assinatura
+    // Fundo transparente — exporta apenas o traço da assinatura (PNG transparente)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#111111";
+    ctx.strokeStyle = "#111111"; // Preto/cinza escuro para impressão legível
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+  }
+
+  function clearCanvas() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    // Limpar com fundo transparente — não usar fillRect com cor
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
   }
 
   function getPos(e, canvas) {
@@ -395,7 +404,7 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
                   border: `1px dashed ${hasSignature ? T.gold : T.border}`,
                   borderRadius: 8, overflow: "hidden",
                   touchAction: "none",
-                  backgroundColor: "#ffffff", // fundo branco só para facilitar o desenho
+                  backgroundColor: "#fafafa", // fundo claro para facilitar visualização durante desenho
                 }}>
                   <canvas
                     ref={canvasRef}

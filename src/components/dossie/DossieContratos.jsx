@@ -225,7 +225,8 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
   });
   const [uploadForm, setUploadForm] = useState({
     nome: "", tipo: "contrato_assinado", procedimento_vinculado: "", valor: "",
-    data_assinatura: "", status: "assinado", observacoes: "", file: null
+    data_assinatura: "", status: "assinado", observacoes: "", file: null,
+    origem: "upload_externo", tipo_documento_assinado: "pdf_assinado_externo"
   });
 
   const filterTipo = mode === "gerados"
@@ -316,7 +317,8 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
         criado_por: currentUser?.full_name || currentUser?.email || "Sistema",
         versao: String("1.0"),
         observacoes: uploadForm.observacoes,
-        origem: "upload_externo"
+        origem: uploadForm.origem || "upload_externo",
+        tipo_documento_assinado: uploadForm.tipo_documento_assinado || "pdf_assinado_externo"
       });
     } finally {
       setUploading(false);
@@ -484,10 +486,10 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
                   {doc.procedimento_vinculado && <span>{doc.procedimento_vinculado}</span>}
                   {doc.criado_por && <span>por {doc.criado_por}</span>}
                   {doc.origem === "upload_externo" && (
-                    <Badge className="bg-blue-500/20 text-blue-400 text-xs">PDF Externo</Badge>
+                    <Badge className="bg-blue-500/20 text-blue-400 text-xs ml-2">PDF Externo</Badge>
                   )}
                   {doc.status === "assinado" && doc.origem !== "upload_externo" && (
-                    <Badge className="bg-green-500/20 text-green-400 text-xs">Assinatura Interna</Badge>
+                    <Badge className="bg-green-500/20 text-green-400 text-xs ml-2">Assinatura Interna</Badge>
                   )}
                 </div>
                 {doc.observacoes && <p className="text-xs text-[#4A5568] mt-1">{doc.observacoes}</p>}

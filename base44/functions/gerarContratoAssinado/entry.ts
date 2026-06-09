@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
 
       y += 8;
 
-      // ── IMAGEM DA ASSINATURA ──
+      // ── IMAGEM DA ASSINATURA (padrão DocuSign/Clicksign: apenas o traço, sem caixa) ──
       if (y > pageHeight - 60) { doc.addPage(); y = 20; }
 
       doc.setFont('helvetica', 'bold');
@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
               const contentType = imgResponse.headers.get('content-type') || 'image/png';
               const mimeType = contentType.includes('jpeg') || contentType.includes('jpg') ? 'JPEG' : 'PNG';
               const imgData = `data:${contentType};base64,${base64str}`;
-              // Sem caixa, sem borda — apenas o traço da assinatura (padrão DocuSign/Clicksign)
+              // Renderizar assinatura sem caixa, sem borda, fundo transparente — padrão jurídico
               doc.addImage(imgData, mimeType, 15, y, 100, 30);
               y += 34;
               imagemCarregada = true;
@@ -346,15 +346,15 @@ Deno.serve(async (req) => {
         y += 14;
       }
 
-      // Linha de assinatura
-      doc.setDrawColor(...black);
-      doc.setLineWidth(0.3);
-      doc.line(15, y + 2, 135, y + 2);
+      // Linha de assinatura (somente uma linha fina abaixo da imagem)
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.25);
+      doc.line(15, y + 1, 135, y + 1);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
-      doc.setTextColor(...gray);
-      doc.text(`${s(assinatura.assinante_nome)} — CPF ${s(assinatura.assinante_cpf)}`, 15, y + 8);
-      y += 16;
+      doc.setTextColor(120, 120, 120);
+      doc.text(`${s(assinatura.assinante_nome)} — CPF ${s(assinatura.assinante_cpf)}`, 15, y + 7);
+      y += 14;
 
     } else {
       // Sem assinatura — campo em branco

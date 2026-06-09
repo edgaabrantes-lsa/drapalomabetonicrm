@@ -63,6 +63,22 @@
     "observacoes": {
       "type": "string"
     },
+    "origem": {
+      "type": "string",
+      "enum": [
+        "assinatura_interna",
+        "upload_externo"
+      ],
+      "default": "assinatura_interna"
+    },
+    "tipo_documento_assinado": {
+      "type": "string",
+      "enum": [
+        "assinatura_eletronica_interna",
+        "pdf_assinado_externo"
+      ],
+      "default": "assinatura_eletronica_interna"
+    },
     "historico_versoes": {
       "type": "array",
       "items": {

@@ -54,7 +54,9 @@ export default function StatusDocumental({ patient }) {
       case "anexo_financeiro":
         return documentos.some(d => d.tipo === "anexo_financeiro");
       case "assinatura":
-        return assinaturas.some(a => a.status === "assinado");
+        // Considerar válido tanto assinatura interna quanto upload externo
+        return assinaturas.some(a => a.status === "assinado") ||
+               documentos.some(d => d.tipo === "contrato_assinado" && d.status === "assinado" && d.origem === "upload_externo");
       case "comprovante":
         return financeiros.some(f =>
           f.comprovantes && f.comprovantes.length > 0
