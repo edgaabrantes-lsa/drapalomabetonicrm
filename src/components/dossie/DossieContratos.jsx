@@ -315,7 +315,8 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
         data_assinatura: uploadForm.data_assinatura ? new Date(uploadForm.data_assinatura).toISOString() : null,
         criado_por: currentUser?.full_name || currentUser?.email || "Sistema",
         versao: String("1.0"),
-        observacoes: uploadForm.observacoes
+        observacoes: uploadForm.observacoes,
+        origem: "upload_externo"
       });
     } finally {
       setUploading(false);
@@ -482,6 +483,12 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
                   {doc.data_criacao && <span>{format(parseISO(doc.data_criacao), "dd/MM/yyyy")}</span>}
                   {doc.procedimento_vinculado && <span>{doc.procedimento_vinculado}</span>}
                   {doc.criado_por && <span>por {doc.criado_por}</span>}
+                  {doc.origem === "upload_externo" && (
+                    <Badge className="bg-blue-500/20 text-blue-400 text-xs">PDF Externo</Badge>
+                  )}
+                  {doc.status === "assinado" && doc.origem !== "upload_externo" && (
+                    <Badge className="bg-green-500/20 text-green-400 text-xs">Assinatura Interna</Badge>
+                  )}
                 </div>
                 {doc.observacoes && <p className="text-xs text-[#4A5568] mt-1">{doc.observacoes}</p>}
               </div>

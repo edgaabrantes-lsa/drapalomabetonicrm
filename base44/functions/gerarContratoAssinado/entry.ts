@@ -313,20 +313,14 @@ Deno.serve(async (req) => {
 
           if (imgResponse.ok) {
             const imgBuffer = await imgResponse.arrayBuffer();
-            // Verificar tamanho: máx 2MB para não causar problemas de memória
             if (imgBuffer.byteLength < 2 * 1024 * 1024) {
               const base64str = arrayBufferToBase64(imgBuffer);
               const contentType = imgResponse.headers.get('content-type') || 'image/png';
               const mimeType = contentType.includes('jpeg') || contentType.includes('jpg') ? 'JPEG' : 'PNG';
               const imgData = `data:${contentType};base64,${base64str}`;
-
-              doc.setFillColor(255, 255, 255);
-              doc.roundedRect(15, y, 120, 40, 2, 2, 'F');
-              doc.setDrawColor(...gold);
-              doc.setLineWidth(0.5);
-              doc.roundedRect(15, y, 120, 40, 2, 2, 'S');
-              doc.addImage(imgData, mimeType, 17, y + 2, 116, 36);
-              y += 44;
+              // Sem caixa, sem borda — apenas o traço da assinatura (padrão DocuSign/Clicksign)
+              doc.addImage(imgData, mimeType, 15, y, 100, 30);
+              y += 34;
               imagemCarregada = true;
             }
           }
@@ -334,16 +328,10 @@ Deno.serve(async (req) => {
           console.error('Erro ao carregar imagem externa:', e.message);
         }
       } else if (isBase64 && sigUrl.length < 500000) {
-        // Base64 diretamente, mas apenas se não for gigante
         try {
           const mimeType = sigUrl.includes('jpeg') || sigUrl.includes('jpg') ? 'JPEG' : 'PNG';
-          doc.setFillColor(255, 255, 255);
-          doc.roundedRect(15, y, 120, 40, 2, 2, 'F');
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.5);
-          doc.roundedRect(15, y, 120, 40, 2, 2, 'S');
-          doc.addImage(sigUrl, mimeType, 17, y + 2, 116, 36);
-          y += 44;
+          doc.addImage(sigUrl, mimeType, 15, y, 100, 30);
+          y += 34;
           imagemCarregada = true;
         } catch (e) {
           console.error('Erro ao inserir base64:', e.message);
@@ -351,13 +339,11 @@ Deno.serve(async (req) => {
       }
 
       if (!imagemCarregada) {
-        doc.setFillColor(245, 245, 245);
-        doc.roundedRect(15, y, 120, 20, 2, 2, 'F');
         doc.setTextColor(...gray);
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(8);
-        doc.text('Assinatura eletrônica registrada — imagem não disponível', 75, y + 11, { align: 'center' });
-        y += 24;
+        doc.text('[ Assinatura eletrônica registrada — imagem não disponível ]', 15, y + 6);
+        y += 14;
       }
 
       // Linha de assinatura

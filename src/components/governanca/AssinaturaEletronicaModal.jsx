@@ -31,10 +31,10 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#1a1a1a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#C8A96A";
-    ctx.lineWidth = 2;
+    // Fundo transparente — exporta apenas o traço da assinatura
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#111111";
+    ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
   }
@@ -86,8 +86,7 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#1a1a1a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasSignature(false);
   }
 
@@ -122,6 +121,7 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
         ).trim() || "1.0"
       );
 
+      // Exportar PNG transparente com traço preto — padrão jurídico
       const assinaturaDataUrl = canvas.toDataURL("image/png");
       const blob = await fetch(assinaturaDataUrl).then(r => r.blob());
       const file = new File([blob], "assinatura.png", { type: "image/png" });
@@ -395,11 +395,12 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
                   border: `1px dashed ${hasSignature ? T.gold : T.border}`,
                   borderRadius: 8, overflow: "hidden",
                   touchAction: "none",
+                  backgroundColor: "#ffffff", // fundo branco só para facilitar o desenho
                 }}>
                   <canvas
                     ref={canvasRef}
                     width={580} height={160}
-                    style={{ width: "100%", height: 140, cursor: "crosshair", display: "block" }}
+                    style={{ width: "100%", height: 140, cursor: "crosshair", display: "block", background: "transparent" }}
                     onMouseDown={startDraw}
                     onMouseMove={draw}
                     onMouseUp={stopDraw}
