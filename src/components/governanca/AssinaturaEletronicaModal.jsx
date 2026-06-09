@@ -110,6 +110,18 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
         throw new Error("Canvas não encontrado");
       }
 
+      // Garantir que documento_versao seja sempre uma string válida
+      // documento.versao pode ser: número (1), string ("1.0"), undefined, null
+      const documentoVersao = (
+        String(
+          documento?.documento_versao ||
+          documento?.versao ||
+          documento?.versao_atual ||
+          documento?.version ||
+          "1.0"
+        ).trim() || "1.0"
+      );
+
       const assinaturaDataUrl = canvas.toDataURL("image/png");
       const blob = await fetch(assinaturaDataUrl).then(r => r.blob());
       const file = new File([blob], "assinatura.png", { type: "image/png" });
@@ -119,7 +131,7 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
         throw new Error("Falha no upload da assinatura");
       }
 
-      const hashInput = `${documento.id}-${documento.versao || "1.0"}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
+      const hashInput = `${documento.id}-${documentoVersao}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
       let hash = 0;
       for (let i = 0; i < hashInput.length; i++) {
         hash = ((hash << 5) - hash) + hashInput.charCodeAt(i);
@@ -128,27 +140,37 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
       const documentoHash = `DOC-${Math.abs(hash).toString(36).toUpperCase()}`;
 
       const payload = {
-        patient_id: patient.id,
-        patient_name: patient.full_name,
-        documento_id: documento.id,
-        documento_nome: documento.nome,
-        documento_tipo: documento.tipo,
-        documento_versao: documento.versao || "1.0",
+        patient_id: String(patient?.id || ""),
+        patient_name: String(patient?.full_name || patient?.name || ""),
+        documento_id: String(documento?.id || ""),
+        documento_nome: String(documento?.nome || documento?.title || "Documento sem nome"),
+        documento_tipo: String(documento?.tipo || "outro"),
+        documento_versao: documentoVersao,
         documento_hash: documentoHash,
         assinatura_data_url: uploadRes.file_url,
-        assinante_nome: assinanteNome,
-        assinante_cpf: assinanteCpf,
-        assinante_tipo: tipoAssinante,
-        responsavel_parentesco: tipoAssinante === "responsavel_legal" ? responsavelParentesco : "",
-        declarou_leitura: declarouLeitura,
-        concordou_termos: concordouTermos,
+        assinante_nome: String(assinanteNome || ""),
+        assinante_cpf: String(assinanteCpf || ""),
+        assinante_tipo: String(tipoAssinante || "paciente"),
+        responsavel_parentesco: String(tipoAssinante === "responsavel_legal" ? responsavelParentesco : ""),
+        declarou_leitura: Boolean(declarouLeitura),
+        concordou_termos: Boolean(concordouTermos),
         data_assinatura: now.toISOString(),
-        usuario_responsavel_id: currentUser?.id,
-        usuario_responsavel_nome: currentUser?.full_name,
-        dispositivo: navigator.userAgent?.substring(0, 100),
+        usuario_responsavel_id: String(currentUser?.id || ""),
+        usuario_responsavel_nome: String(currentUser?.full_name || currentUser?.email || "Usuário não identificado"),
+        dispositivo: String(navigator?.userAgent?.substring(0, 100) || ""),
         ip_address: "capturado-no-registro",
         status: "assinado",
       };
+
+      // Validações de segurança antes de salvar
+      if (!payload.patient_id) throw new Error("Paciente não identificado.");
+      if (!payload.documento_id) throw new Error("Documento não identificado.");
+      if (!payload.documento_nome) throw new Error("Nome do documento não identificado.");
+      if (!payload.documento_versao) payload.documento_versao = "1.0";
+      if (!payload.assinante_nome) throw new Error("Informe o nome do assinante.");
+      if (!payload.assinatura_data_url) throw new Error("Falha no upload da assinatura.");
+
+      console.log("Payload assinatura:", { ...payload, assinatura_data_url: "[URL omitida]" });
 
       const assinaturaCriada = await base44.entities.AssinaturaEletronica.create(payload);
 
@@ -172,7 +194,11 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
       setStep("confirmacao");
     } catch (error) {
       console.error("Erro ao salvar assinatura:", error);
-      alert("Erro ao salvar assinatura: " + (error.message || "Erro desconhecido"));
+      const msg = error.message || "Erro desconhecido";
+      const msgFriendly = msg.includes("documento_versao")
+        ? "Não foi possível salvar a assinatura. O documento não possui versão válida."
+        : "Erro ao salvar assinatura: " + msg;
+      alert(msgFriendly);
     } finally {
       setSaving(false);
     }
