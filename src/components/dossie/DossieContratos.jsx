@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FileDown } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -187,6 +188,30 @@ function generatePDF(patient, formData, selectedDocs) {
 export default function DossieContratos({ patient, currentUser, mode = "gerados" }) {
   const queryClient = useQueryClient();
   const [showGerarForm, setShowGerarForm] = useState(false);
+  const [gerandoPdf, setGerandoPdf] = useState(null);
+
+  const handleGerarPdfContrato = async (doc) => {
+    setGerandoPdf(doc.id);
+    try {
+      const response = await base44.functions.invoke('gerarContratoAssinado', {
+        documento_id: doc.id,
+        patient_id: patient.id,
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Contrato_${(doc.nome || 'Documento').replace(/\s+/g, '_')}_${doc.status === 'assinado' ? 'Assinado' : 'Pendente'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Erro ao gerar PDF: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+      setGerandoPdf(null);
+    }
+  };
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -460,16 +485,23 @@ export default function DossieContratos({ patient, currentUser, mode = "gerados"
                 </div>
                 {doc.observacoes && <p className="text-xs text-[#4A5568] mt-1">{doc.observacoes}</p>}
               </div>
-              {doc.file_url && (
-                <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {doc.file_url && (
                   <a href={doc.file_url} target="_blank" rel="noreferrer">
                     <Button size="sm" variant="ghost" className="text-xs text-[#C5A059] h-7 border border-[#C5A059]/30 hover:bg-[#C5A059]/10">Visualizar</Button>
                   </a>
-                  <a href={doc.file_url} download target="_blank" rel="noreferrer">
-                    <Button size="sm" variant="ghost" className="text-xs text-[#8A95AA] h-7 border border-[#252D3E]">Baixar</Button>
-                  </a>
-                </div>
-              )}
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs text-[#C5A059] h-7 border border-[#C5A059]/30 hover:bg-[#C5A059]/10"
+                  onClick={() => handleGerarPdfContrato(doc)}
+                  disabled={gerandoPdf === doc.id}
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  {gerandoPdf === doc.id ? 'Gerando...' : doc.status === 'assinado' ? 'PDF Assinado' : 'PDF'}
+                </Button>
+              </div>
             </div>
           </div>
         ))}

@@ -80,10 +80,46 @@
       "type": "string",
       "enum": [
         "pendente",
+        "enviado_email",
+        "visualizado",
         "assinado",
+        "recusado",
+        "expirado",
         "cancelado"
       ],
       "default": "pendente"
+    },
+    "metodo_assinatura": {
+      "type": "string",
+      "enum": [
+        "presencial_canvas",
+        "aceite_digital",
+        "email_token",
+        "externo_authentic",
+        "externo_docusign"
+      ],
+      "default": "presencial_canvas"
+    },
+    "email_destinatario": {
+      "type": "string"
+    },
+    "token_assinatura": {
+      "type": "string"
+    },
+    "link_assinatura": {
+      "type": "string"
+    },
+    "enviado_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "visualizado_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiracao_em": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [

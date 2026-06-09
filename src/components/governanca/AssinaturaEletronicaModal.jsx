@@ -160,6 +160,7 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
         dispositivo: String(navigator?.userAgent?.substring(0, 100) || ""),
         ip_address: "capturado-no-registro",
         status: "assinado",
+        metodo_assinatura: "presencial_canvas",
       };
 
       // Validações de segurança antes de salvar

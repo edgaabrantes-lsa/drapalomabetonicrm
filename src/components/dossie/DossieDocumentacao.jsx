@@ -99,15 +99,18 @@ export default function DossieDocumentacao({ patient, currentUser }) {
     updateMutation.mutate({ id: doc.id, data: { status: novoStatus } });
   };
 
-  const handleGerarPdf = async (assinatura) => {
-    setGerandoPdf(assinatura.id);
+  const handleGerarPdf = async (doc) => {
+    setGerandoPdf(doc.id);
     try {
-      const response = await base44.functions.invoke('gerarPdfAssinatura', { assinatura_id: assinatura.id });
+      const response = await base44.functions.invoke('gerarContratoAssinado', {
+        documento_id: doc.id,
+        patient_id: patient.id,
+      });
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Comprovante_Assinatura_${assinatura.documento_nome}.pdf`;
+      link.download = `Contrato_${doc.nome.replace(/\s+/g, '_')}_${doc.status === 'assinado' ? 'Assinado' : 'Pendente'}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -222,7 +225,7 @@ export default function DossieDocumentacao({ patient, currentUser }) {
                     </a>
                   </>
                 )}
-                {doc.status !== "assinado" ? (
+                {doc.status !== "assinado" && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -235,21 +238,17 @@ export default function DossieDocumentacao({ patient, currentUser }) {
                   >
                     ✍ Assinar
                   </Button>
-                ) : (() => {
-                  const assinaturaVinculada = assinaturas.find(a => a.documento_id === doc.id);
-                  return (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-xs text-[#C5A059] h-7 border border-[#C5A059]/30 hover:bg-[#C5A059]/10"
-                      onClick={() => assinaturaVinculada && handleGerarPdf(assinaturaVinculada)}
-                      disabled={!assinaturaVinculada || gerandoPdf === assinaturaVinculada.id}
-                    >
-                      <FileDown className="w-3 h-3 mr-1" />
-                      {gerandoPdf === assinaturaVinculada?.id ? 'Gerando...' : 'PDF'}
-                    </Button>
-                  );
-                })()}
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs text-[#C5A059] h-7 border border-[#C5A059]/30 hover:bg-[#C5A059]/10"
+                  onClick={() => handleGerarPdf(doc)}
+                  disabled={gerandoPdf === doc.id}
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  {gerandoPdf === doc.id ? 'Gerando...' : doc.status === 'assinado' ? 'PDF Assinado' : 'PDF'}
+                </Button>
                 <Select value={doc.status} onValueChange={(v) => handleUpdateStatus(doc, v)}>
                   <SelectTrigger className="h-7 bg-[#1A2030] border-[#252D3E] text-white text-xs w-36"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-[#171D29] border-[#252D3E]">
