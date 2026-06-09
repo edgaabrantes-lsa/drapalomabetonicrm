@@ -37,8 +37,8 @@
       "default": "nao_gerado"
     },
     "versao": {
-      "type": "number",
-      "default": 1
+      "type": "string",
+      "default": "1.0"
     },
     "procedimento_vinculado": {
       "type": "string"
@@ -69,7 +69,7 @@
         "type": "object",
         "properties": {
           "versao": {
-            "type": "number"
+            "type": "string"
           },
           "file_url": {
             "type": "string"
