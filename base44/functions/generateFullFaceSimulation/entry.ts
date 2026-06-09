@@ -1,10 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // ══════════════════════════════════════════════════════════════
-//  MODO CLÍNICO REALISTA v8 — Edição Localizada Ultra-Realista
+//  MODO CLÍNICO REALISTA v9 — Identidade Preservada
 //  Arquitetura: imagem original → máscara anatômica → edição restrita
-//  Apenas pixels da máscara são modificáveis pela OpenAI
-//  Negative prompt global obrigatório em todas as chamadas
+//  Regra absoluta: a paciente deve ser exatamente a mesma pessoa
+//  Nunca criar nova pessoa. Nunca alterar etnia, traços ou identidade.
 // ══════════════════════════════════════════════════════════════
 
 // Mapeamento de área → região anatômica em % da imagem (y_start, y_end, x_start, x_end)
@@ -49,7 +49,7 @@ const SYMMETRY_GUIDANCE = {
 //  NEGATIVE PROMPT GLOBAL — incluído em todas as chamadas
 // ──────────────────────────────────────────────────────────────
 const GLOBAL_NEGATIVE_PROMPT = `NEGATIVE PROMPT — ABSOLUTE PROHIBITIONS (apply to the entire image, no exceptions):
-Do not change eye color. Do not change eye shape. Do not change skin tone. Do not change facial identity. Do not change background. Do not change clothing. Do not change accessories. Do not change hair. Do not change beard. Do not change lips unless lips are the selected treatment area. Do not change eyebrows unless eyebrow area is the selected treatment area. Do not modify the whole face when only one treatment area is selected. Do not create an artificial face. Do not create a generic perfect face. Do not make the patient look like another person. Do not apply beauty filters. Do not regenerate the full face. Do not use full image synthesis. Do not change earrings, necklace or any jewelry. Do not change camera angle or framing. Do not change photo quality or lighting.`;
+Do not change ethnicity. Do not change race. Do not change skin color. Do not change eye color. Do not change eye shape. Do not change facial identity. Do not change background. Do not change clothing. Do not change accessories. Do not change hair color or style. Do not change beard. Do not change lips unless lips are the selected treatment area. Do not change eyebrows unless eyebrow area is the selected treatment area. Do not modify the whole face when only one treatment area is selected. Do not create an artificial face. Do not create a generic perfect face. Do not make the patient look like another person. Do not apply beauty filters. Do not regenerate the full face. Do not use full image synthesis. Do not change earrings, necklace or any jewelry. Do not change camera angle or framing. Do not change photo quality or lighting. Do not change facial bone structure. Do not westernize, idealize or standardize the patient's appearance. The patient must remain 100% recognizable as the same individual.`;
 
 // Prompts de edição localizada por área — baseados na imagem original como fonte dominante
 const AREA_PROMPTS = {
@@ -79,60 +79,47 @@ const AREA_PROMPTS = {
     "Edit the original uploaded photo using localized image editing restricted to the submental region only. Very gently reduce submental shadow and skin laxity appearance in the masked submentonian region. Do not change neck structure, jaw definition, face shape, or facial proportions. The result must be the same original photo with only this specific improvement.",
 };
 
-// Prompt final com negative prompt global + regras de preservação + simetria como referência
+// Prompt final — baseado exatamente no briefing v9
 function buildPrompt(options) {
   if (!options || options.length === 0) options = ["full_face"];
+  const areaLabels = options.map(o => AREA_MASKS[o]?.label || o).join(", ");
   const areaInstruction = options.map(o => AREA_PROMPTS[o] || AREA_PROMPTS.full_face).join("\n");
   const symmetryRefs = options.map(o => SYMMETRY_GUIDANCE[o] || SYMMETRY_GUIDANCE.full_face).join("\n");
-  const areaLabels = options.map(o => AREA_MASKS[o]?.label || o).join(", ");
 
-  return `You are a senior medical-aesthetic photo retouching specialist. You perform LOCALIZED image editing — NOT full face regeneration.
-
-━━━━ EDITING MODE ━━━━
-Use image editing mode. The original uploaded image is the dominant source. Modify only the pixels inside the provided mask. Leave all pixels outside the mask completely unchanged.
+  return `Edit the original uploaded photo using localized, realistic medical-aesthetic image editing. Preserve the patient's facial identity, ethnicity, eye color, eye shape, skin tone, facial expression, hair, eyebrows, lips, clothing, accessories, background, lighting, shadows, camera angle, framing and original photo quality. Do not create a new person. Do not regenerate the whole face. Do not change unselected areas. Modify only the selected treatment area: ${areaLabels}. Use global facial symmetry, golden ratio and facial harmony only as subtle technical references while preserving the patient's natural identity. The final image must look like the same original photo, taken in the same place, at the same moment, with only the selected aesthetic improvement applied.
 
 ━━━━ SELECTED TREATMENT AREA ━━━━
 ${areaLabels}
 
-━━━━ EDITING INSTRUCTIONS FOR SELECTED AREA ━━━━
+━━━━ LOCALIZED EDITING INSTRUCTIONS ━━━━
 ${areaInstruction}
 
-━━━━ MANDATORY PRESERVATION — THESE ELEMENTS MUST BE PIXEL-IDENTICAL TO THE ORIGINAL ━━━━
+━━━━ IDENTITY PRESERVATION — ABSOLUTE RULES ━━━━
+• The patient's ethnicity, race and skin tone must remain 100% unchanged
 • Eye color — NEVER change
 • Eye shape — NEVER change
-• Facial identity — NEVER change
-• Facial expression — NEVER change
-• Skin tone — NEVER change
-• Hair — color, style, texture, hairline unchanged
+• Facial bone structure — NEVER change
+• Facial identity — the patient must be 100% recognizable as the same individual
+• Facial expression — unchanged
+• Hair color, style, texture — unchanged
 • Beard and facial hair — exactly preserved
 • Eyebrows — unchanged (exception: only if eyebrow area is selected)
 • Lips — unchanged (exception: only if lips area is selected)
 • Clothing — exactly preserved
 • Accessories, earrings, necklace, jewelry — exactly preserved
 • Background — exactly preserved
-• Environment — exactly preserved
 • Lighting and shadows — exactly preserved
 • Camera angle and framing — exactly preserved
 • Photo quality — exactly preserved
+• Do not westernize, idealize or standardize the patient's appearance
 
-━━━━ DECISION PRIORITY ORDER ━━━━
-1. Preserve facial identity
-2. Preserve individual anatomy
-3. Preserve personal characteristics and natural asymmetries
-4. Preserve facial expression
-5. Use facial symmetry and golden ratio only as subtle technical references
-6. Apply the requested aesthetic correction in the selected area only
-If facial symmetry conflicts with patient identity: patient identity always prevails.
-
-━━━━ FACIAL SYMMETRY AS SUBTLE CLINICAL REFERENCE ONLY ━━━━
+━━━━ FACIAL SYMMETRY — SUBTLE REFERENCE ONLY ━━━━
 ${symmetryRefs}
 
-━━━━ QUALITY STANDARD ━━━━
+━━━━ INTENSITY AND REALISM ━━━━
 • Transformation intensity: MINIMAL (10-20% of what is technically possible)
-• Realism: MAXIMUM — result must look like professional manual medical retouching
-• The person must be immediately recognizable as the exact same person
+• Realism: MAXIMUM — result must look like professional manual medical retouching, not AI generation
 • A professional viewing BEFORE and AFTER must think: "Same person, same photo, same moment — only the selected area was lightly improved"
-• Final result must convey: "This is the same person, with a subtle, realistic and clinically plausible aesthetic improvement"
 
 ${GLOBAL_NEGATIVE_PROMPT}`;
 }
@@ -437,7 +424,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v8_localized_ultra_realistic",
+      ai_prompt_version: "v9_identity_preserved",
     });
     simulationId = simulation.id;
 
@@ -493,6 +480,8 @@ Deno.serve(async (req) => {
     formData.append("prompt", prompt);
     formData.append("n", "1");
     formData.append("size", "1024x1024");
+    formData.append("quality", "low");        // "low" → menos reconstrução, mais fidelidade
+    formData.append("response_format", "b64_json");
     formData.append("image", new Blob([imageBytes], { type: mimeType }), `photo.${fileExt}`);
     formData.append("mask",  new Blob([maskBytes],  { type: "image/png" }), "mask.png");
 
@@ -519,9 +508,11 @@ Deno.serve(async (req) => {
         console.log("Máscara rejeitada, tentando fallback sem máscara...");
         const fallbackForm = new FormData();
         fallbackForm.append("model", "gpt-image-1");
-        fallbackForm.append("prompt", prompt + "\n\nCRITICAL: Edit ONLY the following area and leave everything else completely unchanged: " + finalOptions.map(o => AREA_MASKS[o]?.label || o).join(", "));
+        fallbackForm.append("prompt", prompt + "\n\nCRITICAL: Edit ONLY the following area and leave everything else completely unchanged: " + finalOptions.map(o => AREA_MASKS[o]?.label || o).join(", ") + ". Do NOT change ethnicity, skin tone, eye color, hair or any other feature.");
         fallbackForm.append("n", "1");
         fallbackForm.append("size", "1024x1024");
+        fallbackForm.append("quality", "low");
+        fallbackForm.append("response_format", "b64_json");
         fallbackForm.append("image", new Blob([imageBytes], { type: mimeType }), `photo.${fileExt}`);
 
         const fallbackRes = await fetch("https://api.openai.com/v1/images/edits", {
@@ -600,7 +591,7 @@ Deno.serve(async (req) => {
       generated_image_url,
       status: "completed",
       technical_report: technicalReport,
-      facial_analysis_snapshot: { simulation_options: finalOptions, mask_used: true, prompt_version: "v8", symmetry_guided: true, localized_editing: true },
+      facial_analysis_snapshot: { simulation_options: finalOptions, mask_used: true, prompt_version: "v9", symmetry_guided: true, localized_editing: true, identity_preserved: true },
       image_metadata: { format: "png", width: 1024, height: 1024 },
     });
 
@@ -618,14 +609,14 @@ Deno.serve(async (req) => {
       console.log("Aviso: log de auditoria falhou:", e.message);
     }
 
-    console.log("Simulação v8 (edição localizada ultra-realista) concluída:", simulationId);
+    console.log("Simulação v9 (identidade preservada) concluída:", simulationId);
 
     return Response.json({
       success: true,
       simulation_id: simulationId,
       generated_image_url,
       technical_report: technicalReport,
-      message: "Simulação gerada com sucesso (Modo Clínico Realista v8 — Edição Localizada Ultra-Realista)",
+      message: "Simulação gerada com sucesso (Modo Clínico Realista v9 — Identidade Preservada)",
     });
 
   } catch (error) {
