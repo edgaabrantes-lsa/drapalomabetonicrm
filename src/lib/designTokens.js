@@ -45,17 +45,18 @@ export const T = {
 export const S = {
   pageWrapper: {
     fontFamily: T.font,
-    maxWidth: 1400,
+    maxWidth: "100%",
     margin: "0 auto",
+    padding: "0 max(16px, 2vw)",
   },
 
   pageHeader: {
-    marginBottom: 32,
+    marginBottom: 24,
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     flexWrap: "wrap",
-    gap: 16,
+    gap: 12,
   },
 
   pageTitle: {
@@ -91,7 +92,7 @@ export const S = {
     background: T.card,
     border: `1px solid ${T.border}`,
     borderRadius: 8,
-    padding: 24,
+    padding: "max(16px, 1.5vw)",
   },
 
   cardCompact: {

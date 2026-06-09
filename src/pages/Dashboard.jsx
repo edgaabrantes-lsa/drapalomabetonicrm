@@ -12,21 +12,21 @@ import { T, S } from "@/lib/designTokens";
 
 /* ── KPI Card ── */
 const KpiCard = ({ title, value, subtitle, accent = false }) => (
-  <div style={{
+  <div className="w-full min-w-0" style={{
     ...S.card,
     borderLeft: accent ? `2px solid ${T.gold}` : `1px solid ${T.border}`,
     borderRadius: 8,
   }}>
-    <p style={S.label}>{title}</p>
-    <p style={{ ...S.valueLg, marginTop: 10, fontSize: 24 }}>{value}</p>
-    {subtitle && <p style={{ ...S.pageSubtitle, marginTop: 6 }}>{subtitle}</p>}
+    <p className="text-[11px]" style={S.label}>{title}</p>
+    <p className="text-[20px] md:text-[24px] font-semibold text-white mt-2">{value}</p>
+    {subtitle && <p style={{ ...S.pageSubtitle, marginTop: 4 }}>{subtitle}</p>}
   </div>
 );
 
 /* ── Section block ── */
 const Section = ({ title, children, action }) => (
-  <div style={S.card}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+  <div className="w-full min-w-0" style={S.card}>
+    <div className="flex justify-between items-center mb-4">
       <p style={S.sectionTitle}>{title}</p>
       {action}
     </div>
@@ -39,24 +39,22 @@ const AppRow = ({ apt }) => {
   let time = "—";
   try { time = format(parseISO(apt.start_time), "HH:mm"); } catch {}
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 16,
-      padding: "11px 0",
+    <div className="flex items-center gap-2 md:gap-4 py-2.5 border-b" style={{
       borderBottom: `1px solid ${T.borderLight}`,
     }}>
-      <span style={{ ...S.label, width: 36, flexShrink: 0, letterSpacing: 0, fontSize: 12, textTransform: "none", color: T.textMuted }}>
+      <span className="text-[11px] md:text-[12px] flex-shrink-0 w-[40px] md:w-[45px]" style={{ ...S.label, letterSpacing: 0, textTransform: "none", color: T.textMuted }}>
         {time}
       </span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ ...S.value, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-medium text-white truncate">
           {apt.patient_name}
         </p>
-        <p style={{ ...S.label, marginTop: 2, textTransform: "uppercase" }}>
+        <p className="text-[11px] uppercase mt-0.5" style={{ ...S.label, marginTop: 2 }}>
           {apt.procedure_name || "—"}
         </p>
       </div>
       {apt.price > 0 && (
-        <span style={{ ...S.value, fontSize: 13, flexShrink: 0 }}>
+        <span className="text-[12px] md:text-[13px] font-medium text-white flex-shrink-0">
           R$ {apt.price.toLocaleString("pt-BR")}
         </span>
       )}
@@ -126,26 +124,26 @@ export default function Dashboard() {
   const fmt = (n) => `R$ ${n.toLocaleString("pt-BR")}`;
 
   return (
-    <div style={S.pageWrapper}>
+    <div className="w-full max-w-full min-w-0 overflow-x-hidden" style={S.pageWrapper}>
 
       {/* ── Cabeçalho ── */}
-      <div style={S.pageHeader}>
-        <div>
-          <h1 style={S.pageTitle}>Dashboard</h1>
-          <p style={S.pageSubtitle}>Visão geral de desempenho clínico e financeiro</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6" style={{ marginBottom: 20 }}>
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-[24px] font-semibold tracking-tight text-white m-0">Dashboard</h1>
+          <p style={{ ...S.pageSubtitle, marginTop: 4 }}>Visão geral de desempenho clínico e financeiro</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Link to={createPageUrl("Agenda")} style={{ textDecoration: "none" }}>
-            <button style={S.btnPrimary}>Nova Consulta</button>
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <Link to={createPageUrl("Agenda")} className="flex-1 md:flex-none" style={{ textDecoration: "none" }}>
+            <button className="w-full md:w-auto text-[12px] md:text-[13px] px-3 md:px-4 py-2 h-[34px] md:h-[36px]" style={S.btnPrimary}>Nova Consulta</button>
           </Link>
-          <Link to={createPageUrl("Patients")} style={{ textDecoration: "none" }}>
-            <button style={S.btnGhost}>Novo Paciente</button>
+          <Link to={createPageUrl("Patients")} className="flex-1 md:flex-none" style={{ textDecoration: "none" }}>
+            <button className="w-full md:w-auto text-[12px] md:text-[13px] px-3 md:px-4 py-2 h-[34px] md:h-[36px]" style={S.btnGhost}>Novo Paciente</button>
           </Link>
         </div>
       </div>
 
       {/* ── KPIs ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
         <KpiCard title="Agenda Hoje" value={todayApts.length} subtitle="consultas marcadas" />
         <KpiCard title="Pacientes Ativos" value={patients.filter(p => p.status === "active").length} subtitle="cadastros no sistema" />
         <KpiCard title="Lucro Líquido" value={fmt(profit)} subtitle={`Receita: ${fmt(income)}`} accent />
@@ -154,13 +152,13 @@ export default function Dashboard() {
       </div>
 
       {/* ── Gráficos ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
 
         {/* Receita vs Despesas */}
-        <div style={S.card}>
+        <div className="lg:col-span-2" style={S.card}>
           <p style={S.sectionTitle}>Receita vs Despesas</p>
-          <p style={{ ...S.pageSubtitle, marginBottom: 20 }}>Últimos 6 meses</p>
-          <div style={{ height: 240 }}>
+          <p style={{ ...S.pageSubtitle, marginBottom: 16 }}>Últimos 6 meses</p>
+          <div className="h-[200px] md:h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={revenueData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
                 <defs>
@@ -185,10 +183,10 @@ export default function Dashboard() {
         </div>
 
         {/* Procedimentos */}
-        <div style={S.card}>
+        <div className="w-full min-w-0" style={S.card}>
           <p style={S.sectionTitle}>Procedimentos</p>
           <p style={{ ...S.pageSubtitle, marginBottom: 12 }}>Distribuição do período</p>
-          <div style={{ height: 160 }}>
+          <div className="h-[160px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={procData} cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={2} dataKey="value">
@@ -201,14 +199,14 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="mt-3 flex flex-col gap-1.5">
             {procData.map((item, i) => (
-              <div key={item.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: PIE_COLORS[i], flexShrink: 0 }} />
-                  <span style={{ fontFamily: T.font, fontSize: 12, color: T.textSecondary }}>{item.name}</span>
+              <div key={item.name} className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i] }} />
+                  <span className="text-[12px] text-[#B0B0B0]">{item.name}</span>
                 </div>
-                <span style={{ fontFamily: T.font, fontSize: 12, fontWeight: 500, color: T.textPrimary }}>{item.value}%</span>
+                <span className="text-[12px] font-medium text-white">{item.value}%</span>
               </div>
             ))}
           </div>
@@ -216,32 +214,34 @@ export default function Dashboard() {
       </div>
 
       {/* ── Linha inferior ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-6">
 
         {/* Agenda de hoje */}
         <Section
           title="Agenda de Hoje"
           action={
             <Link to={createPageUrl("Agenda")} style={{ textDecoration: "none" }}>
-              <span style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, cursor: "pointer" }}>Ver agenda</span>
+              <span className="text-[12px] text-[#666666] cursor-pointer">Ver agenda</span>
             </Link>
           }
         >
-          {todayApts.length > 0
-            ? todayApts.slice(0, 6).map(a => <AppRow key={a.id} apt={a} />)
-            : <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "32px 0" }}>Nenhuma consulta hoje</p>
-          }
+          <div className="max-h-[400px] overflow-y-auto">
+            {todayApts.length > 0
+              ? todayApts.slice(0, 6).map(a => <AppRow key={a.id} apt={a} />)
+              : <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "24px 0" }}>Nenhuma consulta hoje</p>
+            }
+          </div>
         </Section>
 
         {/* Leads + Estoque */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="flex flex-col gap-3 md:gap-4">
           {lowStock.length > 0 && (
-            <div style={{ ...S.card, borderLeft: `2px solid ${T.danger}` }}>
-              <p style={{ ...S.label, color: T.danger, marginBottom: 12 }}>Estoque Abaixo do Mínimo</p>
+            <div className="w-full min-w-0" style={{ ...S.card, borderLeft: `2px solid ${T.danger}` }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#EF4444] mb-3">Estoque Abaixo do Mínimo</p>
               {lowStock.slice(0, 3).map(item => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontFamily: T.font, fontSize: 13, color: T.textSecondary }}>{item.name}</span>
-                  <span style={{ fontFamily: T.font, fontSize: 12, color: T.danger }}>{item.current_stock} {item.unit}</span>
+                <div key={item.id} className="flex justify-between mb-1.5">
+                  <span className="text-[13px] text-[#B0B0B0]">{item.name}</span>
+                  <span className="text-[12px] text-[#EF4444]">{item.current_stock} {item.unit}</span>
                 </div>
               ))}
             </div>
@@ -251,20 +251,20 @@ export default function Dashboard() {
             title="Leads Recentes"
             action={
               <Link to={createPageUrl("CRM")} style={{ textDecoration: "none" }}>
-                <span style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, cursor: "pointer" }}>Ver CRM</span>
+                <span className="text-[12px] text-[#666666] cursor-pointer">Ver CRM</span>
               </Link>
             }
           >
             {leads.slice(0, 4).map(lead => (
-              <div key={lead.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.borderLight}` }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ ...S.value, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lead.name}</p>
-                  <p style={{ ...S.label, marginTop: 2, textTransform: "none", letterSpacing: 0, fontSize: 12 }}>
+              <div key={lead.id} className="flex items-center gap-3 py-2.5 border-b" style={{ borderBottom: `1px solid ${T.borderLight}` }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-white truncate">{lead.name}</p>
+                  <p className="text-[12px] text-[#666666] mt-0.5">
                     {lead.interest?.slice(0, 2).join(", ") || "Interesse a definir"}
                   </p>
                 </div>
                 {lead.priority === "vip" && (
-                  <span style={{ fontFamily: T.font, fontSize: 10, fontWeight: 600, color: T.gold, letterSpacing: "0.08em" }}>VIP</span>
+                  <span className="text-[10px] font-semibold text-[#C8A96A] tracking-wider">VIP</span>
                 )}
               </div>
             ))}
@@ -274,22 +274,19 @@ export default function Dashboard() {
       </div>
 
       {/* ── Indicadores ── */}
-      <div style={S.card}>
-        <p style={{ ...S.sectionTitle, marginBottom: 24 }}>Indicadores de Performance</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+      <div className="w-full min-w-0" style={S.card}>
+        <p style={{ ...S.sectionTitle, marginBottom: 20 }}>Indicadores de Performance</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {indicators.map(item => (
-            <div key={item.label}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                <span style={S.label}>{item.label}</span>
-                <span style={{ ...S.value, fontSize: 13 }}>{item.value}%</span>
+            <div key={item.label} className="w-full min-w-0">
+              <div className="flex justify-between mb-2.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#666666]">{item.label}</span>
+                <span className="text-[13px] font-medium text-white">{item.value}%</span>
               </div>
-              <div style={{ height: 2, backgroundColor: T.borderLight, borderRadius: 1 }}>
-                <div style={{
-                  height: 2,
+              <div className="h-0.5 bg-[#1E1E1E] rounded-full">
+                <div className="h-0.5 rounded-full transition-all duration-500" style={{
                   width: `${item.value}%`,
                   backgroundColor: item.value >= 90 ? T.success : T.gold,
-                  borderRadius: 1,
-                  transition: "width 0.6s ease",
                 }} />
               </div>
             </div>

@@ -73,13 +73,10 @@
     box-sizing: border-box;
   }
 
-  html, body, #root {
+  html {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-  }
-
-  html {
     color-scheme: dark;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
@@ -88,12 +85,21 @@
   }
 
   body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     font-weight: 400;
     font-size: 14px;
     line-height: 1.6;
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
+  }
+
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   img, video, canvas, iframe {
