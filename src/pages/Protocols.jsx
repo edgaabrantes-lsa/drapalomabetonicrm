@@ -30,6 +30,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import CurrencyInput from "@/components/ui/CurrencyInput";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 const durationOptions = [
   { value: 3, label: "3 meses" },
@@ -521,6 +522,10 @@ export default function Protocols() {
   const activePatientProtocols = patientProtocols.filter(pp => pp.status === "active");
   const completedPatientProtocols = patientProtocols.filter(pp => pp.status === "completed");
 
+  const dragRefActive    = useDragScroll();
+  const dragRefCompleted = useDragScroll();
+  const dragRefTemplates = useDragScroll();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -622,7 +627,11 @@ export default function Protocols() {
         </TabsList>
 
         <TabsContent value="active" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div
+            ref={dragRefActive}
+            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-auto select-none"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {activePatientProtocols.map((pp) => (
               <PatientProtocolCard
                 key={pp.id}
@@ -641,7 +650,11 @@ export default function Protocols() {
         </TabsContent>
 
         <TabsContent value="completed" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div
+            ref={dragRefCompleted}
+            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-auto select-none"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {completedPatientProtocols.map((pp) => (
               <PatientProtocolCard
                 key={pp.id}
@@ -660,7 +673,11 @@ export default function Protocols() {
         </TabsContent>
 
         <TabsContent value="templates" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div
+            ref={dragRefTemplates}
+            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-auto select-none"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {protocols.map((protocol) => (
               <Card
                 key={protocol.id}
