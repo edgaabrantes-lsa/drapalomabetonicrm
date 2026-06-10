@@ -391,7 +391,8 @@ export default function Patients() {
     },
   });
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving = createMutation.isPending || updateMutation.isPending ||
+                   createMutation.isLoading || updateMutation.isLoading;
 
   const handleSave = (payload) => {
     setSaveError("");
@@ -530,8 +531,12 @@ export default function Patients() {
       )}
 
       {/* Modal Cadastro/Edição */}
-      <Dialog open={isFormOpen} onOpenChange={open => { if (!open) handleCloseForm(); }}>
-        <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <Dialog open={isFormOpen} onOpenChange={open => { if (!open && !isSaving) handleCloseForm(); }}>
+        <DialogContent
+          className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+          onPointerDownOutside={e => { if (isSaving) e.preventDefault(); }}
+          onInteractOutside={e => { if (isSaving) e.preventDefault(); }}
+        >
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-xl">
               {editingPatient ? "Editar Paciente" : "Novo Paciente"}
@@ -540,11 +545,12 @@ export default function Patients() {
 
           {saveError && (
             <div className="px-3 py-2 rounded-md text-sm flex-shrink-0" style={{ backgroundColor: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}>
-              {saveError}
+              ⚠️ {saveError}
             </div>
           )}
 
           <PatientForm
+            key={editingPatient?.id ?? "new"}
             patient={editingPatient}
             onSave={handleSave}
             onClose={handleCloseForm}
