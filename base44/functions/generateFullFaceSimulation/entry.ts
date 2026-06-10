@@ -290,37 +290,17 @@ function flattenArrays(arrays) {
 }
 
 // ──────────────────────────────────────────────────────────────
-//  Redimensionar imagem para 1024x1024 (OpenAI exige tamanho fixo para edits)
-//  Sem dependências externas — usamos canvas via OffscreenCanvas se disponível
+//  Converter Uint8Array para base64 de forma segura (chunked)
+//  Evita "Maximum call stack size exceeded" com btoa/fromCharCode
 // ──────────────────────────────────────────────────────────────
-async function resizeImageTo1024(imageBytes, mimeType) {
-  // Tentar usar createImageBitmap (disponível no Deno com --allow-all)
-  try {
-    const blob = new Blob([imageBytes], { type: mimeType });
-    const bitmap = await createImageBitmap(blob);
-    const { width, height } = bitmap;
-
-    if (width === 1024 && height === 1024) {
-      return imageBytes; // já está no tamanho correto
-    }
-
-    // Calcular crop quadrado centralizado
-    const side = Math.min(width, height);
-    const sx = Math.floor((width - side) / 2);
-    const sy = Math.floor((height - side) / 2);
-
-    const oc = new OffscreenCanvas(1024, 1024);
-    const ctx = oc.getContext("2d");
-    ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, 1024, 1024);
-    bitmap.close();
-    const pngBlob = await oc.convertToBlob({ type: "image/png" });
-    const buf = await pngBlob.arrayBuffer();
-    console.log("Imagem redimensionada para 1024x1024 via OffscreenCanvas");
-    return new Uint8Array(buf);
-  } catch (e) {
-    console.log("OffscreenCanvas não disponível, usando imagem original:", e.message);
-    return imageBytes;
+function uint8ArrayToBase64(bytes) {
+  const CHUNK = 8192;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    const chunk = bytes.subarray(i, i + CHUNK);
+    binary += String.fromCharCode(...chunk);
   }
+  return btoa(binary);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -409,12 +389,7 @@ Deno.serve(async (req) => {
 
     console.log(`MIME: ${mimeType} | Tamanho: ${imageBytes.length} bytes | Opções: ${finalOptions.join(", ")}`);
 
-    // ── 2. Redimensionar para 1024x1024 se necessário ──
-    imageBytes = await resizeImageTo1024(imageBytes, mimeType);
-    // Após resize, sempre será PNG
-    if (imageBytes[0] === 0x89 && imageBytes[1] === 0x50) {
-      mimeType = "image/png"; fileExt = "png";
-    }
+    // ── 2. Nenhum resize necessário — gpt-image-1 aceita imagens sem tamanho fixo
 
     // ── 3. Gerar máscara anatômica ──
     console.log("Gerando máscara anatômica...");
@@ -464,10 +439,7 @@ Deno.serve(async (req) => {
       console.log("Baixando imagem gerada da URL...");
       const imgRes = await fetch(imgData.url);
       const imgBuf = await imgRes.arrayBuffer();
-      const bytes = new Uint8Array(imgBuf);
-      let bin = "";
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      generatedBase64 = btoa(bin);
+      generatedBase64 = uint8ArrayToBase64(new Uint8Array(imgBuf));
     }
 
     if (!generatedBase64) throw new Error("OpenAI não retornou imagem válida.");
@@ -475,7 +447,12 @@ Deno.serve(async (req) => {
     // ── 7. Upload da imagem gerada ──
     const binaryString = atob(generatedBase64);
     const generatedBytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) generatedBytes[i] = binaryString.charCodeAt(i);
+    const CHUNK_SIZE = 8192;
+    for (let i = 0; i < binaryString.length; i += CHUNK_SIZE) {
+      for (let j = i; j < Math.min(i + CHUNK_SIZE, binaryString.length); j++) {
+        generatedBytes[j] = binaryString.charCodeAt(j);
+      }
+    }
 
     const generatedFile = new File(
       [new Blob([generatedBytes], { type: "image/png" })],
