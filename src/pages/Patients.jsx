@@ -35,15 +35,8 @@ const PatientForm = ({ patient, onSave, onClose }) => {
     consent_whatsapp: false, consent_images: false, consent_terms_signed: false, tags: []
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!formData.full_name?.trim() || !formData.phone?.trim()) return;
-    onSave(formData);
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
       <div>
         <h3 className="text-sm font-medium text-[#c9a55c] mb-3">Dados Pessoais</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -181,14 +174,13 @@ const PatientForm = ({ patient, onSave, onClose }) => {
         <Button type="button" variant="ghost" onClick={onClose} className="text-gray-400">Cancelar</Button>
         <Button
           type="button"
-          onClick={handleSubmit}
-          disabled={!formData.full_name?.trim() || !formData.phone?.trim()}
-          className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black disabled:opacity-50"
+          onClick={() => onSave(formData)}
+          className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black"
         >
           {patient ? "Salvar Alterações" : "Cadastrar Paciente"}
         </Button>
       </div>
-    </form>
+    </div>
   );
 };
 
