@@ -522,12 +522,15 @@ export default function Protocols() {
   const activePatientProtocols = patientProtocols.filter(pp => pp.status === "active");
   const completedPatientProtocols = patientProtocols.filter(pp => pp.status === "completed");
 
-  const dragRefActive    = useDragScroll();
-  const dragRefCompleted = useDragScroll();
-  const dragRefTemplates = useDragScroll();
+  const dragRef = useDragScroll();
 
   return (
-    <div className="space-y-6">
+    <div
+      ref={dragRef}
+      className="w-full max-w-full min-w-0"
+      style={{ overflowX: "auto", overflowY: "visible" }}
+    >
+    <div className="space-y-6 min-w-0 w-full pb-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
@@ -627,11 +630,7 @@ export default function Protocols() {
         </TabsList>
 
         <TabsContent value="active" className="mt-6">
-          <div
-            ref={dragRefActive}
-            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-auto select-none"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {activePatientProtocols.map((pp) => (
               <PatientProtocolCard
                 key={pp.id}
@@ -650,11 +649,7 @@ export default function Protocols() {
         </TabsContent>
 
         <TabsContent value="completed" className="mt-6">
-          <div
-            ref={dragRefCompleted}
-            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-auto select-none"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {completedPatientProtocols.map((pp) => (
               <PatientProtocolCard
                 key={pp.id}
@@ -673,11 +668,7 @@ export default function Protocols() {
         </TabsContent>
 
         <TabsContent value="templates" className="mt-6">
-          <div
-            ref={dragRefTemplates}
-            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-auto select-none"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {protocols.map((protocol) => (
               <Card
                 key={protocol.id}
@@ -713,6 +704,7 @@ export default function Protocols() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
     </div>
   );
 }

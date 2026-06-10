@@ -2,12 +2,15 @@ import { useRef, useCallback, useEffect } from "react";
 
 /**
  * useDragScroll — Desktop drag-to-scroll hook
- * - Horizontal + vertical drag navigation
- * - Only activates on desktop (pointer: fine / non-touch)
- * - Ignores clicks on interactive elements (buttons, inputs, selects, etc.)
- * - Prevents text selection during drag
- * - Uses requestAnimationFrame for smooth performance
- * - Auto-removes event listeners on unmount (no memory leaks)
+ *
+ * Features:
+ * - Horizontal + vertical drag-to-scroll on desktop only
+ * - grab / grabbing cursor feedback
+ * - Ignores all interactive elements (buttons, inputs, selects, links, etc.)
+ * - 5px movement threshold before entering drag mode (prevents misclick)
+ * - requestAnimationFrame for smooth, jank-free scrolling
+ * - Auto-cleanup on unmount — no memory leaks
+ * - Mobile unaffected (pointer: coarse = touch device = no-op)
  */
 
 const INTERACTIVE_SELECTORS = [
@@ -17,90 +20,101 @@ const INTERACTIVE_SELECTORS = [
   "textarea",
   "select",
   "label",
+  "option",
   '[role="button"]',
   '[role="combobox"]',
   '[role="listbox"]',
   '[role="option"]',
   '[role="menuitem"]',
   '[role="tab"]',
+  '[role="slider"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+  '[role="switch"]',
   '[data-radix-collection-item]',
-  '.cursor-pointer',
+  '[data-state]',
 ];
 
 function isInteractiveTarget(target) {
-  return INTERACTIVE_SELECTORS.some((sel) => target.closest(sel));
+  if (!target || !target.closest) return false;
+  return INTERACTIVE_SELECTORS.some((sel) => {
+    try { return !!target.closest(sel); } catch { return false; }
+  });
 }
 
 export function useDragScroll() {
   const containerRef = useRef(null);
 
-  // Internal drag state — stored in ref to avoid re-renders
-  const drag = useRef({
-    active: false,
+  const state = useRef({
+    dragging: false,
     startX: 0,
     startY: 0,
-    scrollLeft: 0,
-    scrollTop: 0,
+    origScrollLeft: 0,
+    origScrollTop: 0,
     moved: false,
     rafId: null,
-    pendingX: 0,
-    pendingY: 0,
+    nextScrollLeft: 0,
+    nextScrollTop: 0,
   });
 
-  const applyScroll = useCallback(() => {
+  // RAF callback — applies scroll outside React render cycle
+  const flushScroll = useCallback(() => {
     const el = containerRef.current;
-    if (!el) return;
-    el.scrollLeft = drag.current.pendingX;
-    el.scrollTop = drag.current.pendingY;
-    drag.current.rafId = null;
+    if (el) {
+      el.scrollLeft = state.current.nextScrollLeft;
+      el.scrollTop  = state.current.nextScrollTop;
+    }
+    state.current.rafId = null;
   }, []);
 
-  const onMouseDown = useCallback((e) => {
-    // Only left mouse button
+  const handleMouseDown = useCallback((e) => {
     if (e.button !== 0) return;
-
-    // Skip if the target is an interactive element
     if (isInteractiveTarget(e.target)) return;
 
     const el = containerRef.current;
     if (!el) return;
 
-    drag.current.active = true;
-    drag.current.moved = false;
-    drag.current.startX = e.clientX;
-    drag.current.startY = e.clientY;
-    drag.current.scrollLeft = el.scrollLeft;
-    drag.current.scrollTop = el.scrollTop;
-    drag.current.pendingX = el.scrollLeft;
-    drag.current.pendingY = el.scrollTop;
+    // Only activate if element actually has scrollable content
+    const hasHScroll = el.scrollWidth > el.clientWidth;
+    const hasVScroll = el.scrollHeight > el.clientHeight;
+    if (!hasHScroll && !hasVScroll) return;
+
+    const s = state.current;
+    s.dragging = true;
+    s.moved = false;
+    s.startX = e.clientX;
+    s.startY = e.clientY;
+    s.origScrollLeft = el.scrollLeft;
+    s.origScrollTop  = el.scrollTop;
+    s.nextScrollLeft = el.scrollLeft;
+    s.nextScrollTop  = el.scrollTop;
 
     el.style.cursor = "grabbing";
     el.style.userSelect = "none";
     e.preventDefault();
   }, []);
 
-  const onMouseMove = useCallback((e) => {
-    if (!drag.current.active) return;
+  const handleMouseMove = useCallback((e) => {
+    if (!state.current.dragging) return;
 
-    const dx = e.clientX - drag.current.startX;
-    const dy = e.clientY - drag.current.startY;
+    const dx = e.clientX - state.current.startX;
+    const dy = e.clientY - state.current.startY;
 
-    // Mark as moved if threshold exceeded (avoids accidental drags on click)
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-      drag.current.moved = true;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      state.current.moved = true;
     }
 
-    drag.current.pendingX = drag.current.scrollLeft - dx;
-    drag.current.pendingY = drag.current.scrollTop - dy;
+    state.current.nextScrollLeft = state.current.origScrollLeft - dx;
+    state.current.nextScrollTop  = state.current.origScrollTop  - dy;
 
-    if (!drag.current.rafId) {
-      drag.current.rafId = requestAnimationFrame(applyScroll);
+    if (!state.current.rafId) {
+      state.current.rafId = requestAnimationFrame(flushScroll);
     }
-  }, [applyScroll]);
+  }, [flushScroll]);
 
-  const stopDrag = useCallback(() => {
-    if (!drag.current.active) return;
-    drag.current.active = false;
+  const handleMouseUp = useCallback(() => {
+    if (!state.current.dragging) return;
+    state.current.dragging = false;
 
     const el = containerRef.current;
     if (el) {
@@ -108,18 +122,18 @@ export function useDragScroll() {
       el.style.userSelect = "";
     }
 
-    if (drag.current.rafId) {
-      cancelAnimationFrame(drag.current.rafId);
-      drag.current.rafId = null;
+    if (state.current.rafId) {
+      cancelAnimationFrame(state.current.rafId);
+      state.current.rafId = null;
     }
   }, []);
 
-  // Prevent clicks from firing if the user was dragging
-  const onClickCapture = useCallback((e) => {
-    if (drag.current.moved) {
+  // Capture-phase click suppressor: prevents child onClick during a drag
+  const handleClickCapture = useCallback((e) => {
+    if (state.current.moved) {
       e.stopPropagation();
       e.preventDefault();
-      drag.current.moved = false;
+      state.current.moved = false;
     }
   }, []);
 
@@ -127,34 +141,31 @@ export function useDragScroll() {
     const el = containerRef.current;
     if (!el) return;
 
-    // Only enable on non-touch / desktop devices
-    const isDesktop = window.matchMedia("(pointer: fine)").matches;
-    if (!isDesktop) return;
+    // Only activate on desktop (fine pointer = mouse, not touch)
+    if (!window.matchMedia("(pointer: fine)").matches) return;
 
-    // Set initial cursor
     el.style.cursor = "grab";
 
-    el.addEventListener("mousedown", onMouseDown, { passive: false });
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", stopDrag);
-    window.addEventListener("mouseleave", stopDrag);
-    el.addEventListener("click", onClickCapture, true);
+    el.addEventListener("mousedown",  handleMouseDown,    { passive: false });
+    el.addEventListener("click",      handleClickCapture, true);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup",   handleMouseUp);
+    window.addEventListener("mouseleave", handleMouseUp);
 
     return () => {
-      el.removeEventListener("mousedown", onMouseDown);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", stopDrag);
-      window.removeEventListener("mouseleave", stopDrag);
-      el.removeEventListener("click", onClickCapture, true);
+      el.removeEventListener("mousedown",  handleMouseDown);
+      el.removeEventListener("click",      handleClickCapture, true);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup",   handleMouseUp);
+      window.removeEventListener("mouseleave", handleMouseUp);
 
-      if (drag.current.rafId) {
-        cancelAnimationFrame(drag.current.rafId);
+      if (state.current.rafId) {
+        cancelAnimationFrame(state.current.rafId);
       }
-
       el.style.cursor = "";
       el.style.userSelect = "";
     };
-  }, [onMouseDown, onMouseMove, stopDrag, onClickCapture]);
+  }, [handleMouseDown, handleMouseMove, handleMouseUp, handleClickCapture]);
 
   return containerRef;
 }
