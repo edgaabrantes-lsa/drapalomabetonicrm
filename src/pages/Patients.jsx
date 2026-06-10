@@ -36,7 +36,8 @@ const PatientForm = ({ patient, onSave, onClose }) => {
   });
 
   return (
-    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+    <div className="flex flex-col" style={{ maxHeight: "70vh" }}>
+    <div className="space-y-6 overflow-y-auto pr-2 flex-1 pb-2">
       <div>
         <h3 className="text-sm font-medium text-[#c9a55c] mb-3">Dados Pessoais</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -170,7 +171,8 @@ const PatientForm = ({ patient, onSave, onClose }) => {
         <Textarea value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} className="bg-[#1a1a25] border-[#1e1e2a] text-white mt-1" rows={3} />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-[#1e1e2a]">
+    </div>
+      <div className="flex justify-end gap-3 pt-4 border-t border-[#1e1e2a] flex-shrink-0">
         <Button type="button" variant="ghost" onClick={onClose} className="text-gray-400">Cancelar</Button>
         <Button
           type="button"
