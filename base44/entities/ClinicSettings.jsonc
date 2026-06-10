@@ -1,0 +1,147 @@
+{
+  "name": "ClinicSettings",
+  "type": "object",
+  "properties": {
+    "clinic_name": {
+      "type": "string",
+      "default": "Cl\u00ednica Est\u00e9tica"
+    },
+    "legal_name": {
+      "type": "string"
+    },
+    "professional_name": {
+      "type": "string"
+    },
+    "professional_title": {
+      "type": "string",
+      "default": "Dra."
+    },
+    "professional_registry": {
+      "type": "string"
+    },
+    "cnpj": {
+      "type": "string"
+    },
+    "cpf": {
+      "type": "string"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "number": {
+          "type": "string"
+        },
+        "complement": {
+          "type": "string"
+        },
+        "neighborhood": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "zip_code": {
+          "type": "string"
+        }
+      }
+    },
+    "phone": {
+      "type": "string"
+    },
+    "whatsapp": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "website": {
+      "type": "string"
+    },
+    "instagram": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "favicon_url": {
+      "type": "string"
+    },
+    "primary_color": {
+      "type": "string",
+      "default": "#C8A96A"
+    },
+    "accent_color": {
+      "type": "string",
+      "default": "#D4BC88"
+    },
+    "theme_mode": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light"
+      ],
+      "default": "dark"
+    },
+    "contract_header": {
+      "type": "string"
+    },
+    "contract_footer": {
+      "type": "string"
+    },
+    "default_lgpd_text": {
+      "type": "string"
+    },
+    "default_payment_policy": {
+      "type": "string"
+    },
+    "default_cancellation_policy": {
+      "type": "string"
+    },
+    "default_return_policy": {
+      "type": "string"
+    },
+    "conselho_regional": {
+      "type": "string"
+    },
+    "numero_conselho": {
+      "type": "string"
+    },
+    "especialidade": {
+      "type": "string"
+    },
+    "horario_funcionamento": {
+      "type": "string"
+    },
+    "observacoes_legais": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "clinic_name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

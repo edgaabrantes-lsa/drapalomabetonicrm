@@ -12,6 +12,7 @@ import FullFaceSimulations from './pages/FullFaceSimulations';
 import BeforeAfterIA from './pages/BeforeAfterIA.jsx';
 import DossiePatient from './pages/DossiePatient.jsx';
 import Governanca from './pages/Governanca.jsx';
+import ClinicSettingsPage from './pages/ClinicSettingsPage.jsx';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -104,6 +105,13 @@ const AuthenticatedApp = () => {
       <Route path="/Governanca" element={
         <LayoutWrapper currentPageName="Governanca">
           <Governanca />
+        </LayoutWrapper>
+      } />
+
+      {/* Configurações da Clínica */}
+      <Route path="/ClinicSettingsPage" element={
+        <LayoutWrapper currentPageName="ClinicSettingsPage">
+          <ClinicSettingsPage />
         </LayoutWrapper>
       } />
     </Routes>

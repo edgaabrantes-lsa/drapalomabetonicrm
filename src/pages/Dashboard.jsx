@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -98,27 +98,55 @@ export default function Dashboard() {
   const lowStock    = supplies.filter(s => s.current_stock <= (s.minimum_stock || 5));
   const newLeads    = leads.filter(l => { try { const d = parseISO(l.created_date); return d >= monthStart && d <= monthEnd; } catch { return false; } });
 
-  const revenueData = [
-    { mes: "Jan", receita: 45000, despesas: 32000 },
-    { mes: "Fev", receita: 52000, despesas: 28000 },
-    { mes: "Mar", receita: 48000, despesas: 35000 },
-    { mes: "Abr", receita: 61000, despesas: 30000 },
-    { mes: "Mai", receita: 55000, despesas: 33000 },
-    { mes: "Jun", receita: 67000, despesas: 29000 },
-  ];
+  // Receita vs Despesas — últimos 6 meses a partir dos dados reais
+  const revenueData = useMemo(() => {
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const label = d.toLocaleString("pt-BR", { month: "short" });
+      const m = d.getMonth(); const y = d.getFullYear();
+      const rec = transactions
+        .filter(t => t.type === "income" && t.status === "paid" && t.payment_date && new Date(t.payment_date).getMonth() === m && new Date(t.payment_date).getFullYear() === y)
+        .reduce((s, t) => s + (t.amount || 0), 0);
+      const desp = transactions
+        .filter(t => t.type === "expense" && t.status === "paid" && t.payment_date && new Date(t.payment_date).getMonth() === m && new Date(t.payment_date).getFullYear() === y)
+        .reduce((s, t) => s + (t.amount || 0), 0);
+      months.push({ mes: label, receita: rec, despesas: desp });
+    }
+    return months;
+  }, [transactions, today]);
 
-  const procData = [
-    { name: "Toxina",         value: 35 },
-    { name: "Preenchimento",  value: 25 },
-    { name: "Skinbooster",    value: 20 },
-    { name: "Bioestimulador", value: 15 },
-    { name: "Outros",         value: 5  },
-  ];
+  // Procedimentos — distribuição real por categoria
+  const procData = useMemo(() => {
+    const counts = {};
+    transactions.filter(t => t.type === "income" && t.category).forEach(t => {
+      const k = t.category; counts[k] = (counts[k] || 0) + 1;
+    });
+    const total = Object.values(counts).reduce((s, v) => s + v, 0) || 1;
+    const categoryLabels = { procedure: "Procedimento", protocol: "Protocolo", product: "Produto", other: "Outros" };
+    return Object.entries(counts).slice(0, 5).map(([k, v]) => ({
+      name: categoryLabels[k] || k,
+      value: Math.round((v / total) * 100),
+    }));
+  }, [transactions]);
+
+  // Indicadores reais
+  const totalLeads = leads.length || 1;
+  const convertedLeads = patients.filter(p => p.source !== undefined).length;
+  const taxaConversao = Math.min(100, Math.round((convertedLeads / totalLeads) * 100));
+  const paidTransactions = transactions.filter(t => t.status === "paid").length;
+  const totalTransactions = transactions.length || 1;
+  const taxaSucesso = Math.min(100, Math.round((paidTransactions / totalTransactions) * 100));
+  const totalMonthIncome = transactions
+    .filter(t => t.type === "income" && t.status === "paid" && t.payment_date && new Date(t.payment_date) >= monthStart && new Date(t.payment_date) <= monthEnd)
+    .reduce((s, t) => s + (t.amount || 0), 0);
+  const monthTarget = 50000;
+  const metaMensal = Math.min(100, Math.round((totalMonthIncome / monthTarget) * 100));
 
   const indicators = [
-    { label: "Taxa de Conversão",    value: 72 },
-    { label: "Satisfação",           value: 94 },
-    { label: "Meta Mensal",          value: 85 },
+    { label: "Taxa de Conversão",  value: taxaConversao },
+    { label: "Taxa de Recebimento", value: taxaSucesso },
+    { label: "Meta Mensal",         value: metaMensal },
   ];
 
   const fmt = (n) => `R$ ${n.toLocaleString("pt-BR")}`;

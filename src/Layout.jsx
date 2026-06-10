@@ -41,24 +41,27 @@ import {
 import { Input } from "@/components/ui/input";
 
 const navigation = [
-  { name: "Dashboard",           href: "Dashboard",         icon: LayoutDashboard },
-  { name: "CRM",                 href: "CRM",               icon: MessageSquare },
-  { name: "Bate-papo",           href: "Chat",              icon: MessagesSquare },
-  { name: "Agenda",              href: "Agenda",            icon: Calendar },
-  { name: "Pacientes",           href: "Patients",          icon: Users },
-  { name: "Prontuários",         href: "MedicalRecords",    icon: FileText },
-  { name: "Protocolos",          href: "Protocols",         icon: ClipboardList },
-  { name: "Protocolos Premium",  href: "ProtocolosPremium", icon: Layers },
-  { name: "Estoque",             href: "Inventory",         icon: Package },
-  { name: "Financeiro",          href: "Financial",         icon: DollarSign },
-  { name: "Precificação",        href: "Pricing",           icon: Calculator },
-  { name: "Análise Facial",      href: "FacialAnalysis",    icon: Eye },
-  { name: "Antes e Depois",      href: "BeforeAfterIA",     icon: ScanFace },
-  { name: "Dossiê da Paciente",  href: "DossiePatient",     icon: FolderOpen },
-  { name: "Vigilância Sanitária",href: "VigilanciaPage",    icon: ShieldCheck },
-  { name: "Governança Doc.",     href: "Governanca",         icon: ShieldCheck },
-  { name: "Triagem IA",          href: "Intake",            icon: ClipboardList },
-  { name: "Configurações",       href: "Settings",          icon: Settings },
+  // Clínico
+  { name: "Dashboard",           href: "Dashboard",          icon: LayoutDashboard, group: "clinico" },
+  { name: "Pacientes",           href: "Patients",           icon: Users,            group: "clinico" },
+  { name: "Dossiê da Paciente",  href: "DossiePatient",      icon: FolderOpen,       group: "clinico" },
+  { name: "Agenda",              href: "Agenda",             icon: Calendar,         group: "clinico" },
+  { name: "Prontuários",         href: "MedicalRecords",     icon: FileText,         group: "clinico" },
+  { name: "Análise Facial",      href: "FacialAnalysis",     icon: Eye,              group: "clinico" },
+  { name: "Antes e Depois",      href: "BeforeAfterIA",      icon: ScanFace,         group: "clinico" },
+  { name: "Protocolos",          href: "Protocols",          icon: ClipboardList,    group: "clinico" },
+  { name: "Protocolos Premium",  href: "ProtocolosPremium",  icon: Layers,           group: "clinico" },
+  { name: "Financeiro",          href: "Financial",          icon: DollarSign,       group: "clinico" },
+  { name: "Estoque",             href: "Inventory",          icon: Package,          group: "clinico" },
+  // Comercial
+  { name: "CRM",                 href: "CRM",                icon: MessageSquare,    group: "comercial" },
+  { name: "Bate-papo",           href: "Chat",               icon: MessagesSquare,   group: "comercial" },
+  { name: "Triagem IA",          href: "Intake",             icon: ClipboardList,    group: "comercial" },
+  // Administrativo
+  { name: "Governança Doc.",     href: "Governanca",         icon: ShieldCheck,      group: "admin" },
+  { name: "Vigilância Sanitária",href: "VigilanciaPage",     icon: ShieldCheck,      group: "admin" },
+  { name: "Config. da Clínica",  href: "ClinicSettingsPage", icon: Settings,         group: "admin" },
+  { name: "Configurações",       href: "Settings",           icon: Settings,         group: "admin" },
 ];
 
 const SIDEBAR_W_OPEN   = 240;
@@ -177,77 +180,92 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto" style={{ padding: "8px 0" }}>
-          {navigation.map((item) => {
-            const isActive = currentPageName === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={createPageUrl(item.href)}
-                onClick={() => setMobileOpen(false)}
-                title={collapsed ? item.name : undefined}
-                className="flex items-center transition-colors duration-150 relative group"
-                style={{
-                  padding: collapsed ? "10px 0" : "9px 16px",
-                  justifyContent: collapsed ? "center" : "flex-start",
-                  gap: collapsed ? 0 : 10,
-                  margin: "1px 8px",
-                  borderRadius: 6,
-                  backgroundColor: isActive ? "rgba(200,169,106,0.08)" : "transparent",
-                  color: isActive ? "#FFFFFF" : "#666666",
-                  textDecoration: "none",
-                  borderLeft: isActive ? "2px solid #C8A96A" : "2px solid transparent",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
-                    e.currentTarget.style.color = "#B0B0B0";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.color = "#666666";
-                  }
-                }}
-              >
-                <item.icon
-                  className="flex-shrink-0"
-                  style={{
-                    width: 15,
-                    height: 15,
-                    color: isActive ? "#C8A96A" : "currentColor",
-                  }}
-                />
-                {!collapsed && (
-                  <span style={{
-                    fontSize: 13,
-                    fontWeight: isActive ? 500 : 400,
-                    letterSpacing: 0,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}>
-                    {item.name}
-                  </span>
-                )}
-
-                {/* Tooltip quando recolhido */}
-                {collapsed && (
-                  <span
-                    className="absolute left-full ml-2 px-2 py-1 text-xs rounded-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50"
-                    style={{
-                      backgroundColor: "#1A1A1A",
-                      border: "1px solid #2B2B2B",
-                      color: "#FFFFFF",
-                      fontSize: 12,
-                    }}
-                  >
-                    {item.name}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {(() => {
+            const groups = [
+              { key: "clinico",   label: "Clínico" },
+              { key: "comercial", label: "Comercial" },
+              { key: "admin",     label: "Administrativo" },
+            ];
+            return groups.map((group) => {
+              const items = navigation.filter(n => n.group === group.key);
+              return (
+                <div key={group.key}>
+                  {!collapsed && (
+                    <p style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: "0.09em",
+                      textTransform: "uppercase",
+                      color: "#3A3A3A",
+                      padding: "12px 24px 4px",
+                    }}>
+                      {group.label}
+                    </p>
+                  )}
+                  {items.map((item) => {
+                    const isActive = currentPageName === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        to={createPageUrl(item.href)}
+                        onClick={() => setMobileOpen(false)}
+                        title={collapsed ? item.name : undefined}
+                        className="flex items-center transition-colors duration-150 relative group"
+                        style={{
+                          padding: collapsed ? "10px 0" : "9px 16px",
+                          justifyContent: collapsed ? "center" : "flex-start",
+                          gap: collapsed ? 0 : 10,
+                          margin: "1px 8px",
+                          borderRadius: 6,
+                          backgroundColor: isActive ? "rgba(200,169,106,0.08)" : "transparent",
+                          color: isActive ? "#FFFFFF" : "#666666",
+                          textDecoration: "none",
+                          borderLeft: isActive ? "2px solid #C8A96A" : "2px solid transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive) {
+                            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+                            e.currentTarget.style.color = "#B0B0B0";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = "#666666";
+                          }
+                        }}
+                      >
+                        <item.icon
+                          className="flex-shrink-0"
+                          style={{ width: 15, height: 15, color: isActive ? "#C8A96A" : "currentColor" }}
+                        />
+                        {!collapsed && (
+                          <span style={{
+                            fontSize: 13,
+                            fontWeight: isActive ? 500 : 400,
+                            letterSpacing: 0,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}>
+                            {item.name}
+                          </span>
+                        )}
+                        {collapsed && (
+                          <span
+                            className="absolute left-full ml-2 px-2 py-1 text-xs rounded-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50"
+                            style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", color: "#FFFFFF", fontSize: 12 }}
+                          >
+                            {item.name}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            });
+          })()}
         </nav>
 
         {/* User section */}
