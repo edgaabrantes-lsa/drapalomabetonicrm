@@ -493,7 +493,8 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
 
     setSavingRecord(true);
     try {
-      const user = await base44.auth.me();
+      let user = null;
+      try { user = await base44.auth.me(); } catch { /* continua sem usuário */ }
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
       const optionLabels = selectedOptions.map(id => SIMULATION_OPTIONS.find(o => o.id === id)?.label || id).join(", ");
@@ -893,7 +894,12 @@ function SimulationHistory() {
   const [selected, setSelected] = useState(null);
   const [toDelete, setToDelete] = useState(null);
 
-  const { data: user } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me() });
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      try { return await base44.auth.me(); } catch { return null; }
+    },
+  });
   const isAdmin = user?.role === "admin";
 
   const { data: simulations = [], isLoading } = useQuery({
