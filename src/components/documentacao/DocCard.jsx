@@ -132,7 +132,7 @@ export default function DocCard({ doc, patient, currentUser, onAssinar, onRefres
               {gerandoPdf ? "..." : "PDF"}
             </button>
           )}
-          {!concluido && doc.id && doc.status !== "pendente" && (
+          {!concluido && doc.id && (
             <button
               onClick={() => onAssinar && onAssinar(doc)}
               style={{ ...btnStyle, borderColor: "#22C55E44", color: "#22C55E" }}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format, parseISO } from "date-fns";
+import { Camera, Upload, X, RotateCcw, Check } from "lucide-react";
 
 const CATEGORIAS = {
   antes: { label: "Antes", color: "bg-blue-500/20 text-blue-400" },
   depois: { label: "Depois", color: "bg-green-500/20 text-green-400" },
   analise_facial: { label: "Análise Facial", color: "bg-purple-500/20 text-purple-400" },
+  simulacao_ia: { label: "Simulação IA", color: "bg-indigo-500/20 text-indigo-400" },
+  prontuario_facial: { label: "Prontuário Facial", color: "bg-teal-500/20 text-teal-400" },
   evolucao: { label: "Evolução", color: "bg-yellow-500/20 text-yellow-400" },
   intercorrencia: { label: "Intercorrência", color: "bg-red-500/20 text-red-400" },
   documento_clinico: { label: "Documento Clínico", color: "bg-orange-500/20 text-orange-400" },
@@ -23,9 +26,15 @@ const CATEGORIAS = {
 export default function DossieImagensArquivos({ patient, currentUser }) {
   const queryClient = useQueryClient();
   const [showUpload, setShowUpload] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const [filtroCategoria, setFiltroCategoria] = useState("all");
   const [previewImage, setPreviewImage] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState("user");
+  const [capturedPhoto, setCapturedPhoto] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
   const [form, setForm] = useState({
     categoria: "outros",
     titulo: "",
@@ -34,10 +43,34 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
     file: null
   });
 
-  const { data: imagens = [] } = useQuery({
+  // Buscar imagens do DossieImagem + simulações FullFace
+  const { data: imagensDossie = [] } = useQuery({
     queryKey: ["dossie-imagens", patient.id],
     queryFn: () => base44.entities.DossieImagem.filter({ patient_id: patient.id }, "-data_upload", 200)
   });
+
+  const { data: simulacoes = [] } = useQuery({
+    queryKey: ["fullface-sims", patient.id],
+    queryFn: () => base44.entities.FullFaceSimulation.filter({ patient_id: patient.id }, "-created_date", 50)
+  });
+
+  // Mesclar simulações como imagens da categoria simulacao_ia
+  const simComoImagens = simulacoes
+    .filter(s => s.generated_image_url && s.status === "completed")
+    .map(s => ({
+      id: `sim-${s.id}`,
+      patient_id: s.patient_id,
+      file_url: s.generated_image_url,
+      file_name: `Simulação IA - ${s.created_date?.substring(0,10) || ""}`,
+      file_type: "image/jpeg",
+      categoria: "simulacao_ia",
+      titulo: `Simulação IA — ${s.protocol_type || "Full Face"}`,
+      descricao: s.technical_report || "",
+      data_upload: s.created_date,
+      uploaded_by: s.user_email || "IA",
+    }));
+
+  const imagens = [...imagensDossie, ...simComoImagens];
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.DossieImagem.create(data),
@@ -71,6 +104,84 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
     }
   };
 
+  const startCamera = async () => {
+    setCameraError(null);
+    setCapturedPhoto(null);
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: cameraFacing },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      setCameraError("Câmera não disponível: " + err.message);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+    setCapturedPhoto(null);
+  };
+
+  const flipCamera = async () => {
+    const newFacing = cameraFacing === "user" ? "environment" : "user";
+    setCameraFacing(newFacing);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: newFacing }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch (err) {
+      setCameraError("Erro ao trocar câmera: " + err.message);
+    }
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    setCapturedPhoto(canvas.toDataURL("image/jpeg", 0.92));
+  };
+
+  const savePhoto = async () => {
+    if (!capturedPhoto) return;
+    setUploading(true);
+    try {
+      const blob = await fetch(capturedPhoto).then(r => r.blob());
+      const file = new File([blob], `foto-${Date.now()}.jpg`, { type: "image/jpeg" });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await createMutation.mutateAsync({
+        patient_id: patient.id,
+        patient_name: patient.full_name,
+        categoria: form.categoria || "outros",
+        titulo: `Foto — ${new Date().toLocaleDateString("pt-BR")}`,
+        descricao: "",
+        procedimento_vinculado: "",
+        file_url,
+        file_name: file.name,
+        file_type: "image/jpeg",
+        data_upload: new Date().toISOString(),
+        uploaded_by: currentUser?.full_name || currentUser?.email || "Sistema"
+      });
+      stopCamera();
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const filtradas = filtroCategoria === "all"
     ? imagens
     : imagens.filter(i => i.categoria === filtroCategoria);
@@ -91,10 +202,65 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={() => setShowUpload(!showUpload)} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black text-xs">
-          Upload de Arquivo
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={startCamera} size="sm" variant="outline" className="border-[#C5A059]/40 text-[#C5A059] hover:bg-[#C5A059]/10 text-xs gap-1">
+            <Camera className="h-3 w-3" /> Tirar Foto
+          </Button>
+          <Button onClick={() => setShowUpload(!showUpload)} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black text-xs gap-1">
+            <Upload className="h-3 w-3" /> Upload
+          </Button>
+        </div>
       </div>
+
+      {/* Modal Câmera */}
+      {showCamera && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-[#0F1521] border border-[#252D3E] rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#252D3E]">
+              <p className="text-white text-sm font-medium">Tirar Foto — {patient.full_name}</p>
+              <button onClick={stopCamera} className="text-gray-400 hover:text-white"><X className="h-4 w-4" /></button>
+            </div>
+            {cameraError ? (
+              <div className="p-6 text-center text-red-400 text-sm">{cameraError}</div>
+            ) : capturedPhoto ? (
+              <div>
+                <img src={capturedPhoto} alt="Captura" className="w-full object-contain max-h-72" />
+                <div className="p-3 flex gap-2 justify-end">
+                  <Button onClick={() => setCapturedPhoto(null)} variant="ghost" size="sm" className="text-gray-400 gap-1">
+                    <RotateCcw className="h-3 w-3" /> Refazer
+                  </Button>
+                  <Button onClick={savePhoto} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black gap-1" disabled={uploading}>
+                    <Check className="h-3 w-3" /> {uploading ? "Salvando..." : "Salvar Foto"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <video ref={videoRef} autoPlay playsInline muted className="w-full max-h-72 object-cover" />
+                <div className="p-3 flex gap-2 justify-center">
+                  <Button onClick={flipCamera} variant="outline" size="sm" className="border-[#252D3E] text-gray-400 text-xs">
+                    Virar Câmera
+                  </Button>
+                  <Button onClick={capturePhoto} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black gap-1">
+                    <Camera className="h-4 w-4" /> Capturar
+                  </Button>
+                </div>
+                <div className="px-4 pb-3">
+                  <Label className="text-[#8A95AA] text-xs">Categoria da foto</Label>
+                  <Select value={form.categoria} onValueChange={(v) => setForm(p => ({ ...p, categoria: v }))}>
+                    <SelectTrigger className="mt-1 bg-[#1A2030] border-[#252D3E] text-white text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-[#171D29] border-[#252D3E]">
+                      {Object.entries(CATEGORIAS).map(([k, v]) => (
+                        <SelectItem key={k} value={k} className="text-white">{v.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {showUpload && (
         <div className="border border-[#252D3E] rounded-md p-5 bg-[#0F1521] space-y-4">

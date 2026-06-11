@@ -186,8 +186,10 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
 
       if (documento.id) {
         await base44.entities.DossieDocumento.update(documento.id, {
-          status: "assinado",
+          status: "assinado_internamente",
           data_assinatura: now.toISOString(),
+          assinatura_id: assinaturaCriada?.id || "",
+          origem_assinatura: "presencial_canvas",
         });
       }
 

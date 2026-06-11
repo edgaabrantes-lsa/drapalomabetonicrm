@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { T, S } from "@/lib/designTokens";
@@ -29,8 +29,25 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
   const [showKit, setShowKit] = useState(false);
   const [assinaturaDoc, setAssinaturaDoc] = useState(null);
   const [showNovoDoc, setShowNovoDoc] = useState(false);
-  const [novoDoc, setNovoDoc] = useState({ nome: "", tipo: "outro" });
+  const [novoDoc, setNovoDoc] = useState({ nome: "", tipo: "contrato_mestre" });
   const [salvandoDoc, setSalvandoDoc] = useState(false);
+
+  // Auto-preencher nome do documento quando o tipo muda
+  const gerarNomeDoc = (tipo) => {
+    const proc = categoria ? (CATEGORIAS_PROCEDIMENTO[categoria]?.label || categoria) : "";
+    const nomeMap = {
+      contrato_mestre: `Contrato Mestre — ${patient.full_name}${proc ? " — " + proc : ""}`,
+      anexo_financeiro: `Anexo Financeiro — ${patient.full_name}${proc ? " — " + proc : ""}`,
+      termo_lgpd: `Termo LGPD — ${patient.full_name}`,
+      uso_imagem: `Termo de Uso de Imagem — ${patient.full_name}`,
+      consentimento: `Termo de Consentimento — ${patient.full_name}${proc ? " — " + proc : ""}`,
+      documento_identificacao: `Documento de Identificação — ${patient.full_name}`,
+      comprovante_pagamento: `Comprovante de Pagamento — ${patient.full_name}`,
+      prontuario_facial: `Prontuário Facial — ${patient.full_name}`,
+      outro: `Documento — ${patient.full_name}`,
+    };
+    return nomeMap[tipo] || `Documento — ${patient.full_name}`;
+  };
 
   const { data: documentos = [] } = useQuery({
     queryKey: ["dossie-docs", patient.id],
@@ -42,8 +59,15 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
     queryFn: () => base44.entities.DossieFinanceiro.filter({ patient_id: patient.id }, "-created_date", 20),
   });
 
+  // Buscar tratamentos do paciente para popular seletor de procedimentos
+  const { data: tratamentos = [] } = useQuery({
+    queryKey: ["patient-treatments", patient.id],
+    queryFn: () => base44.entities.PatientTreatment.filter({ patient_id: patient.id }, "-created_date", 50),
+  });
+
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["dossie-docs", patient.id] });
+    queryClient.invalidateQueries({ queryKey: ["assinaturas", patient.id] });
   };
 
   // Checklist: mescla docs esperados da categoria com docs existentes do banco
@@ -83,13 +107,14 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
   [documentos]);
 
   const handleSalvarNovoDoc = async () => {
-    if (!novoDoc.nome) return;
+    const nomeDoc = novoDoc.nome || gerarNomeDoc(novoDoc.tipo);
+    if (!nomeDoc) return;
     setSalvandoDoc(true);
     try {
       await base44.entities.DossieDocumento.create({
         patient_id: patient.id,
         patient_name: patient.full_name,
-        nome: novoDoc.nome,
+        nome: nomeDoc,
         tipo: novoDoc.tipo,
         status: "gerado",
         obrigatorio: false,
@@ -105,8 +130,28 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
     }
   };
 
+  // Verificar se template de contrato mestre existe
+  const { data: templates = [] } = useQuery({
+    queryKey: ["doc-templates-contrato"],
+    queryFn: () => base44.entities.DocumentoTemplate.filter({ tipo: "contrato_mestre", status: "ativo" }),
+  });
+  const temContrato = templates.length > 0;
+
   return (
     <div style={{ fontFamily: T.font }}>
+      {/* Aviso template faltando */}
+      {!temContrato && (
+        <div style={{
+          marginBottom: 16, padding: "10px 14px", borderRadius: 8,
+          background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span style={{ fontSize: 13, color: "#F59E0B", fontFamily: T.font }}>
+            ⚠ Nenhum template de Contrato Mestre ativo encontrado.
+            Vá em <strong>Governança → Templates</strong> para criar ou ativar o Contrato Mestre Base.
+          </span>
+        </div>
+      )}
       {/* Modais */}
       {showKit && (
         <KitDocumentalModal
@@ -153,9 +198,24 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
             style={{ ...S.input, width: "100%" }}
           >
             <option value="">— Selecione o procedimento —</option>
-            {Object.entries(CATEGORIAS_PROCEDIMENTO).map(([k, v]) => (
-              <option key={k} value={k}>{v.icon} {v.label}</option>
-            ))}
+            {tratamentos.length > 0 && (
+              <optgroup label="Procedimentos da Paciente">
+                {[...new Map(tratamentos.map(t => [t.protocolo_nome, t])).values()].map((t, i) => {
+                  // Mapear para categoria
+                  const catKey = t.categoria || "outro";
+                  return (
+                    <option key={`pt-${i}`} value={catKey}>
+                      ★ {t.protocolo_nome}
+                    </option>
+                  );
+                })}
+              </optgroup>
+            )}
+            <optgroup label="Todos os Procedimentos">
+              {Object.entries(CATEGORIAS_PROCEDIMENTO).map(([k, v]) => (
+                <option key={k} value={k}>{v.icon} {v.label}</option>
+              ))}
+            </optgroup>
           </select>
         </div>
         <button
@@ -189,19 +249,13 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <p style={{ ...S.label, marginBottom: 4 }}>Nome do Documento *</p>
-              <input
-                value={novoDoc.nome}
-                onChange={e => setNovoDoc(p => ({ ...p, nome: e.target.value }))}
-                placeholder="Ex: Avaliação Complementar"
-                style={{ ...S.input, width: "100%" }}
-              />
-            </div>
-            <div>
               <p style={{ ...S.label, marginBottom: 4 }}>Tipo</p>
               <select
                 value={novoDoc.tipo}
-                onChange={e => setNovoDoc(p => ({ ...p, tipo: e.target.value }))}
+                onChange={e => {
+                  const newTipo = e.target.value;
+                  setNovoDoc(p => ({ ...p, tipo: newTipo, nome: gerarNomeDoc(newTipo) }));
+                }}
                 style={{ ...S.input, width: "100%" }}
               >
                 <option value="contrato_mestre">Contrato Mestre</option>
@@ -211,8 +265,18 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
                 <option value="consentimento">Consentimento</option>
                 <option value="documento_identificacao">Doc. Identificação</option>
                 <option value="comprovante_pagamento">Comprovante de Pagamento</option>
+                <option value="prontuario_facial">Prontuário Facial</option>
                 <option value="outro">Outro</option>
               </select>
+            </div>
+            <div>
+              <p style={{ ...S.label, marginBottom: 4 }}>Nome do Documento *</p>
+              <input
+                value={novoDoc.nome || gerarNomeDoc(novoDoc.tipo)}
+                onChange={e => setNovoDoc(p => ({ ...p, nome: e.target.value }))}
+                placeholder="Nome do documento"
+                style={{ ...S.input, width: "100%" }}
+              />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -221,8 +285,8 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
             </button>
             <button
               onClick={handleSalvarNovoDoc}
-              disabled={!novoDoc.nome || salvandoDoc}
-              style={{ ...S.btnPrimary, fontSize: 12, opacity: novoDoc.nome && !salvandoDoc ? 1 : 0.5 }}
+              disabled={salvandoDoc}
+              style={{ ...S.btnPrimary, fontSize: 12, opacity: !salvandoDoc ? 1 : 0.5 }}
             >
               {salvandoDoc ? "Salvando..." : "Salvar Documento"}
             </button>

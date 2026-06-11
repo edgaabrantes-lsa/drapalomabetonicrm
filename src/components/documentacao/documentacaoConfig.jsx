@@ -8,6 +8,13 @@ export const CATEGORIAS_PROCEDIMENTO = {
   pele: { label: "Skinbooster / Microagulhamento / Pele", icon: "🌿" },
   corporal: { label: "Enzimas / Procedimentos Corporais", icon: "💪" },
   full_face: { label: "Full Face", icon: "👤" },
+  labios: { label: "Lábios", icon: "💋" },
+  mandibula: { label: "Mandíbula", icon: "🦷" },
+  mento: { label: "Mento", icon: "🔹" },
+  olheiras: { label: "Olheiras", icon: "👁️" },
+  rinomodelacao: { label: "Rinomodelação", icon: "👃" },
+  microagulhamento: { label: "Microagulhamento", icon: "🪡" },
+  enzimas: { label: "Enzimas", icon: "💊" },
   outro: { label: "Outro", icon: "📋" },
 };
 
@@ -79,13 +86,14 @@ export const STATUS_DOC = {
 };
 
 export const ORIGENS_ASSINATURA = [
-  { value: "assinatura_manual",  label: "Assinatura Manual" },
-  { value: "authentic",          label: "Authentic" },
-  { value: "docusign",           label: "DocuSign" },
-  { value: "clicksign",          label: "Clicksign" },
-  { value: "zapsign",            label: "ZapSign" },
-  { value: "cartorio",           label: "Cartório" },
-  { value: "outro",              label: "Outro" },
+  { value: "assinatura_interna",  label: "Assinatura Interna (plataforma)" },
+  { value: "upload_manual",       label: "Upload Manual" },
+  { value: "autentique",          label: "Autentique" },
+  { value: "docusign",            label: "DocuSign" },
+  { value: "clicksign",           label: "Clicksign" },
+  { value: "zapsign",             label: "ZapSign" },
+  { value: "cartorio",            label: "Cartório" },
+  { value: "outro",               label: "Outro" },
 ];
 
 export function calcularStatusGeral(checklist) {

@@ -658,8 +658,41 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
         status: "approved",
       });
 
+      // Registrar evolução no DossieEvolucao para aparecer na aba Prontuário do Dossiê
+      await base44.entities.DossieEvolucao.create({
+        patient_id: patient.id,
+        patient_name: patient.full_name,
+        tipo: "evolucao",
+        queixa_principal: record.queixa || nome,
+        historico_estetico: nome,
+        descricao: record.evolucao || `Sessão de ${nome} realizada.`,
+        orientacoes_pos: record.recomendacoes || "",
+        medicamentos: record.medicamentos || "",
+        alergias: record.alergias || "",
+        profissional: record.profissional || "Dra. Paloma Betoni",
+        data_registro: now,
+      });
+
+      // Registrar financeiro no DossieFinanceiro para aparecer na aba Financeiro do Dossiê
+      const isInstallmentFin = payment.method === "installments";
+      const numParcelasFin = isInstallmentFin ? (payment.installments || 2) : 1;
+      await base44.entities.DossieFinanceiro.create({
+        patient_id: patient.id,
+        patient_name: patient.full_name,
+        procedimento: nome,
+        valor_total: valorCliente,
+        entrada: valorCliente,
+        num_parcelas: numParcelasFin,
+        forma_pagamento: payment.method === "installments" ? "cartao_credito" : (payment.method === "credit_card" ? "cartao_credito" : payment.method === "debit_card" ? "cartao_debito" : payment.method === "cash" ? "dinheiro" : payment.method || "outro"),
+        status_financeiro: "pago_integral",
+        data_pagamento: now.split("T")[0],
+        observacoes: payment.notes || "",
+      });
+
       queryClient.invalidateQueries({ queryKey: ["patient-treatments"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dossie-evolucao"] });
+      queryClient.invalidateQueries({ queryKey: ["dossie-financeiro"] });
       toast.success("Tratamento registrado com sucesso!");
       onSuccess?.();
       onClose();
