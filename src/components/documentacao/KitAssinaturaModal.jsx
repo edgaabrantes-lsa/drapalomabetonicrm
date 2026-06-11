@@ -23,6 +23,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState("revisao"); // revisao | assinatura | confirmacao
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
+  const [pdfGerado, setPdfGerado] = useState(false);
 
   const now = new Date();
   const dataFormatada = now.toLocaleDateString("pt-BR");
@@ -155,17 +156,63 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         }
       }
 
-      // 4. Log
+      // 4. Gerar PDF final assinado e salvar no storage
+      let pdfFinalUrl = null;
+      let pdfFinalNome = null;
+      try {
+        const nomeArquivo = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}_Assinado_${now.toISOString().slice(0,10)}.pdf`;
+        const pdfResp = await base44.functions.invoke("gerarKitDocumental", {
+          kit_id: kit.id,
+          patient_id: patient.id,
+          assinatura_id: assinaturaCriada.id,
+        });
+        // O SDK pode retornar o PDF como Blob, ArrayBuffer ou base64
+        let pdfBlob = null;
+        const pdfData = pdfResp?.data;
+        if (pdfData instanceof Blob) {
+          pdfBlob = pdfData;
+        } else if (pdfData instanceof ArrayBuffer) {
+          pdfBlob = new Blob([pdfData], { type: "application/pdf" });
+        } else if (typeof pdfData === "string" && pdfData.length > 100) {
+          try {
+            const byteChars = atob(pdfData);
+            const byteNums = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+            pdfBlob = new Blob([byteNums], { type: "application/pdf" });
+          } catch { /* não é base64 válido */ }
+        }
+        if (pdfBlob && pdfBlob.size > 1000) {
+          const pdfFile = new File([pdfBlob], nomeArquivo, { type: "application/pdf" });
+          const uploadPdf = await base44.integrations.Core.UploadFile({ file: pdfFile });
+          if (uploadPdf?.file_url) {
+            pdfFinalUrl = uploadPdf.file_url;
+            pdfFinalNome = nomeArquivo;
+          }
+        }
+      } catch (pdfErr) {
+        console.warn("PDF final não gerado após assinatura:", pdfErr.message);
+      }
+
+      // 5. Atualizar kit com pdf_final_url (se gerado)
+      if (pdfFinalUrl) {
+        await base44.entities.DossieKitDocumental.update(kit.id, {
+          pdf_final_url: pdfFinalUrl,
+          pdf_file_name: pdfFinalNome,
+        });
+      }
+
+      // 6. Log
       await base44.entities.DossieLog.create({
         patient_id: patient.id,
         patient_name: patient.full_name,
         acao: `Kit Documental assinado: ${kit.kit_nome || kit.procedimento_nome}`,
         tipo: "documento",
         usuario: currentUser?.full_name || "Sistema",
-        descricao: `Hash: ${documentoHash} | Assinante: ${assinanteNome} | CPF: ${assinanteCpf}`,
+        descricao: `Hash: ${documentoHash} | Assinante: ${assinanteNome} | CPF: ${assinanteCpf}${pdfFinalUrl ? " | PDF final gerado" : " | PDF pendente"}`,
         data_hora: now.toISOString(),
       });
 
+      setPdfGerado(!!pdfFinalUrl);
       setStep("confirmacao");
       setTimeout(() => { if (onAssinado) onAssinado(assinaturaCriada); }, 200);
     } catch (error) {
@@ -417,11 +464,20 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
               <p style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
                 Assinante: {assinanteNome}
               </p>
-              <p style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, marginBottom: 20 }}>
+              <p style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, marginBottom: 12 }}>
                 {dataFormatada} às {horaFormatada}
               </p>
+              {pdfGerado ? (
+                <p style={{ fontFamily: T.font, fontSize: 12, color: "#22C55E", marginBottom: 20 }}>
+                  ✓ PDF final assinado gerado e salvo com sucesso. Use "Baixar PDF" no card do kit.
+                </p>
+              ) : (
+                <p style={{ fontFamily: T.font, fontSize: 12, color: "#F59E0B", marginBottom: 20 }}>
+                  ⚠ Assinatura salva. O PDF final não foi gerado automaticamente. Use "Baixar PDF" no card do kit para gerar agora.
+                </p>
+              )}
               <p style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted, marginBottom: 20 }}>
-                Todos os documentos incluídos foram atualizados para <strong style={{ color: "#22C55E" }}>assinado pelo kit</strong>.
+                Todos os documentos foram atualizados para <strong style={{ color: "#22C55E" }}>assinado pelo kit</strong>.
               </p>
               <button onClick={onClose} style={{ ...S.btnPrimary, minWidth: 160 }}>Fechar</button>
             </div>

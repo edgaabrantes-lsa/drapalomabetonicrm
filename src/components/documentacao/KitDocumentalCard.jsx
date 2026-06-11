@@ -19,8 +19,24 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
   const isAssinado = ["assinado", "pdf_externo_anexado"].includes(kit.status);
   const podeAssinar = ["gerado", "em_revisao", "aguardando_assinatura"].includes(kit.status);
   const podeAnexar = !["assinado"].includes(kit.status);
+  const precisaRegerarPdf = isAssinado && !kit.pdf_final_url;
+
+  // Retorna a melhor URL disponível do kit
+  function getKitPdfUrl() {
+    if (isAssinado) return kit.pdf_final_url || kit.pdf_url || null;
+    return kit.pdf_url || kit.pdf_final_url || null;
+  }
 
   async function handleBaixarPdf() {
+    const urlSalva = getKitPdfUrl();
+
+    // Se já tem URL persistida no storage, abrir diretamente
+    if (urlSalva) {
+      window.open(urlSalva, "_blank");
+      return;
+    }
+
+    // Sem URL salva: gerar PDF via função backend, salvar e baixar
     setBaixandoPdf(true);
     try {
       const response = await base44.functions.invoke("gerarKitDocumental", {
@@ -29,31 +45,47 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
         assinatura_id: kit.assinatura_id || null,
       });
 
-      // response.data pode ser ArrayBuffer, Blob ou base64 string dependendo do axios responseType
-      let blob;
-      const data = response.data;
+      let pdfBlob = null;
+      const data = response?.data;
       if (data instanceof Blob) {
-        blob = data;
+        pdfBlob = data;
       } else if (data instanceof ArrayBuffer) {
-        blob = new Blob([data], { type: "application/pdf" });
-      } else if (typeof data === "string") {
-        // base64 ou texto — tentar como base64
-        const byteChars = atob(data);
-        const byteNums = new Array(byteChars.length).fill(0).map((_, i) => byteChars.charCodeAt(i));
-        blob = new Blob([new Uint8Array(byteNums)], { type: "application/pdf" });
-      } else {
-        // objeto com erro
-        throw new Error(data?.error || "Resposta inesperada do servidor");
+        pdfBlob = new Blob([data], { type: "application/pdf" });
+      } else if (typeof data === "string" && data.length > 100) {
+        try {
+          const byteChars = atob(data);
+          const byteNums = new Uint8Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+          pdfBlob = new Blob([byteNums], { type: "application/pdf" });
+        } catch { /* não é base64 */ }
       }
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (!pdfBlob || pdfBlob.size < 1000) {
+        throw new Error(data?.error || "PDF gerado está vazio ou inválido.");
+      }
+
+      // Salvar no storage e persistir URL
+      const nomeArq = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}_${isAssinado ? "Assinado" : "Pendente"}.pdf`;
+      const pdfFile = new File([pdfBlob], nomeArq, { type: "application/pdf" });
+      const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
+
+      if (uploadRes?.file_url) {
+        // Persistir no kit para próximas consultas
+        const updateField = isAssinado ? { pdf_final_url: uploadRes.file_url, pdf_file_name: nomeArq } : { pdf_url: uploadRes.file_url, pdf_file_name: nomeArq };
+        await base44.entities.DossieKitDocumental.update(kit.id, updateField);
+        window.open(uploadRes.file_url, "_blank");
+        if (onRefresh) onRefresh();
+      } else {
+        // Fallback: download local via blob URL
+        const tempUrl = URL.createObjectURL(pdfBlob);
+        const a = document.createElement("a");
+        a.href = tempUrl;
+        a.download = nomeArq;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(tempUrl);
+      }
     } catch (error) {
       console.error("Erro ao baixar PDF:", error);
       alert("Erro ao gerar PDF: " + error.message);
@@ -201,12 +233,24 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
               </button>
             )}
 
-            <button
-              onClick={() => onRegerar && onRegerar(kit)}
-              style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}
-            >
-              <RotateCcw size={13} /> Regerar Kit
-            </button>
+            {precisaRegerarPdf && (
+              <button
+                onClick={handleBaixarPdf}
+                disabled={baixandoPdf}
+                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#F59E0B", color: "#F59E0B", opacity: baixandoPdf ? 0.5 : 1 }}
+              >
+                <RotateCcw size={13} /> {baixandoPdf ? "Gerando..." : "Regerar PDF Final"}
+              </button>
+            )}
+
+            {!isAssinado && (
+              <button
+                onClick={() => onRegerar && onRegerar(kit)}
+                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}
+              >
+                <RotateCcw size={13} /> Regerar Kit
+              </button>
+            )}
 
             <button
               onClick={() => setShowHistorico(!showHistorico)}
@@ -242,6 +286,20 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Aviso PDF ausente */}
+          {precisaRegerarPdf && (
+            <div style={{
+              display: "flex", alignItems: "flex-start", gap: 8, marginTop: 8,
+              background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)",
+              borderRadius: 6, padding: "8px 12px",
+            }}>
+              <AlertTriangle size={13} style={{ color: "#F59E0B", flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontFamily: T.font, fontSize: 12, color: "#F59E0B" }}>
+                Kit assinado, mas o PDF final não foi salvo. Clique em <strong>Regerar PDF Final</strong> para gerar e persistir o PDF assinado.
+              </span>
             </div>
           )}
 
