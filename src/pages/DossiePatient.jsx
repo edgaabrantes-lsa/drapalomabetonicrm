@@ -4,29 +4,20 @@ import { useQuery } from "@tanstack/react-query";
 import { T, S, STATUS_DOSSIE } from "@/lib/designTokens";
 import { ChevronLeft, Search, Menu, X } from "lucide-react";
 
-import DossieCadastro         from "@/components/dossie/DossieCadastro";
-import DossieProntuario        from "@/components/dossie/DossieProntuario";
-import DossieImagensArquivos   from "@/components/dossie/DossieImagensArquivos";
-import DossieDocumentacao      from "@/components/dossie/DossieDocumentacao";
-import DossieFinanceiroTab     from "@/components/dossie/DossieFinanceiroTab";
-import DossieContratos         from "@/components/dossie/DossieContratos";
-import DossieObservacoes       from "@/components/dossie/DossieObservacoes";
-import StatusDocumental        from "@/components/governanca/StatusDocumental";
-import HistoricoAssinaturas    from "@/components/governanca/HistoricoAssinaturas";
-import RelatorioConformidade   from "@/components/governanca/RelatorioConformidade";
+import DossieCadastro              from "@/components/dossie/DossieCadastro";
+import DossieProntuario             from "@/components/dossie/DossieProntuario";
+import DossieImagensArquivos        from "@/components/dossie/DossieImagensArquivos";
+import DossieFinanceiroTab          from "@/components/dossie/DossieFinanceiroTab";
+import DossieObservacoes            from "@/components/dossie/DossieObservacoes";
+import DossieDocumentacaoNew        from "@/components/documentacao/DossieDocumentacaoNew";
 
 const ABAS = [
-  { id: "cadastro",            label: "Cadastro" },
-  { id: "prontuario",          label: "Prontuário" },
-  { id: "fotos",               label: "Fotos" },
-  { id: "juridico",            label: "Jurídico" },
-  { id: "status_documental",   label: "Status Doc." },
-  { id: "assinaturas",         label: "Assinaturas" },
-  { id: "financeiro",          label: "Financeiro" },
-  { id: "contratos_gerados",   label: "Contratos" },
-  { id: "contratos_assinados", label: "Assinados" },
-  { id: "observacoes",         label: "Obs." },
-  { id: "conformidade",        label: "Conformidade" },
+  { id: "cadastro",       label: "Cadastro" },
+  { id: "prontuario",     label: "Prontuário" },
+  { id: "fotos",          label: "Fotos" },
+  { id: "financeiro",     label: "Financeiro" },
+  { id: "documentacao",   label: "Documentação" },
+  { id: "observacoes",    label: "Observações" },
 ];
 
 export default function DossiePatient() {
@@ -320,17 +311,12 @@ export default function DossiePatient() {
 
               <div className="w-full max-w-full min-w-0 flex-1 overflow-y-auto" style={{ padding: "max(12px, 1.5vw)", backgroundColor: T.bgPrimary }}>
                 <div className="w-full max-w-full min-w-0">
-                  {activeTab === "cadastro"            && <DossieCadastro patient={selectedPatient} onPatientUpdate={() => {}} />}
-                  {activeTab === "prontuario"          && <DossieProntuario patient={selectedPatient} currentUser={currentUser} />}
-                  {activeTab === "fotos"               && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
-                  {activeTab === "juridico"            && <DossieDocumentacao patient={selectedPatient} currentUser={currentUser} />}
-                  {activeTab === "financeiro"          && <DossieFinanceiroTab patient={selectedPatient} currentUser={currentUser} />}
-                  {activeTab === "contratos_gerados"   && <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="gerados" />}
-                  {activeTab === "contratos_assinados" && <DossieContratos patient={selectedPatient} currentUser={currentUser} mode="assinados" />}
-                  {activeTab === "observacoes"         && <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />}
-                  {activeTab === "status_documental"   && <StatusDocumental patient={selectedPatient} />}
-                  {activeTab === "assinaturas"         && <HistoricoAssinaturas patient={selectedPatient} />}
-                  {activeTab === "conformidade"        && <RelatorioConformidade patient={selectedPatient} />}
+                  {activeTab === "cadastro"      && <DossieCadastro patient={selectedPatient} onPatientUpdate={() => {}} />}
+                  {activeTab === "prontuario"    && <DossieProntuario patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "fotos"         && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "financeiro"    && <DossieFinanceiroTab patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "documentacao"  && <DossieDocumentacaoNew patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "observacoes"   && <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />}
                 </div>
               </div>
             </div>
