@@ -23,28 +23,33 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
   async function handleBaixarPdf() {
     setBaixandoPdf(true);
     try {
-      // Usar fetch com token para receber o PDF como blob
-      const token = await base44.auth.getToken?.().catch(() => null);
-      const appId = import.meta.env.VITE_APP_ID || window.__APP_ID__;
-      const res = await fetch(`/api/functions/gerarKitDocumental`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ kit_id: kit.id, patient_id: patient.id, assinatura_id: kit.assinatura_id || null }),
+      const response = await base44.functions.invoke("gerarKitDocumental", {
+        kit_id: kit.id,
+        patient_id: patient.id,
+        assinatura_id: kit.assinatura_id || null,
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Erro ${res.status}`);
+      // response.data pode ser ArrayBuffer, Blob ou base64 string dependendo do axios responseType
+      let blob;
+      const data = response.data;
+      if (data instanceof Blob) {
+        blob = data;
+      } else if (data instanceof ArrayBuffer) {
+        blob = new Blob([data], { type: "application/pdf" });
+      } else if (typeof data === "string") {
+        // base64 ou texto — tentar como base64
+        const byteChars = atob(data);
+        const byteNums = new Array(byteChars.length).fill(0).map((_, i) => byteChars.charCodeAt(i));
+        blob = new Blob([new Uint8Array(byteNums)], { type: "application/pdf" });
+      } else {
+        // objeto com erro
+        throw new Error(data?.error || "Resposta inesperada do servidor");
       }
 
-      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/\s+/g, "_")}.pdf`;
+      a.download = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
