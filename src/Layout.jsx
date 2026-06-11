@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
+import { usePermissions } from "@/lib/PermissionsContext";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -62,6 +63,7 @@ const navigation = [
   { name: "Vigilância Sanitária",href: "VigilanciaPage",     icon: ShieldCheck,      group: "admin" },
   { name: "Config. da Clínica",  href: "ClinicSettingsPage", icon: Settings,         group: "admin" },
   { name: "Configurações",       href: "Settings",           icon: Settings,         group: "admin" },
+  { name: "Usuários",            href: "UsuariosPermissoes",  icon: Users,            group: "admin" },
 ];
 
 const SIDEBAR_W_OPEN   = 240;
@@ -76,6 +78,7 @@ export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser]             = useState(null);
   const [isLgScreen, setIsLgScreen] = useState(window.innerWidth >= 1024);
+  const { hasMenu } = usePermissions();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -197,7 +200,7 @@ export default function Layout({ children, currentPageName }) {
               { key: "admin",     label: "Administrativo" },
             ];
             return groups.map((group) => {
-              const items = navigation.filter(n => n.group === group.key);
+              const items = navigation.filter(n => n.group === group.key && hasMenu(n.href));
               return (
                 <div key={group.key}>
                   {!collapsed && (

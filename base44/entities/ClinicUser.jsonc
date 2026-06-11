@@ -1,0 +1,76 @@
+{
+  "name": "ClinicUser",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "cargo": {
+      "type": "string"
+    },
+    "perfil": {
+      "type": "string",
+      "enum": [
+        "super_admin",
+        "gestor",
+        "recepcao",
+        "profissional",
+        "financeiro",
+        "visualizacao"
+      ],
+      "default": "visualizacao"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo",
+        "bloqueado"
+      ],
+      "default": "ativo"
+    },
+    "foto_url": {
+      "type": "string"
+    },
+    "ultimo_acesso": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "criado_por": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome",
+    "email",
+    "perfil"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

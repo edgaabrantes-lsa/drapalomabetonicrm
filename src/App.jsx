@@ -13,6 +13,8 @@ import BeforeAfterIA from './pages/BeforeAfterIA.jsx';
 import DossiePatient from './pages/DossiePatient.jsx';
 import Governanca from './pages/Governanca.jsx';
 import ClinicSettingsPage from './pages/ClinicSettingsPage.jsx';
+import UsuariosPermissoes from './pages/UsuariosPermissoes.jsx';
+import { PermissionsProvider } from '@/lib/PermissionsContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -114,6 +116,13 @@ const AuthenticatedApp = () => {
           <ClinicSettingsPage />
         </LayoutWrapper>
       } />
+
+      {/* Usuários e Permissões */}
+      <Route path="/UsuariosPermissoes" element={
+        <LayoutWrapper currentPageName="UsuariosPermissoes">
+          <UsuariosPermissoes />
+        </LayoutWrapper>
+      } />
     </Routes>
   );
 };
@@ -125,7 +134,9 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <PermissionsProvider>
+            <AuthenticatedApp />
+          </PermissionsProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>
