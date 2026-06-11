@@ -68,10 +68,14 @@ const SIDEBAR_W_OPEN   = 240;
 const SIDEBAR_W_CLOSED = 60;
 const TOPBAR_H         = 56;
 
+// Contexto para que páginas filhas saibam a largura da sidebar (opcional, não obrigatório)
+
+
 export default function Layout({ children, currentPageName }) {
   const [collapsed, setCollapsed]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser]             = useState(null);
+  const [isLgScreen, setIsLgScreen] = useState(window.innerWidth >= 1024);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -79,10 +83,16 @@ export default function Layout({ children, currentPageName }) {
     document.documentElement.style.colorScheme = "dark";
   }, []);
 
+  useEffect(() => {
+    const handler = () => setIsLgScreen(window.innerWidth >= 1024);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   const sidebarWidth = collapsed ? SIDEBAR_W_CLOSED : SIDEBAR_W_OPEN;
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden" style={{ backgroundColor: "#0A0A0A", color: "#FFFFFF" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "#0A0A0A", color: "#FFFFFF", overflowX: "hidden" }}>
 
       {/* ── Mobile top bar ── */}
       <div
@@ -126,11 +136,11 @@ export default function Layout({ children, currentPageName }) {
       {/* ══ SIDEBAR ══ */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full flex flex-col glass-sidebar transition-all duration-200 ease-in-out lg:w-[240px]",
+          "fixed top-0 left-0 z-50 h-full flex flex-col glass-sidebar transition-[width,transform] duration-200 ease-in-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
         style={{
-          width: mobileOpen ? "min(240px, 85vw)" : sidebarWidth,
+          width: mobileOpen ? "min(240px, 85vw)" : (isLgScreen ? sidebarWidth : SIDEBAR_W_OPEN),
           borderRight: "1px solid #1E1E1E",
         }}
       >
@@ -346,10 +356,16 @@ export default function Layout({ children, currentPageName }) {
 
       {/* ══ MAIN CONTENT ══ */}
       <main
-        className="min-h-screen w-full max-w-full overflow-x-hidden lg:ml-[240px]"
-        style={{
-          paddingLeft: 0,
-          paddingTop: 0,
+        className="min-h-screen transition-[margin-left,width] duration-200 ease-in-out hidden-lg-override"
+        style={isLgScreen ? {
+          marginLeft: sidebarWidth,
+          width: `calc(100vw - ${sidebarWidth}px)`,
+          minWidth: 0,
+          maxWidth: `calc(100vw - ${sidebarWidth}px)`,
+        } : {
+          marginLeft: 0,
+          width: "100%",
+          minWidth: 0,
         }}
       >
         {/* ── Top bar — desktop ── */}
@@ -429,15 +445,15 @@ export default function Layout({ children, currentPageName }) {
 
         {/* ── Page content ── */}
         <div
-          className="min-h-[calc(100vh-56px)] w-full max-w-full overflow-x-hidden"
+          className="min-h-[calc(100vh-56px)] w-full overflow-x-auto overflow-y-auto"
           style={{
             backgroundColor: "#0A0A0A",
             padding: "max(16px, 2vw)",
           }}
         >
-          {/* Mobile padding */}
+          {/* Mobile top-bar spacer */}
           <div className="lg:hidden" style={{ height: 52 }} />
-          <div className="w-full max-w-full min-w-0">
+          <div className="min-w-0" style={{ minWidth: 0 }}>
             {children}
           </div>
         </div>

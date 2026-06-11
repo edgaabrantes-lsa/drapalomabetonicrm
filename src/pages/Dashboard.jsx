@@ -152,7 +152,7 @@ export default function Dashboard() {
   const fmt = (n) => `R$ ${n.toLocaleString("pt-BR")}`;
 
   return (
-    <div className="w-full max-w-full min-w-0 overflow-x-hidden" style={S.pageWrapper}>
+    <div className="w-full min-w-0" style={S.pageWrapper}>
 
       {/* ── Cabeçalho ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6" style={{ marginBottom: 20 }}>
