@@ -1,53 +1,41 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { T, S } from "@/lib/designTokens";
 import {
   CATEGORIAS_PROCEDIMENTO,
   getDocsParaProcedimento,
-  STATUS_DOC,
-  calcularStatusGeral,
 } from "./documentacaoConfig";
-import DocResumoCards from "./DocResumoCards";
-import DocCard from "./DocCard";
-import DocPendencias from "./DocPendencias";
-import DocRelatorioConformidade from "./DocRelatorioConformidade";
 import KitDocumentalModal from "./KitDocumentalModal";
+import KitDocumentalCard from "./KitDocumentalCard";
+import DocRelatorioConformidade from "./DocRelatorioConformidade";
+import DocCard from "./DocCard";
 import AssinaturaEletronicaModal from "@/components/governanca/AssinaturaEletronicaModal";
-import { Zap, Plus, RefreshCw, FileText, ClipboardList } from "lucide-react";
+import {
+  Zap, Plus, RefreshCw, FileText, ClipboardList, Package, History, ShieldCheck
+} from "lucide-react";
 
 const VIEWS = [
-  { id: "checklist", label: "Checklist" },
-  { id: "historico", label: "Histórico" },
-  { id: "conformidade", label: "Conformidade" },
+  { id: "kits",        label: "Kit Documental",  icon: Package },
+  { id: "historico",   label: "Documentos",       icon: FileText },
+  { id: "conformidade",label: "Conformidade",     icon: ShieldCheck },
 ];
 
 export default function DossieDocumentacaoNew({ patient, currentUser }) {
   const queryClient = useQueryClient();
-  const [categoria, setCategoria] = useState("");
-  const [viewAtual, setViewAtual] = useState("checklist");
+  const [viewAtual, setViewAtual] = useState("kits");
   const [showKit, setShowKit] = useState(false);
+  const [kitParaEditar, setKitParaEditar] = useState(null);
   const [assinaturaDoc, setAssinaturaDoc] = useState(null);
   const [showNovoDoc, setShowNovoDoc] = useState(false);
-  const [novoDoc, setNovoDoc] = useState({ nome: "", tipo: "contrato_mestre" });
+  const [novoDoc, setNovoDoc] = useState({ nome: "", tipo: "outro" });
   const [salvandoDoc, setSalvandoDoc] = useState(false);
 
-  // Auto-preencher nome do documento quando o tipo muda
-  const gerarNomeDoc = (tipo) => {
-    const proc = categoria ? (CATEGORIAS_PROCEDIMENTO[categoria]?.label || categoria) : "";
-    const nomeMap = {
-      contrato_mestre: `Contrato Mestre — ${patient.full_name}${proc ? " — " + proc : ""}`,
-      anexo_financeiro: `Anexo Financeiro — ${patient.full_name}${proc ? " — " + proc : ""}`,
-      termo_lgpd: `Termo LGPD — ${patient.full_name}`,
-      uso_imagem: `Termo de Uso de Imagem — ${patient.full_name}`,
-      consentimento: `Termo de Consentimento — ${patient.full_name}${proc ? " — " + proc : ""}`,
-      documento_identificacao: `Documento de Identificação — ${patient.full_name}`,
-      comprovante_pagamento: `Comprovante de Pagamento — ${patient.full_name}`,
-      prontuario_facial: `Prontuário Facial — ${patient.full_name}`,
-      outro: `Documento — ${patient.full_name}`,
-    };
-    return nomeMap[tipo] || `Documento — ${patient.full_name}`;
-  };
+  // Buscar kits documentais
+  const { data: kits = [] } = useQuery({
+    queryKey: ["kits-documentais", patient.id],
+    queryFn: () => base44.entities.DossieKitDocumental.filter({ patient_id: patient.id }, "-data_geracao", 50),
+  });
 
   const { data: documentos = [] } = useQuery({
     queryKey: ["dossie-docs", patient.id],
@@ -59,62 +47,50 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
     queryFn: () => base44.entities.DossieFinanceiro.filter({ patient_id: patient.id }, "-created_date", 20),
   });
 
-  // Buscar tratamentos do paciente para popular seletor de procedimentos
   const { data: tratamentos = [] } = useQuery({
     queryKey: ["patient-treatments", patient.id],
     queryFn: () => base44.entities.PatientTreatment.filter({ patient_id: patient.id }, "-created_date", 50),
   });
 
   const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["kits-documentais", patient.id] });
     queryClient.invalidateQueries({ queryKey: ["dossie-docs", patient.id] });
     queryClient.invalidateQueries({ queryKey: ["assinaturas", patient.id] });
   };
 
-  // Checklist: mescla docs esperados da categoria com docs existentes do banco
-  const checklist = useMemo(() => {
-    if (!categoria) {
-      // Sem categoria: exibir apenas o que já existe no banco
-      return documentos.map(d => ({
-        ...d,
-        status: d.status || "pendente",
-        obrigatorio: d.obrigatorio ?? false,
-      }));
-    }
+  // Ordenar kits: ativos primeiro, cancelados/substituídos por último
+  const kitsOrdenados = useMemo(() => {
+    const ativos = kits.filter(k => !["substituido","cancelado"].includes(k.status));
+    const inativos = kits.filter(k => ["substituido","cancelado"].includes(k.status));
+    return [...ativos, ...inativos];
+  }, [kits]);
 
-    const esperados = getDocsParaProcedimento(
-      categoria,
-      [] // tecnicas serão adicionadas depois via kit
-    );
+  // Conformidade geral
+  const conformidadeGeral = useMemo(() => {
+    if (kits.length === 0) return { pct: 0, label: "Sem Kit", color: T.textMuted };
+    const kitAtivo = kits.find(k => !["substituido","cancelado"].includes(k.status));
+    if (!kitAtivo) return { pct: 0, label: "Sem Kit Ativo", color: T.textMuted };
+    if (["assinado","pdf_externo_anexado"].includes(kitAtivo.status)) return { pct: 100, label: "Conforme", color: "#22C55E" };
+    if (kitAtivo.status === "aguardando_assinatura") return { pct: 75, label: "Aguardando Assinatura", color: "#F59E0B" };
+    if (kitAtivo.status === "gerado") return { pct: 50, label: "Kit Gerado", color: "#3B82F6" };
+    return { pct: 0, label: "Pendente", color: "#EF4444" };
+  }, [kits]);
 
-    return esperados.map(esp => {
-      const existente = documentos.find(d =>
-        d.tipo === esp.tipo &&
-        (!d.procedimento_nome || d.procedimento_nome === categoria || true)
-      );
-      if (existente) {
-        return { ...existente, nome: esp.nome, obrigatorio: esp.obrigatorio };
-      }
-      return { ...esp, status: "pendente", id: null };
-    });
-  }, [categoria, documentos]);
-
-  // Docs do histórico (todos do banco)
+  // Docs histórico (excluindo os "incluido_no_kit" que são apenas internos)
   const historicoCompleto = useMemo(() =>
-    [...documentos].sort((a, b) =>
-      new Date(b.data_geracao || b.created_date || 0) -
-      new Date(a.data_geracao || a.created_date || 0)
-    ),
-  [documentos]);
+    [...documentos]
+      .sort((a, b) => new Date(b.data_geracao || b.created_date || 0) - new Date(a.data_geracao || a.created_date || 0)),
+    [documentos]
+  );
 
   const handleSalvarNovoDoc = async () => {
-    const nomeDoc = novoDoc.nome || gerarNomeDoc(novoDoc.tipo);
-    if (!nomeDoc) return;
+    const nome = novoDoc.nome || `Documento — ${patient.full_name}`;
     setSalvandoDoc(true);
     try {
       await base44.entities.DossieDocumento.create({
         patient_id: patient.id,
         patient_name: patient.full_name,
-        nome: nomeDoc,
+        nome,
         tipo: novoDoc.tipo,
         status: "gerado",
         obrigatorio: false,
@@ -130,35 +106,16 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
     }
   };
 
-  // Verificar se template de contrato mestre existe
-  const { data: templates = [] } = useQuery({
-    queryKey: ["doc-templates-contrato"],
-    queryFn: () => base44.entities.DocumentoTemplate.filter({ tipo: "contrato_mestre", status: "ativo" }),
-  });
-  const temContrato = templates.length > 0;
-
   return (
     <div style={{ fontFamily: T.font }}>
-      {/* Aviso template faltando */}
-      {!temContrato && (
-        <div style={{
-          marginBottom: 16, padding: "10px 14px", borderRadius: 8,
-          background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)",
-          display: "flex", alignItems: "center", gap: 10,
-        }}>
-          <span style={{ fontSize: 13, color: "#F59E0B", fontFamily: T.font }}>
-            ⚠ Nenhum template de Contrato Mestre ativo encontrado.
-            Vá em <strong>Governança → Templates</strong> para criar ou ativar o Contrato Mestre Base.
-          </span>
-        </div>
-      )}
       {/* Modais */}
       {showKit && (
         <KitDocumentalModal
           patient={patient}
           financeiros={financeiros}
-          onClose={() => setShowKit(false)}
-          onKitGerado={() => { refresh(); setShowKit(false); }}
+          kitParaEditar={kitParaEditar}
+          onClose={() => { setShowKit(false); setKitParaEditar(null); }}
+          onKitGerado={() => { refresh(); setShowKit(false); setKitParaEditar(null); }}
         />
       )}
       {assinaturaDoc && (
@@ -172,132 +129,60 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
       )}
 
       {/* Cabeçalho */}
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: T.textPrimary, margin: 0 }}>
-          Documentação da Paciente
-        </h2>
-        <p style={{ fontFamily: T.font, fontSize: 13, color: T.textMuted, margin: "4px 0 0" }}>
-          Gere, assine, anexe e acompanhe todos os documentos obrigatórios por procedimento.
-        </p>
-      </div>
-
-      {/* Bloco 1 — Resumo */}
-      <DocResumoCards checklist={checklist} />
-
-      {/* Bloco 2 — Selecionar Procedimento + Ações */}
-      <div style={{
-        background: T.card, border: `1px solid ${T.border}`, borderRadius: 8,
-        padding: "14px 16px", marginBottom: 16,
-        display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end",
-      }}>
-        <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-          <p style={{ ...S.label, marginBottom: 6 }}>Procedimento / Protocolo</p>
-          <select
-            value={categoria}
-            onChange={e => setCategoria(e.target.value)}
-            style={{ ...S.input, width: "100%" }}
-          >
-            <option value="">— Selecione o procedimento —</option>
-            {tratamentos.length > 0 && (
-              <optgroup label="Procedimentos da Paciente">
-                {[...new Map(tratamentos.map(t => [t.protocolo_nome, t])).values()].map((t, i) => {
-                  // Mapear para categoria
-                  const catKey = t.categoria || "outro";
-                  return (
-                    <option key={`pt-${i}`} value={catKey}>
-                      ★ {t.protocolo_nome}
-                    </option>
-                  );
-                })}
-              </optgroup>
-            )}
-            <optgroup label="Todos os Procedimentos">
-              {Object.entries(CATEGORIAS_PROCEDIMENTO).map(([k, v]) => (
-                <option key={k} value={k}>{v.icon} {v.label}</option>
-              ))}
-            </optgroup>
-          </select>
+      <div style={{ marginBottom: 20, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: T.textPrimary, margin: 0 }}>
+            Documentação da Paciente
+          </h2>
+          <p style={{ fontFamily: T.font, fontSize: 13, color: T.textMuted, margin: "4px 0 0" }}>
+            Gere, revise, assine e arquive o kit documental completo de cada procedimento.
+          </p>
         </div>
-        <button
-          onClick={() => setShowKit(true)}
-          style={{ ...S.btnPrimary, display: "flex", alignItems: "center", gap: 6, height: 38 }}
-        >
-          <Zap style={{ width: 14, height: 14 }} /> Gerar Kit Documental
-        </button>
-        <button
-          onClick={() => setShowNovoDoc(!showNovoDoc)}
-          style={{ ...S.btnGhost, display: "flex", alignItems: "center", gap: 6, height: 38 }}
-        >
-          <Plus style={{ width: 14, height: 14 }} /> Adicionar Documento
-        </button>
-        <button
-          onClick={refresh}
-          style={{ ...S.btnGhost, height: 38, display: "flex", alignItems: "center", gap: 6 }}
-        >
-          <RefreshCw style={{ width: 13, height: 13 }} /> Atualizar
-        </button>
-      </div>
 
-      {/* Form novo documento */}
-      {showNovoDoc && (
+        {/* Conformidade */}
         <div style={{
           background: T.card, border: `1px solid ${T.border}`, borderRadius: 8,
-          padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 12,
+          padding: "10px 16px", textAlign: "right",
         }}>
-          <p style={{ fontFamily: T.font, fontSize: 13, fontWeight: 600, color: T.textPrimary, margin: 0 }}>
-            Novo Documento Avulso
+          <p style={{ fontFamily: T.font, fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>
+            Conformidade Documental
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div>
-              <p style={{ ...S.label, marginBottom: 4 }}>Tipo</p>
-              <select
-                value={novoDoc.tipo}
-                onChange={e => {
-                  const newTipo = e.target.value;
-                  setNovoDoc(p => ({ ...p, tipo: newTipo, nome: gerarNomeDoc(newTipo) }));
-                }}
-                style={{ ...S.input, width: "100%" }}
-              >
-                <option value="contrato_mestre">Contrato Mestre</option>
-                <option value="anexo_financeiro">Anexo Financeiro</option>
-                <option value="termo_lgpd">Termo LGPD</option>
-                <option value="uso_imagem">Uso de Imagem</option>
-                <option value="consentimento">Consentimento</option>
-                <option value="documento_identificacao">Doc. Identificação</option>
-                <option value="comprovante_pagamento">Comprovante de Pagamento</option>
-                <option value="prontuario_facial">Prontuário Facial</option>
-                <option value="outro">Outro</option>
-              </select>
-            </div>
-            <div>
-              <p style={{ ...S.label, marginBottom: 4 }}>Nome do Documento *</p>
-              <input
-                value={novoDoc.nome || gerarNomeDoc(novoDoc.tipo)}
-                onChange={e => setNovoDoc(p => ({ ...p, nome: e.target.value }))}
-                placeholder="Nome do documento"
-                style={{ ...S.input, width: "100%" }}
-              />
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button onClick={() => setShowNovoDoc(false)} style={{ ...S.btnGhost, fontSize: 12 }}>
-              Cancelar
-            </button>
-            <button
-              onClick={handleSalvarNovoDoc}
-              disabled={salvandoDoc}
-              style={{ ...S.btnPrimary, fontSize: 12, opacity: !salvandoDoc ? 1 : 0.5 }}
-            >
-              {salvandoDoc ? "Salvando..." : "Salvar Documento"}
-            </button>
-          </div>
+          <span style={{ fontFamily: T.font, fontSize: 22, fontWeight: 700, color: conformidadeGeral.color }}>
+            {conformidadeGeral.pct}%
+          </span>
+          <p style={{ fontFamily: T.font, fontSize: 10, color: conformidadeGeral.color }}>{conformidadeGeral.label}</p>
         </div>
-      )}
+      </div>
 
-      {/* Abas internas */}
+      {/* Ação principal */}
       <div style={{
-        display: "flex", gap: 0, borderBottom: `1px solid ${T.border}`, marginBottom: 16,
+        background: T.bgSecondary, border: `1px solid ${T.goldBorder}`,
+        borderRadius: 8, padding: "14px 16px", marginBottom: 20,
+        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
       }}>
+        <div>
+          <p style={{ fontFamily: T.font, fontSize: 14, fontWeight: 600, color: T.textPrimary, marginBottom: 2 }}>
+            Kit Documental Único
+          </p>
+          <p style={{ fontFamily: T.font, fontSize: 12, color: T.textMuted }}>
+            Selecione o procedimento, gere o kit, assine uma única vez. Simples assim.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            onClick={() => { setKitParaEditar(null); setShowKit(true); }}
+            style={{ ...S.btnPrimary, display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <Zap size={14} /> Gerar Kit Documental
+          </button>
+          <button onClick={refresh} style={{ ...S.btnGhost, display: "flex", alignItems: "center", gap: 6 }}>
+            <RefreshCw size={13} /> Atualizar
+          </button>
+        </div>
+      </div>
+
+      {/* Abas */}
+      <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${T.border}`, marginBottom: 20 }}>
         {VIEWS.map(v => (
           <button
             key={v.id}
@@ -307,66 +192,138 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
               color: viewAtual === v.id ? T.textPrimary : T.textMuted,
               padding: "8px 16px", border: "none", background: "transparent", cursor: "pointer",
               borderBottom: viewAtual === v.id ? `2px solid ${T.gold}` : "2px solid transparent",
-              transition: "all 0.15s",
+              transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6,
             }}
           >
+            <v.icon size={13} />
             {v.label}
           </button>
         ))}
       </div>
 
-      {/* VIEW: CHECKLIST */}
-      {viewAtual === "checklist" && (
+      {/* VIEW: KITS */}
+      {viewAtual === "kits" && (
         <div>
-          <DocPendencias checklist={checklist} />
-
-          {checklist.length === 0 && (
-            <div style={{ textAlign: "center", padding: "48px 0", color: T.textMuted }}>
-              <ClipboardList style={{ width: 40, height: 40, color: T.textMuted, marginBottom: 12 }} />
-              <p style={{ fontFamily: T.font, fontSize: 14, margin: 0 }}>
-                {categoria
-                  ? "Nenhum documento encontrado. Clique em \"Gerar Kit Documental\"."
-                  : "Selecione um procedimento para ver o checklist documental."}
+          {kitsOrdenados.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "56px 0" }}>
+              <Package size={48} style={{ color: T.textMuted, marginBottom: 16 }} />
+              <p style={{ fontFamily: T.font, fontSize: 15, fontWeight: 600, color: T.textPrimary, marginBottom: 8 }}>
+                Nenhum Kit Documental gerado ainda
               </p>
+              <p style={{ fontFamily: T.font, fontSize: 13, color: T.textMuted, marginBottom: 24 }}>
+                Clique em "Gerar Kit Documental" para iniciar o fluxo de assinatura única.
+              </p>
+              <button
+                onClick={() => { setKitParaEditar(null); setShowKit(true); }}
+                style={{ ...S.btnPrimary, display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <Zap size={14} /> Gerar Primeiro Kit
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {kitsOrdenados.map(kit => (
+                <div key={kit.id} style={{ opacity: ["substituido","cancelado"].includes(kit.status) ? 0.5 : 1 }}>
+                  {["substituido","cancelado"].includes(kit.status) && (
+                    <p style={{ fontFamily: T.font, fontSize: 10, color: T.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      Kit inativo
+                    </p>
+                  )}
+                  <KitDocumentalCard
+                    kit={kit}
+                    patient={patient}
+                    currentUser={currentUser}
+                    onRefresh={refresh}
+                    onRegerar={(k) => { setKitParaEditar(k); setShowKit(true); }}
+                  />
+                </div>
+              ))}
             </div>
           )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {checklist.map((doc, i) => (
-              <DocCard
-                key={doc.id || `pending-${i}`}
-                doc={doc}
-                patient={patient}
-                currentUser={currentUser}
-                onAssinar={d => setAssinaturaDoc({ ...d, versao: String(d.versao || "1.0") })}
-                onRefresh={refresh}
-              />
-            ))}
-          </div>
         </div>
       )}
 
-      {/* VIEW: HISTÓRICO */}
+      {/* VIEW: DOCUMENTOS INDIVIDUAIS (HISTÓRICO) */}
       {viewAtual === "historico" && (
         <div>
-          {historicoCompleto.length === 0 && (
-            <div style={{ textAlign: "center", padding: "48px 0", color: T.textMuted }}>
-              <FileText style={{ width: 40, height: 40, color: T.textMuted, marginBottom: 12 }} />
-              <p style={{ fontFamily: T.font, fontSize: 14, margin: 0 }}>Nenhum documento registrado.</p>
+          <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <p style={{ fontFamily: T.font, fontSize: 13, color: T.textMuted }}>
+              Documentos individuais (gerados automaticamente pelo kit ou adicionados manualmente)
+            </p>
+            <button
+              onClick={() => setShowNovoDoc(!showNovoDoc)}
+              style={{ ...S.btnGhost, fontSize: 12, height: 32, display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <Plus size={12} /> Adicionar Avulso
+            </button>
+          </div>
+
+          {showNovoDoc && (
+            <div style={{
+              background: T.card, border: `1px solid ${T.border}`, borderRadius: 8,
+              padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 12,
+            }}>
+              <p style={{ fontFamily: T.font, fontSize: 13, fontWeight: 600, color: T.textPrimary, margin: 0 }}>
+                Novo Documento Avulso
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <p style={{ ...S.label, marginBottom: 4 }}>Tipo</p>
+                  <select value={novoDoc.tipo} onChange={e => setNovoDoc(p => ({ ...p, tipo: e.target.value }))} style={{ ...S.input, width: "100%" }}>
+                    <option value="contrato_mestre">Contrato Mestre</option>
+                    <option value="anexo_financeiro">Anexo Financeiro</option>
+                    <option value="termo_lgpd">Termo LGPD</option>
+                    <option value="uso_imagem">Uso de Imagem</option>
+                    <option value="consentimento">Consentimento</option>
+                    <option value="documento_identificacao">Doc. Identificação</option>
+                    <option value="comprovante_pagamento">Comprovante de Pagamento</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </div>
+                <div>
+                  <p style={{ ...S.label, marginBottom: 4 }}>Nome *</p>
+                  <input
+                    value={novoDoc.nome}
+                    onChange={e => setNovoDoc(p => ({ ...p, nome: e.target.value }))}
+                    placeholder={`Documento — ${patient.full_name}`}
+                    style={{ ...S.input, width: "100%" }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button onClick={() => setShowNovoDoc(false)} style={{ ...S.btnGhost, fontSize: 12 }}>Cancelar</button>
+                <button
+                  onClick={handleSalvarNovoDoc}
+                  disabled={salvandoDoc}
+                  style={{ ...S.btnPrimary, fontSize: 12, opacity: !salvandoDoc ? 1 : 0.5 }}
+                >
+                  {salvandoDoc ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {historicoCompleto.map((doc, i) => (
-              <DocCard
-                key={doc.id || i}
-                doc={doc}
-                patient={patient}
-                currentUser={currentUser}
-                onAssinar={d => setAssinaturaDoc({ ...d, versao: String(d.versao || "1.0") })}
-                onRefresh={refresh}
-              />
-            ))}
-          </div>
+
+          {historicoCompleto.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: T.textMuted }}>
+              <FileText size={36} style={{ color: T.textMuted, marginBottom: 12 }} />
+              <p style={{ fontFamily: T.font, fontSize: 13 }}>
+                Nenhum documento registrado. Os documentos aparecem aqui após a geração do Kit.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {historicoCompleto.map((doc, i) => (
+                <DocCard
+                  key={doc.id || i}
+                  doc={doc}
+                  patient={patient}
+                  currentUser={currentUser}
+                  onAssinar={d => setAssinaturaDoc({ ...d, versao: String(d.versao || "1.0") })}
+                  onRefresh={refresh}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -374,8 +331,10 @@ export default function DossieDocumentacaoNew({ patient, currentUser }) {
       {viewAtual === "conformidade" && (
         <DocRelatorioConformidade
           patient={patient}
-          checklist={checklist.length > 0 ? checklist : historicoCompleto}
-          procedimento={categoria ? CATEGORIAS_PROCEDIMENTO[categoria]?.label : null}
+          kits={kits}
+          checklist={historicoCompleto}
+          procedimento={null}
+          conformidadeGeral={conformidadeGeral}
         />
       )}
     </div>

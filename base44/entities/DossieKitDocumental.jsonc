@@ -1,5 +1,5 @@
 {
-  "name": "DossieDocumento",
+  "name": "DossieKitDocumental",
   "type": "object",
   "properties": {
     "patient_id": {
@@ -14,80 +14,122 @@
     "procedimento_nome": {
       "type": "string"
     },
+    "protocolo_id": {
+      "type": "string"
+    },
+    "protocolo_nome": {
+      "type": "string"
+    },
     "financeiro_id": {
       "type": "string"
     },
-    "template_id": {
+    "kit_nome": {
       "type": "string"
     },
-    "kit_id": {
-      "type": "string"
-    },
-    "nome": {
-      "type": "string"
-    },
-    "tipo": {
+    "kit_tipo": {
       "type": "string",
       "enum": [
-        "contrato_mestre",
-        "anexo_financeiro",
-        "consentimento",
-        "consentimento_toxina",
-        "consentimento_preenchimento",
-        "consentimento_bioestimulador",
-        "consentimento_fios",
-        "consentimento_pele",
-        "consentimento_corporal",
-        "consentimento_full_face",
-        "consentimento_labios",
-        "consentimento_mandibula",
-        "consentimento_mento",
-        "consentimento_olheiras",
-        "consentimento_rinomodelacao",
-        "termo_lgpd",
-        "uso_imagem",
-        "documento_identificacao",
-        "comprovante_pagamento",
-        "prontuario_facial",
-        "contrato_assinado",
+        "procedimento_unico",
+        "protocolo",
+        "pacote",
+        "full_face",
+        "avaliacao",
         "outro"
-      ]
+      ],
+      "default": "procedimento_unico"
+    },
+    "categoria": {
+      "type": "string"
+    },
+    "tecnicas_full_face": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "status": {
       "type": "string",
       "enum": [
-        "pendente",
+        "nao_gerado",
         "gerado",
+        "em_revisao",
         "aguardando_assinatura",
-        "assinado_internamente",
-        "pdf_anexado",
-        "aprovado",
+        "assinado",
+        "pdf_externo_anexado",
         "substituido",
-        "cancelado",
-        "expirado",
-        "incluido_no_kit",
-        "assinado_pelo_kit",
-        "anexado_no_kit",
-        "pendente_no_kit"
+        "cancelado"
       ],
-      "default": "pendente"
+      "default": "nao_gerado"
     },
-    "obrigatorio": {
-      "type": "boolean",
-      "default": false
+    "documentos_incluidos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "documento_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
     },
-    "versao": {
-      "type": "string",
-      "default": "1.0"
+    "documentos_obrigatorios": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
-    "file_url": {
+    "documentos_pendentes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "pdf_url": {
       "type": "string"
     },
-    "file_name": {
+    "pdf_file_name": {
+      "type": "string"
+    },
+    "pdf_final_url": {
       "type": "string"
     },
     "assinatura_id": {
       "type": "string"
+    },
+    "assinatura_status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "assinado",
+        "externo",
+        "cancelado"
+      ],
+      "default": "pendente"
+    },
+    "origem_assinatura": {
+      "type": "string",
+      "enum": [
+        "assinatura_interna",
+        "upload_manual",
+        "autentique",
+        "docusign",
+        "clicksign",
+        "zapsign",
+        "cartorio",
+        "outro"
+      ]
     },
     "data_geracao": {
       "type": "string",
@@ -101,13 +143,17 @@
       "type": "string",
       "format": "date-time"
     },
-    "origem_assinatura": {
+    "gerado_por": {
       "type": "string"
     },
-    "criado_por": {
+    "assinado_por": {
       "type": "string"
     },
-    "aprovado_por": {
+    "versao": {
+      "type": "string",
+      "default": "1.0"
+    },
+    "hash": {
       "type": "string"
     },
     "observacoes": {
@@ -132,12 +178,17 @@
           }
         }
       }
+    },
+    "clinic_id": {
+      "type": "string"
+    },
+    "clinic_name": {
+      "type": "string"
     }
   },
   "required": [
     "patient_id",
-    "nome",
-    "tipo"
+    "procedimento_nome"
   ],
   "rls": {
     "create": {

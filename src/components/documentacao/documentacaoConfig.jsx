@@ -83,6 +83,11 @@ export const STATUS_DOC = {
   substituido:          { label: "Substituído",          color: "#F97316", bg: "rgba(249,115,22,0.12)" },
   cancelado:            { label: "Cancelado",            color: "#EF4444", bg: "rgba(239,68,68,0.12)"  },
   expirado:             { label: "Expirado",             color: "#DC2626", bg: "rgba(220,38,38,0.12)"  },
+  // Novos status de kit
+  incluido_no_kit:      { label: "Incluído no Kit",     color: "#3B82F6", bg: "rgba(59,130,246,0.10)" },
+  assinado_pelo_kit:    { label: "Assinado pelo Kit",   color: "#22C55E", bg: "rgba(34,197,94,0.10)"  },
+  anexado_no_kit:       { label: "Anexado no Kit",      color: "#10B981", bg: "rgba(16,185,129,0.10)" },
+  pendente_no_kit:      { label: "Pendente no Kit",     color: "#F59E0B", bg: "rgba(245,158,11,0.10)" },
 };
 
 export const ORIGENS_ASSINATURA = [
@@ -102,7 +107,7 @@ export function calcularStatusGeral(checklist) {
   if (obrigatorios.length === 0) return { label: "Pendente", color: "#F59E0B", pct: 0 };
 
   const concluidos = obrigatorios.filter(d =>
-    ["assinado_internamente", "pdf_anexado", "aprovado"].includes(d.status)
+    ["assinado_internamente", "pdf_anexado", "aprovado", "assinado_pelo_kit", "anexado_no_kit"].includes(d.status)
   ).length;
 
   const pct = Math.round((concluidos / obrigatorios.length) * 100);

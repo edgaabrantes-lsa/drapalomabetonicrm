@@ -39,15 +39,6 @@ export default function AssinaturaEletronicaModal({ documento, patient, currentU
     ctx.lineJoin = "round";
   }
 
-  function clearCanvas() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    // Limpar com fundo transparente — não usar fillRect com cor
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasSignature(false);
-  }
-
   function getPos(e, canvas) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
