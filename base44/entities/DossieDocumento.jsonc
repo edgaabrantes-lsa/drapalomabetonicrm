@@ -8,6 +8,18 @@
     "patient_name": {
       "type": "string"
     },
+    "procedimento_id": {
+      "type": "string"
+    },
+    "procedimento_nome": {
+      "type": "string"
+    },
+    "financeiro_id": {
+      "type": "string"
+    },
+    "template_id": {
+      "type": "string"
+    },
     "nome": {
       "type": "string"
     },
@@ -17,8 +29,23 @@
         "contrato_mestre",
         "anexo_financeiro",
         "consentimento",
+        "consentimento_toxina",
+        "consentimento_preenchimento",
+        "consentimento_bioestimulador",
+        "consentimento_fios",
+        "consentimento_pele",
+        "consentimento_corporal",
+        "consentimento_full_face",
+        "consentimento_labios",
+        "consentimento_mandibula",
+        "consentimento_mento",
+        "consentimento_olheiras",
+        "consentimento_rinomodelacao",
         "termo_lgpd",
         "uso_imagem",
+        "documento_identificacao",
+        "comprovante_pagamento",
+        "prontuario_facial",
         "contrato_assinado",
         "outro"
       ]
@@ -26,22 +53,25 @@
     "status": {
       "type": "string",
       "enum": [
-        "nao_gerado",
+        "pendente",
         "gerado",
-        "enviado_assinatura",
-        "assinado",
+        "aguardando_assinatura",
+        "assinado_internamente",
+        "pdf_anexado",
+        "aprovado",
         "substituido",
         "cancelado",
         "expirado"
       ],
-      "default": "nao_gerado"
+      "default": "pendente"
+    },
+    "obrigatorio": {
+      "type": "boolean",
+      "default": false
     },
     "versao": {
       "type": "string",
       "default": "1.0"
-    },
-    "procedimento_vinculado": {
-      "type": "string"
     },
     "file_url": {
       "type": "string"
@@ -49,7 +79,10 @@
     "file_name": {
       "type": "string"
     },
-    "data_criacao": {
+    "assinatura_id": {
+      "type": "string"
+    },
+    "data_geracao": {
       "type": "string",
       "format": "date-time"
     },
@@ -57,43 +90,37 @@
       "type": "string",
       "format": "date-time"
     },
+    "data_upload_externo": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origem_assinatura": {
+      "type": "string"
+    },
     "criado_por": {
+      "type": "string"
+    },
+    "aprovado_por": {
       "type": "string"
     },
     "observacoes": {
       "type": "string"
     },
-    "origem": {
-      "type": "string",
-      "enum": [
-        "assinatura_interna",
-        "upload_externo"
-      ],
-      "default": "assinatura_interna"
-    },
-    "tipo_documento_assinado": {
-      "type": "string",
-      "enum": [
-        "assinatura_eletronica_interna",
-        "pdf_assinado_externo"
-      ],
-      "default": "assinatura_eletronica_interna"
-    },
-    "historico_versoes": {
+    "historico_status": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "versao": {
-            "type": "string"
-          },
-          "file_url": {
+          "status": {
             "type": "string"
           },
           "data": {
             "type": "string"
           },
           "usuario": {
+            "type": "string"
+          },
+          "observacao": {
             "type": "string"
           }
         }
@@ -143,16 +170,9 @@
       ]
     },
     "delete": {
-      "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }
