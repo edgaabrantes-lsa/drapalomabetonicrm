@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { appParams } from "@/lib/app-params";
 import { T, S } from "@/lib/designTokens";
 import {
   Shield, Download, Upload, RotateCcw, History,
@@ -11,13 +12,31 @@ import KitAssinaturaModal from "./KitAssinaturaModal";
 import KitUploadExternoModal from "./KitUploadExternoModal";
 import KitDiagnosticoModal from "./KitDiagnosticoModal";
 
-// ─── Upload correto via SDK do frontend (File object real) ───────────────────
+// ─── Upload via FormData real (evita serialização JSON que esvazia o File) ───
 async function uploadPdfToStorage(pdfBlob, fileName) {
   if (!pdfBlob || pdfBlob.size === 0) throw new Error("PDF Blob vazio (" + (pdfBlob?.size ?? 0) + " bytes)");
   const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
   if (pdfFile.size === 0) throw new Error("File criado com 0 bytes");
-  const result = await base44.integrations.Core.UploadFile({ file: pdfFile });
-  if (!result?.file_url) throw new Error("Upload retornou sem file_url: " + JSON.stringify(result));
+  const formData = new FormData();
+  formData.append("file", pdfFile);
+  // URL base: appBaseUrl do SDK ou origin atual
+  const baseUrl = (appParams.appBaseUrl || window.location.origin).replace(/\/$/, "");
+  const uploadUrl = `${baseUrl}/api/integrations/Core/UploadFile`;
+  const token = appParams.token;
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const resp = await fetch(uploadUrl, {
+    method: "POST",
+    headers,
+    body: formData,
+    credentials: "include",
+  });
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => resp.statusText);
+    throw new Error("Upload HTTP " + resp.status + ": " + errText.substring(0, 300));
+  }
+  const result = await resp.json();
+  if (!result?.file_url) throw new Error("Upload retornou sem file_url: " + JSON.stringify(result).substring(0, 200));
   return result.file_url;
 }
 

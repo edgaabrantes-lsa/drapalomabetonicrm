@@ -1,7 +1,34 @@
 import React, { useRef, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { appParams } from "@/lib/app-params";
 import { T, S } from "@/lib/designTokens";
 import { X, PenLine, RotateCcw, CheckCircle2, Shield, FileText } from "lucide-react";
+
+// Upload via FormData real (evita { files: {} } vazio no JSON)
+async function uploadFileToStorage(fileOrBlob, fileName, mimeType) {
+  const file = fileOrBlob instanceof File
+    ? fileOrBlob
+    : new File([fileOrBlob], fileName, { type: mimeType });
+  if (file.size === 0) throw new Error("Arquivo para upload está vazio");
+  const formData = new FormData();
+  formData.append("file", file);
+  const baseUrl = (appParams.appBaseUrl || window.location.origin).replace(/\/$/, "");
+  const uploadUrl = `${baseUrl}/api/integrations/Core/UploadFile`;
+  const token = appParams.token;
+  const resp = await fetch(uploadUrl, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+    credentials: "include",
+  });
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => resp.statusText);
+    throw new Error("Upload HTTP " + resp.status + ": " + errText.substring(0, 300));
+  }
+  const result = await resp.json();
+  if (!result?.file_url) throw new Error("Upload sem file_url: " + JSON.stringify(result).substring(0, 200));
+  return result.file_url;
+}
 
 const CHECKBOXES_PADRAO = [
   { id: "leitura",     label: "Li e compreendi integralmente todo o Kit Documental." },
@@ -94,9 +121,8 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
       const canvas = canvasRef.current;
       const dataUrl = canvas.toDataURL("image/png");
       const blob = await fetch(dataUrl).then(r => r.blob());
-      const file = new File([blob], "assinatura_kit.png", { type: "image/png" });
-      const uploadRes = await base44.integrations.Core.UploadFile({ file });
-      if (!uploadRes.file_url) throw new Error("Falha no upload da assinatura");
+      const sigUrl = await uploadFileToStorage(blob, "assinatura_kit.png", "image/png");
+      const uploadRes = { file_url: sigUrl };
 
       const hashInput = `${kit.id}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
       let hash = 0;
@@ -175,8 +201,8 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
           if (pdfBlob.size === 0) throw new Error("Blob PDF vazio");
           const nomeArq = pdfData.pdf_file_name || `Kit_${kit.id}_Assinado_${Date.now()}.pdf`;
           const pdfFile = new File([pdfBlob], nomeArq, { type: "application/pdf" });
-          // Upload via File object real (não passar Blob direto)
-          const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
+          // Upload via FormData real
+          const up = { file_url: await uploadFileToStorage(pdfFile, nomeArq, "application/pdf") };
           if (up?.file_url) {
             pdfFinalUrl = up.file_url;
             await base44.entities.DossieKitDocumental.update(kit.id, {
