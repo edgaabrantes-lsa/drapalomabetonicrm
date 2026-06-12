@@ -156,7 +156,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         }
       }
 
-      // 4. Gerar PDF final assinado e fazer upload no frontend
+      // 4. Gerar PDF final assinado e fazer upload correto via File object
       let pdfFinalUrl = null;
       try {
         const pdfResp = await base44.functions.invoke("gerarKitDocumental", {
@@ -167,23 +167,29 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         const pdfData = pdfResp?.data;
 
         if (pdfData?.success && pdfData.pdf_base64) {
+          // Converter base64 → Blob → File
           const byteStr = atob(pdfData.pdf_base64);
           const bytes   = new Uint8Array(byteStr.length);
           for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
-          const blob    = new Blob([bytes], { type: "application/pdf" });
+          const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+          if (pdfBlob.size === 0) throw new Error("Blob PDF vazio");
           const nomeArq = pdfData.pdf_file_name || `Kit_${kit.id}_Assinado_${Date.now()}.pdf`;
-          const pdfFile = new File([blob], nomeArq, { type: "application/pdf" });
-          const up      = await base44.integrations.Core.UploadFile({ file: pdfFile });
+          const pdfFile = new File([pdfBlob], nomeArq, { type: "application/pdf" });
+          // Upload via File object real (não passar Blob direto)
+          const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
           if (up?.file_url) {
             pdfFinalUrl = up.file_url;
             await base44.entities.DossieKitDocumental.update(kit.id, {
               pdf_final_url: pdfFinalUrl,
               pdf_file_name: nomeArq,
             });
+            console.log("[KitModal] pdf_final_url salvo:", pdfFinalUrl);
+          } else {
+            console.warn("[KitModal] upload retornou sem file_url:", up);
           }
         }
       } catch (pdfErr) {
-        console.warn("PDF final não gerado após assinatura:", pdfErr.message);
+        console.warn("[KitModal] PDF final não gerado após assinatura:", pdfErr.message);
       }
 
       // 6. Log

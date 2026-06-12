@@ -11,37 +11,63 @@ import KitAssinaturaModal from "./KitAssinaturaModal";
 import KitUploadExternoModal from "./KitUploadExternoModal";
 import KitDiagnosticoModal from "./KitDiagnosticoModal";
 
-// Gera HTML de fallback para impressão pelo navegador (nunca vazio)
-function buildKitHtml(kit, patient) {
-  const now = new Date().toLocaleString("pt-BR");
-  const nome = patient?.full_name || kit.patient_name || "Paciente";
-  const proc = kit.procedimento_nome || "Procedimento";
-  const hash = kit.hash || "—";
-  const status = kit.status || "—";
-  const dataAss = kit.data_assinatura ? new Date(kit.data_assinatura).toLocaleString("pt-BR") : "—";
-  const assinadoPor = kit.assinado_por || "—";
+// ─── Upload correto via SDK do frontend (File object real) ───────────────────
+async function uploadPdfToStorage(pdfBlob, fileName) {
+  if (!pdfBlob || pdfBlob.size === 0) throw new Error("PDF Blob vazio (" + (pdfBlob?.size ?? 0) + " bytes)");
+  const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
+  if (pdfFile.size === 0) throw new Error("File criado com 0 bytes");
+  const result = await base44.integrations.Core.UploadFile({ file: pdfFile });
+  if (!result?.file_url) throw new Error("Upload retornou sem file_url: " + JSON.stringify(result));
+  return result.file_url;
+}
+
+// ─── HTML de impressão com assinatura visual ─────────────────────────────────
+function buildKitHtml(kit, patient, assinatura) {
+  const now         = new Date().toLocaleString("pt-BR");
+  const nome        = patient?.full_name || kit.patient_name || "Paciente";
+  const proc        = kit.procedimento_nome || "Procedimento";
+  const hash        = kit.hash || assinatura?.documento_hash || "—";
+  const status      = kit.status || "—";
+  const dataAss     = kit.data_assinatura ? new Date(kit.data_assinatura).toLocaleString("pt-BR") : "—";
+  const assinadoPor = kit.assinado_por || assinatura?.assinante_nome || "—";
+  const cpf         = assinatura?.assinante_cpf || "—";
+  const sigUrl      = assinatura?.assinatura_data_url || "";
+
+  const sigImgBlock = sigUrl
+    ? `<div style="margin-top:14px">
+        <strong>Assinatura Manuscrita:</strong><br/>
+        <img src="${sigUrl}" alt="Assinatura"
+          style="display:block;max-width:280px;max-height:120px;object-fit:contain;background:#fff;border:1px solid #ddd;padding:4px;margin-top:6px;"
+          onerror="this.style.display='none';document.getElementById('sig-fallback').style.display='block';" />
+        <div id="sig-fallback" style="display:none;color:#444;font-size:11px;margin-top:6px;">
+          Assinado eletronicamente por: ${assinadoPor} — CPF: ${cpf} — ${dataAss}
+        </div>
+      </div>`
+    : `<div style="margin-top:14px;color:#444;font-size:11px;">
+        Assinado eletronicamente por: ${assinadoPor} — CPF: ${cpf} — ${dataAss} — Método: Assinatura Interna
+      </div>`;
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <title>Kit Documental — ${proc} — ${nome}</title>
   <style>
-    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-    h1 { font-size: 22px; margin-bottom: 4px; color: #1a1a1a; }
-    h2 { font-size: 14px; color: #C8A96A; border-bottom: 1px solid #C8A96A; padding-bottom: 4px; margin-top: 28px; }
-    .badge { display: inline-block; background: #22c55e; color: white; padding: 4px 14px; border-radius: 4px; font-size: 11px; font-weight: bold; margin: 8px 0 20px; }
-    .field { margin: 4px 0; } .field strong { display: inline-block; width: 140px; color: #555; }
-    .section-text { white-space: pre-wrap; line-height: 1.7; color: #333; font-size: 11.5px; }
-    .sig-block { border: 1px solid #ccc; border-radius: 4px; padding: 16px; margin-top: 16px; background: #f9f9f9; }
-    .hash { font-family: monospace; font-size: 10px; color: #666; word-break: break-all; }
-    footer { margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; font-size: 10px; color: #999; }
-    @media print { button { display: none !important; } }
+    body{font-family:Arial,sans-serif;font-size:12px;color:#111;max-width:800px;margin:0 auto;padding:40px 20px}
+    h1{font-size:22px;margin-bottom:4px;color:#1a1a1a}
+    h2{font-size:14px;color:#C8A96A;border-bottom:1px solid #C8A96A;padding-bottom:4px;margin-top:28px}
+    .badge{display:inline-block;background:#22c55e;color:#fff;padding:4px 14px;border-radius:4px;font-size:11px;font-weight:bold;margin:8px 0 20px}
+    .field{margin:4px 0}.field strong{display:inline-block;width:140px;color:#555}
+    .section-text{white-space:pre-wrap;line-height:1.7;color:#333;font-size:11.5px}
+    .sig-block{border:1px solid #ccc;border-radius:4px;padding:16px;margin-top:16px;background:#f9f9f9}
+    .hash{font-family:monospace;font-size:10px;color:#666;word-break:break-all}
+    footer{margin-top:40px;border-top:1px solid #eee;padding-top:10px;font-size:10px;color:#999}
+    @media print{button{display:none!important}}
   </style>
 </head>
 <body>
   <h1>Kit Documental Assinado</h1>
-  <div class="badge">✓ ASSINADO ELETRONICAMENTE</div>
+  <div class="badge">&#10003; ASSINADO ELETRONICAMENTE</div>
 
   <h2>Identificação</h2>
   <div class="field"><strong>Paciente:</strong> ${nome}</div>
@@ -89,122 +115,147 @@ Autoriza a realização dos procedimentos descritos e está ciente que pode revo
   <h2>Assinatura Eletrônica</h2>
   <div class="sig-block">
     <div class="field"><strong>Nome:</strong> ${assinadoPor}</div>
+    <div class="field"><strong>CPF:</strong> ${cpf}</div>
     <div class="field"><strong>Data:</strong> ${dataAss}</div>
     <div class="field"><strong>Método:</strong> Assinatura Digital Presencial</div>
-    <div class="field"><strong>Status:</strong> ✓ ASSINADO</div>
+    <div class="field"><strong>Status:</strong> &#10003; ASSINADO</div>
     <div style="margin-top:12px"><strong>Hash:</strong><br/><span class="hash">${hash}</span></div>
+    ${sigImgBlock}
   </div>
 
-  <footer>
-    Kit Documental — ${proc} — ${nome} — Gerado em ${now}
-  </footer>
+  <footer>Kit Documental — ${proc} — ${nome} — Gerado em ${now}</footer>
 </body>
 </html>`;
 }
 
+// ─── Componente principal ────────────────────────────────────────────────────
 export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh, onRegerar }) {
-  const [showAssinatura, setShowAssinatura]     = useState(false);
+  const [showAssinatura, setShowAssinatura]       = useState(false);
   const [showUploadExterno, setShowUploadExterno] = useState(false);
-  const [baixandoPdf, setBaixandoPdf]           = useState(false);
-  const [showHistorico, setShowHistorico]       = useState(false);
-  const [showDiagnostico, setShowDiagnostico]   = useState(false);
-  const [erroDetalhe, setErroDetalhe]           = useState(null);
+  const [baixandoPdf, setBaixandoPdf]             = useState(false);
+  const [showHistorico, setShowHistorico]         = useState(false);
+  const [showDiagnostico, setShowDiagnostico]     = useState(false);
+  const [erroDetalhe, setErroDetalhe]             = useState(null);
 
-  const isAdmin      = currentUser?.role === "admin";
-  const isAssinado   = ["assinado", "pdf_externo_anexado"].includes(kit.status);
-  const podeAssinar  = ["gerado", "em_revisao", "aguardando_assinatura"].includes(kit.status);
-  const podeAnexar   = !["assinado"].includes(kit.status);
+  const isAdmin           = currentUser?.role === "admin";
+  const isAssinado        = ["assinado", "pdf_externo_anexado"].includes(kit.status);
+  const podeAssinar       = ["gerado", "em_revisao", "aguardando_assinatura"].includes(kit.status);
+  const podeAnexar        = !["assinado"].includes(kit.status);
   const precisaRegerarPdf = isAssinado && !kit.pdf_final_url;
 
   function getKitPdfUrl() {
-    if (isAssinado) return kit.pdf_final_url || kit.pdf_url || null;
-    return kit.pdf_url || kit.pdf_final_url || null;
+    return isAssinado
+      ? (kit.pdf_final_url || kit.pdf_url || null)
+      : (kit.pdf_url || kit.pdf_final_url || null);
   }
 
-  // Abre o kit como HTML imprimível em nova aba
-  function handleImprimir() {
-    const html = buildKitHtml(kit, patient);
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      setTimeout(() => win.print(), 500);
-    }
+  // Busca assinatura do kit (para HTML e impressão)
+  async function getAssinatura() {
+    if (!kit.assinatura_id) return null;
+    try {
+      const arr = await base44.entities.AssinaturaEletronica.filter({ id: kit.assinatura_id }, "-created_date", 1);
+      return arr[0] || null;
+    } catch { return null; }
   }
 
-  // Visualizar HTML gerado (para diagnóstico)
-  function handleVerHtml() {
-    const html = buildKitHtml(kit, patient);
+  // Converte base64 → Blob com validação
+  function base64ToPdfBlob(b64) {
+    const byteStr = atob(b64);
+    const bytes   = new Uint8Array(byteStr.length);
+    for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    if (blob.size === 0) throw new Error("Blob gerado tem 0 bytes");
+    return blob;
+  }
+
+  // Imprimir Kit — espera imagens carregarem
+  async function handleImprimir() {
+    const assinatura = await getAssinatura();
+    const html = buildKitHtml(kit, patient, assinatura);
+    const win  = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    // Aguardar imagens carregarem antes de imprimir
+    await Promise.all(
+      Array.from(win.document.images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+      })
+    );
+    setTimeout(() => win.print(), 300);
+  }
+
+  // Visualizar HTML (admin)
+  async function handleVerHtml() {
+    const assinatura = await getAssinatura();
+    const html = buildKitHtml(kit, patient, assinatura);
     const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
+    const url  = URL.createObjectURL(blob);
     window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
+  // Baixar / Gerar PDF Final
   async function handleBaixarPdf() {
     setErroDetalhe(null);
 
-    // 1. Se já tem URL persistida, abre diretamente
+    // 1. URL já salva → abre direto
     const urlSalva = getKitPdfUrl();
     if (urlSalva) {
       window.open(urlSalva, "_blank");
       return;
     }
 
-    // 2. Gerar via backend (retorna base64) + fazer upload no frontend
     setBaixandoPdf(true);
     try {
+      // 2. Gerar PDF no backend (retorna base64)
       const response = await base44.functions.invoke("gerarKitDocumental", {
-        kit_id: kit.id,
-        patient_id: patient.id,
+        kit_id:       kit.id,
+        patient_id:   patient.id,
         assinatura_id: kit.assinatura_id || null,
       });
 
       const data = response?.data;
-      if (!data) throw new Error("Sem resposta do servidor.");
-      if (data.error) {
-        setErroDetalhe(data.error + (data.etapa ? ` [etapa: ${data.etapa}]` : ""));
-        return;
-      }
-      if (!data.success || !data.pdf_base64) {
-        setErroDetalhe("Backend não retornou PDF: " + JSON.stringify(data).substring(0, 200));
-        return;
-      }
+      if (!data)                          throw new Error("Sem resposta do servidor.");
+      if (data.error)                     throw new Error(data.error + (data.etapa ? ` [${data.etapa}]` : ""));
+      if (!data.success || !data.pdf_base64) throw new Error("Backend não retornou PDF. Resposta: " + JSON.stringify(data).substring(0, 200));
 
-      // Converter base64 → Blob
-      const byteStr = atob(data.pdf_base64);
-      const bytes   = new Uint8Array(byteStr.length);
-      for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
-      const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+      // 3. Converter base64 → Blob
+      const pdfBlob = base64ToPdfBlob(data.pdf_base64);
+      console.log("[KitCard] PDF blob size:", pdfBlob.size);
 
-      // Abrir para download imediato
+      // 4. Abrir para o usuário imediatamente (URL temporária)
       const tempUrl = URL.createObjectURL(pdfBlob);
       window.open(tempUrl, "_blank");
-      setTimeout(() => URL.revokeObjectURL(tempUrl), 15000);
+      setTimeout(() => URL.revokeObjectURL(tempUrl), 20000);
 
-      // Fazer upload para storage e persistir URL no kit
+      // 5. Upload para storage via File object real
       try {
-        const nomeArq = data.pdf_file_name || `Kit_${kit.id}_${Date.now()}.pdf`;
-        const pdfFile = new File([pdfBlob], nomeArq, { type: "application/pdf" });
-        const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
-        if (up?.file_url) {
-          const campo = data.is_signed ? { pdf_final_url: up.file_url } : { pdf_url: up.file_url };
-          await base44.entities.DossieKitDocumental.update(kit.id, { ...campo, pdf_file_name: nomeArq });
-          if (onRefresh) onRefresh();
-        }
+        const nomeArq  = data.pdf_file_name || `Kit_${kit.id}_${Date.now()}.pdf`;
+        const fileUrl  = await uploadPdfToStorage(pdfBlob, nomeArq);
+        console.log("[KitCard] upload OK:", fileUrl);
+
+        // 6. Persistir pdf_final_url no kit
+        const campo = data.is_signed ? { pdf_final_url: fileUrl } : { pdf_url: fileUrl };
+        await base44.entities.DossieKitDocumental.update(kit.id, { ...campo, pdf_file_name: nomeArq });
+        if (onRefresh) onRefresh();
       } catch (upErr) {
-        // Upload falhou — PDF já foi aberto, não bloquear o usuário
-        console.warn("Upload do PDF para storage falhou:", upErr.message);
+        console.warn("[KitCard] upload storage falhou (PDF já foi aberto):", upErr.message);
+        setErroDetalhe(
+          "PDF aberto com sucesso, mas não foi salvo no storage para uso futuro. Detalhe: " + upErr.message +
+          "\nUse 'Imprimir Kit' como alternativa permanente."
+        );
       }
     } catch (error) {
-      setErroDetalhe("Erro: " + error.message);
+      setErroDetalhe(error.message);
     } finally {
       setBaixandoPdf(false);
     }
   }
 
   const conformidadePct   = isAssinado ? 100 : kit.status === "gerado" ? 50 : kit.status === "aguardando_assinatura" ? 75 : 0;
-  const conformidadeLabel = isAssinado ? "Conforme" : kit.status === "gerado" ? "Gerado" : kit.status === "aguardando_assinatura" ? "Aguardando Assinatura" : "Sem Kit";
+  const conformidadeLabel = isAssinado ? "Conforme" : kit.status === "gerado" ? "Gerado" : kit.status === "aguardando_assinatura" ? "Aguardando" : "Pendente";
   const conformidadeColor = isAssinado ? "#22C55E" : kit.status === "gerado" ? "#3B82F6" : kit.status === "aguardando_assinatura" ? "#F59E0B" : T.textMuted;
 
   return (
@@ -302,80 +353,59 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
             )}
           </div>
 
-          {/* Ações principais */}
+          {/* Ações */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
             {podeAssinar && (
-              <button
-                onClick={() => setShowAssinatura(true)}
-                style={{ ...S.btnPrimary, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}
-              >
+              <button onClick={() => setShowAssinatura(true)}
+                style={{ ...S.btnPrimary, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}>
                 <Shield size={13} /> Assinar Kit
               </button>
             )}
 
-            <button
-              onClick={handleBaixarPdf}
-              disabled={baixandoPdf}
-              style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, opacity: baixandoPdf ? 0.5 : 1 }}
-            >
+            <button onClick={handleBaixarPdf} disabled={baixandoPdf}
+              style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, opacity: baixandoPdf ? 0.5 : 1 }}>
               <Download size={13} /> {baixandoPdf ? "Gerando..." : "Baixar PDF"}
             </button>
 
             {podeAnexar && (
-              <button
-                onClick={() => setShowUploadExterno(true)}
-                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}
-              >
+              <button onClick={() => setShowUploadExterno(true)}
+                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}>
                 <Upload size={13} /> Anexar PDF Externo
               </button>
             )}
 
             {precisaRegerarPdf && (
-              <button
-                onClick={handleBaixarPdf}
-                disabled={baixandoPdf}
-                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#F59E0B", color: "#F59E0B", opacity: baixandoPdf ? 0.5 : 1 }}
-              >
+              <button onClick={handleBaixarPdf} disabled={baixandoPdf}
+                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#F59E0B", color: "#F59E0B", opacity: baixandoPdf ? 0.5 : 1 }}>
                 <RotateCcw size={13} /> {baixandoPdf ? "Gerando..." : "Regerar PDF Final"}
               </button>
             )}
 
             {!isAssinado && (
-              <button
-                onClick={() => onRegerar && onRegerar(kit)}
-                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}
-              >
+              <button onClick={() => onRegerar && onRegerar(kit)}
+                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}>
                 <RotateCcw size={13} /> Regerar Kit
               </button>
             )}
 
-            {/* Imprimir Kit — sempre disponível como fallback */}
-            <button
-              onClick={handleImprimir}
-              style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#3B82F6", color: "#3B82F6" }}
-            >
+            <button onClick={handleImprimir}
+              style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#3B82F6", color: "#3B82F6" }}>
               <Printer size={13} /> Imprimir Kit
             </button>
 
-            <button
-              onClick={() => setShowHistorico(!showHistorico)}
-              style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}
-            >
+            <button onClick={() => setShowHistorico(!showHistorico)}
+              style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6 }}>
               <History size={13} /> Histórico
             </button>
 
             {isAdmin && (
               <>
-                <button
-                  onClick={handleVerHtml}
-                  style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#8B5CF6", color: "#8B5CF6" }}
-                >
+                <button onClick={handleVerHtml}
+                  style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#8B5CF6", color: "#8B5CF6" }}>
                   <Eye size={13} /> Visualizar HTML
                 </button>
-                <button
-                  onClick={() => setShowDiagnostico(true)}
-                  style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#7C3AED", color: "#7C3AED" }}
-                >
+                <button onClick={() => setShowDiagnostico(true)}
+                  style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#7C3AED", color: "#7C3AED" }}>
                   <Bug size={13} /> Diagnosticar PDF
                 </button>
               </>
@@ -384,17 +414,10 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
 
           {/* Histórico */}
           {showHistorico && kit.historico_status?.length > 0 && (
-            <div style={{
-              background: T.bgSecondary, border: `1px solid ${T.border}`,
-              borderRadius: 6, padding: "10px 14px", marginTop: 8,
-            }}>
+            <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 6, padding: "10px 14px", marginTop: 8 }}>
               <p style={{ ...S.label, marginBottom: 8 }}>Histórico de Status</p>
               {[...kit.historico_status].reverse().map((h, i) => (
-                <div key={i} style={{
-                  display: "flex", gap: 10, alignItems: "flex-start",
-                  paddingBottom: 6, marginBottom: 6,
-                  borderBottom: i < kit.historico_status.length - 1 ? `1px solid ${T.borderLight}` : "none",
-                }}>
+                <div key={i} style={{ display: "flex", gap: 10, paddingBottom: 6, marginBottom: 6, borderBottom: i < kit.historico_status.length - 1 ? `1px solid ${T.borderLight}` : "none" }}>
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: T.gold, marginTop: 4, flexShrink: 0 }} />
                   <div>
                     <p style={{ fontFamily: T.font, fontSize: 12, color: T.textSecondary, marginBottom: 2 }}>
@@ -413,11 +436,7 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
 
           {/* Aviso PDF ausente */}
           {precisaRegerarPdf && !erroDetalhe && (
-            <div style={{
-              display: "flex", alignItems: "flex-start", gap: 8, marginTop: 8,
-              background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)",
-              borderRadius: 6, padding: "8px 12px",
-            }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 8, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, padding: "8px 12px" }}>
               <AlertTriangle size={13} style={{ color: "#F59E0B", flexShrink: 0, marginTop: 1 }} />
               <span style={{ fontFamily: T.font, fontSize: 12, color: "#F59E0B" }}>
                 Kit assinado, mas o PDF final não foi salvo. Clique em <strong>Regerar PDF Final</strong> ou use <strong>Imprimir Kit</strong>.
@@ -427,21 +446,13 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
 
           {/* Erro detalhado */}
           {erroDetalhe && (
-            <div style={{
-              display: "flex", alignItems: "flex-start", gap: 8, marginTop: 8,
-              background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
-              borderRadius: 6, padding: "10px 12px",
-            }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6, padding: "10px 12px" }}>
               <AlertTriangle size={13} style={{ color: "#EF4444", flexShrink: 0, marginTop: 1 }} />
               <div>
-                <p style={{ fontFamily: T.font, fontSize: 12, color: "#EF4444", fontWeight: 600, marginBottom: 4 }}>
-                  Falha ao gerar PDF
-                </p>
-                <p style={{ fontFamily: "monospace", fontSize: 11, color: "#F87171", lineHeight: 1.5 }}>
-                  {erroDetalhe}
-                </p>
+                <p style={{ fontFamily: T.font, fontSize: 12, color: "#EF4444", fontWeight: 600, marginBottom: 4 }}>Falha no PDF</p>
+                <pre style={{ fontFamily: "monospace", fontSize: 11, color: "#F87171", lineHeight: 1.5, whiteSpace: "pre-wrap", margin: 0 }}>{erroDetalhe}</pre>
                 <p style={{ fontFamily: T.font, fontSize: 11, color: "#F59E0B", marginTop: 6 }}>
-                  Use <strong>Imprimir Kit</strong> para salvar o documento pelo navegador, ou <strong>Diagnosticar PDF</strong> para identificar a causa.
+                  Use <strong>Imprimir Kit</strong> como alternativa, ou <strong>Diagnosticar PDF</strong> para identificar a causa.
                 </p>
               </div>
             </div>
