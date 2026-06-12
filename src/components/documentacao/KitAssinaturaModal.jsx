@@ -156,49 +156,36 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         }
       }
 
-      // 4. Gerar PDF final assinado e salvar no storage
+      // 4. Gerar PDF final assinado — a função faz upload e salva pdf_final_url no kit
       let pdfFinalUrl = null;
-      let pdfFinalNome = null;
       try {
-        const nomeArquivo = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}_Assinado_${now.toISOString().slice(0,10)}.pdf`;
         const pdfResp = await base44.functions.invoke("gerarKitDocumental", {
           kit_id: kit.id,
           patient_id: patient.id,
           assinatura_id: assinaturaCriada.id,
         });
-        // O SDK pode retornar o PDF como Blob, ArrayBuffer ou base64
-        let pdfBlob = null;
         const pdfData = pdfResp?.data;
-        if (pdfData instanceof Blob) {
-          pdfBlob = pdfData;
-        } else if (pdfData instanceof ArrayBuffer) {
-          pdfBlob = new Blob([pdfData], { type: "application/pdf" });
-        } else if (typeof pdfData === "string" && pdfData.length > 100) {
-          try {
-            const byteChars = atob(pdfData);
-            const byteNums = new Uint8Array(byteChars.length);
-            for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-            pdfBlob = new Blob([byteNums], { type: "application/pdf" });
-          } catch { /* não é base64 válido */ }
+        // Resposta JSON com URL do storage
+        if (pdfData && pdfData.pdf_url) {
+          pdfFinalUrl = pdfData.pdf_url;
         }
-        if (pdfBlob && pdfBlob.size > 1000) {
-          const pdfFile = new File([pdfBlob], nomeArquivo, { type: "application/pdf" });
-          const uploadPdf = await base44.integrations.Core.UploadFile({ file: pdfFile });
-          if (uploadPdf?.file_url) {
-            pdfFinalUrl = uploadPdf.file_url;
-            pdfFinalNome = nomeArquivo;
+        // Fallback: se retornou PDF binário, fazer upload manualmente
+        if (!pdfFinalUrl) {
+          let blob = null;
+          if (pdfData instanceof Blob && pdfData.size > 500) blob = pdfData;
+          else if (pdfData instanceof ArrayBuffer && pdfData.byteLength > 500) blob = new Blob([pdfData], { type: "application/pdf" });
+          if (blob) {
+            const nomeArq = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}_Assinado_${Date.now()}.pdf`;
+            const pdfFile = new File([blob], nomeArq, { type: "application/pdf" });
+            const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
+            if (up?.file_url) {
+              pdfFinalUrl = up.file_url;
+              await base44.entities.DossieKitDocumental.update(kit.id, { pdf_final_url: up.file_url, pdf_file_name: nomeArq });
+            }
           }
         }
       } catch (pdfErr) {
         console.warn("PDF final não gerado após assinatura:", pdfErr.message);
-      }
-
-      // 5. Atualizar kit com pdf_final_url (se gerado)
-      if (pdfFinalUrl) {
-        await base44.entities.DossieKitDocumental.update(kit.id, {
-          pdf_final_url: pdfFinalUrl,
-          pdf_file_name: pdfFinalNome,
-        });
       }
 
       // 6. Log

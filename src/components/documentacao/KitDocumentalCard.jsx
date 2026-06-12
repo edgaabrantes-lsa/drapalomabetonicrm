@@ -36,7 +36,7 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
       return;
     }
 
-    // Sem URL salva: gerar PDF via função backend, salvar e baixar
+    // Sem URL salva: gerar PDF via função backend
     setBaixandoPdf(true);
     try {
       const response = await base44.functions.invoke("gerarKitDocumental", {
@@ -45,47 +45,34 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
         assinatura_id: kit.assinatura_id || null,
       });
 
-      let pdfBlob = null;
       const data = response?.data;
-      if (data instanceof Blob) {
-        pdfBlob = data;
-      } else if (data instanceof ArrayBuffer) {
-        pdfBlob = new Blob([data], { type: "application/pdf" });
-      } else if (typeof data === "string" && data.length > 100) {
-        try {
-          const byteChars = atob(data);
-          const byteNums = new Uint8Array(byteChars.length);
-          for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-          pdfBlob = new Blob([byteNums], { type: "application/pdf" });
-        } catch { /* não é base64 */ }
-      }
 
-      if (!pdfBlob || pdfBlob.size < 1000) {
-        throw new Error(data?.error || "PDF gerado está vazio ou inválido.");
-      }
-
-      // Salvar no storage e persistir URL
-      const nomeArq = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}_${isAssinado ? "Assinado" : "Pendente"}.pdf`;
-      const pdfFile = new File([pdfBlob], nomeArq, { type: "application/pdf" });
-      const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
-
-      if (uploadRes?.file_url) {
-        // Persistir no kit para próximas consultas
-        const updateField = isAssinado ? { pdf_final_url: uploadRes.file_url, pdf_file_name: nomeArq } : { pdf_url: uploadRes.file_url, pdf_file_name: nomeArq };
-        await base44.entities.DossieKitDocumental.update(kit.id, updateField);
-        window.open(uploadRes.file_url, "_blank");
+      // Resposta JSON com URL persistida no storage
+      if (data && data.pdf_url) {
+        window.open(data.pdf_url, "_blank");
         if (onRefresh) onRefresh();
-      } else {
-        // Fallback: download local via blob URL
-        const tempUrl = URL.createObjectURL(pdfBlob);
-        const a = document.createElement("a");
-        a.href = tempUrl;
-        a.download = nomeArq;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(tempUrl);
+        return;
       }
+
+      // Fallback: resposta binária (PDF retornado diretamente)
+      if (data instanceof Blob && data.size > 500) {
+        const tempUrl = URL.createObjectURL(data);
+        window.open(tempUrl, "_blank");
+        setTimeout(() => URL.revokeObjectURL(tempUrl), 10000);
+        return;
+      }
+      if (data instanceof ArrayBuffer && data.byteLength > 500) {
+        const blob = new Blob([data], { type: "application/pdf" });
+        const tempUrl = URL.createObjectURL(blob);
+        window.open(tempUrl, "_blank");
+        setTimeout(() => URL.revokeObjectURL(tempUrl), 10000);
+        return;
+      }
+
+      // Erro explícito
+      if (data && data.error) throw new Error(data.error);
+
+      throw new Error("Não foi possível gerar o PDF. Tente novamente.");
     } catch (error) {
       console.error("Erro ao baixar PDF:", error);
       alert("Erro ao gerar PDF: " + error.message);
