@@ -44,9 +44,11 @@ async function uploadPdfToStorage(pdfBlob, fileName) {
 function normalizeSignatureImage(assinatura, kit) {
   const raw =
     assinatura?.assinatura_data_url ||
+    assinatura?.assinatura_image_url ||
     assinatura?.signature_data_url ||
     assinatura?.image_url ||
     assinatura?.file_url ||
+    kit?.assinatura_image_url ||
     kit?.assinatura_data_url ||
     kit?.signature_url ||
     "";

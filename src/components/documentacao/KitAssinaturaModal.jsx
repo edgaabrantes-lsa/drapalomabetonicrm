@@ -91,16 +91,32 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
 
     setSaving(true);
     try {
-      // Captura assinatura como data URL — sem upload externo (evita erro X-App-Id)
       const canvas = canvasRef.current;
-      const assinaturaDataUrl = canvas.toDataURL("image/png");
+
+      // 1. Normalizar canvas: fundo branco + traço escuro → Blob PNG
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = 600;
+      exportCanvas.height = 220;
+      const ctx = exportCanvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      ctx.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height);
+      const sigBlob = await new Promise(resolve => exportCanvas.toBlob(resolve, "image/png", 0.9));
+      if (!sigBlob || sigBlob.size === 0) throw new Error("Não foi possível preparar a imagem da assinatura.");
+
+      // 2. Upload oficial via Base44 — retorna URL permanente
+      const fileName = `assinatura-kit-${kit.id}-${Date.now()}.png`;
+      const sigFile = new File([sigBlob], fileName, { type: "image/png" });
+      const upResult = await base44.integrations.Core.UploadFile({ file: sigFile });
+      if (!upResult?.file_url) throw new Error("Upload da assinatura falhou — URL não retornada.");
+      const uploadedSignatureUrl = upResult.file_url;
 
       const hashInput = `${kit.id}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
       let hash = 0;
       for (let i = 0; i < hashInput.length; i++) { hash = ((hash << 5) - hash) + hashInput.charCodeAt(i); hash |= 0; }
       const documentoHash = `KIT-${Math.abs(hash).toString(36).toUpperCase()}`;
 
-      // 1. Criar AssinaturaEletronica
+      // 3. Criar AssinaturaEletronica — assinatura_data_url recebe URL (não base64)
       const assinaturaCriada = await base44.entities.AssinaturaEletronica.create({
         patient_id: String(patient.id),
         patient_name: String(patient.full_name),
@@ -109,7 +125,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         documento_tipo: "contrato_mestre",
         documento_versao: String(kit.versao || "1.0"),
         documento_hash: documentoHash,
-        assinatura_data_url: assinaturaDataUrl,
+        assinatura_data_url: uploadedSignatureUrl,
         assinante_nome: assinanteNome,
         assinante_cpf: assinanteCpf,
         assinante_tipo: tipoAssinante,
@@ -124,7 +140,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         metodo_assinatura: "presencial_canvas",
       });
 
-      // 2. Atualizar kit
+      // 4. Atualizar kit
       await base44.entities.DossieKitDocumental.update(kit.id, {
         status: "assinado",
         assinatura_id: assinaturaCriada.id,
@@ -133,13 +149,14 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         data_assinatura: now.toISOString(),
         assinado_por: assinanteNome,
         hash: documentoHash,
+        assinatura_image_url: uploadedSignatureUrl,
         historico_status: [
           ...(kit.historico_status || []),
           { status: "assinado", data: now.toISOString(), usuario: currentUser?.full_name || "Sistema", observacao: `Assinado por ${assinanteNome}` }
         ],
       });
 
-      // 3. Atualizar documentos individuais para assinado_pelo_kit
+      // 5. Atualizar documentos individuais para assinado_pelo_kit
       if (kit.documentos_incluidos?.length > 0) {
         for (const doc of kit.documentos_incluidos) {
           if (doc.documento_id) {
@@ -153,7 +170,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         }
       }
 
-      // 4. Tentar gerar PDF final (opcional — não bloqueia a assinatura)
+      // 6. Tentar gerar PDF final (opcional — não bloqueia a assinatura)
       let pdfFinalUrl = null;
       try {
         const pdfResp = await base44.functions.invoke("gerarKitDocumental", {
@@ -183,7 +200,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         console.warn("[KitModal] PDF final não gerado (não crítico):", pdfErr.message);
       }
 
-      // 6. Log
+      // 7. Log
       await base44.entities.DossieLog.create({
         patient_id: patient.id,
         patient_name: patient.full_name,
