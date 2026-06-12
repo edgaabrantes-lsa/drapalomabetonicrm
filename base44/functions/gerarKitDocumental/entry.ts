@@ -505,56 +505,17 @@ Deno.serve(async function(req) {
     const nomePac     = sv(patient?.full_name || kit.patient_name, 'Paciente').replace(/[^a-zA-Z0-9]/g, '_');
     const nomeArq     = 'Kit_' + nomeLimpo + '_' + nomePac + '_' + (assinatura ? 'Assinado' : 'Pendente') + '_' + Date.now() + '.pdf';
 
-    // 7. Upload: converter para base64 data URL (funciona no Deno SDK)
-    let pdfUrl = null;
-    let uploadErro = null;
-    try {
-      const b64 = ab2b64(pdfBytes);
-      const dataUrl = 'data:application/pdf;base64,' + b64;
-      const upRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: dataUrl });
-      if (upRes?.file_url) {
-        pdfUrl = upRes.file_url;
-        console.log('[gerarKit] upload OK:', pdfUrl.substring(0, 60));
-      } else {
-        uploadErro = 'UploadFile retornou sem file_url';
-        console.warn('[gerarKit] upload sem URL:', JSON.stringify(upRes));
-      }
-    } catch (upErr) {
-      uploadErro = upErr.message;
-      console.warn('[gerarKit] upload erro:', upErr.message);
-    }
-
-    // 8. Persistir URL no kit
-    if (pdfUrl) {
-      try {
-        const updateData = assinatura
-          ? { pdf_final_url: pdfUrl, pdf_file_name: nomeArq }
-          : { pdf_url: pdfUrl, pdf_file_name: nomeArq };
-        await base44.asServiceRole.entities.DossieKitDocumental.update(kit_id, updateData);
-        console.log('[gerarKit] kit atualizado:', assinatura ? 'pdf_final_url' : 'pdf_url');
-      } catch (updErr) {
-        console.warn('[gerarKit] atualização do kit falhou:', updErr.message);
-      }
-
-      return Response.json({
-        success: true,
-        pdf_url: pdfUrl,
-        pdf_file_name: nomeArq,
-        is_signed: !!assinatura,
-        bytes: pdfBytes.byteLength,
-      });
-    }
-
-    // 9. Fallback: retornar base64 no JSON para o frontend baixar sem storage
-    console.warn('[gerarKit] storage falhou — retornando base64. Motivo:', uploadErro);
+    // 7. Retornar base64 — o frontend faz o upload e persiste pdf_final_url
+    // (Upload de Blob do Deno para storage não funciona via SDK — o frontend usa integrations.Core.UploadFile)
     const b64Final = ab2b64(pdfBytes);
+    console.log('[gerarKit] PDF pronto, retornando base64 para upload no frontend');
     return Response.json({
       success: true,
       pdf_base64: b64Final,
       pdf_file_name: nomeArq,
       is_signed: !!assinatura,
       bytes: pdfBytes.byteLength,
-      storage_error: uploadErro,
+      kit_id,
     });
 
   } catch (error) {

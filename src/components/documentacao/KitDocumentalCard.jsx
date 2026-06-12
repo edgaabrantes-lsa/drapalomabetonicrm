@@ -151,7 +151,7 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
       return;
     }
 
-    // 2. Gerar via backend
+    // 2. Gerar via backend (retorna base64) + fazer upload no frontend
     setBaixandoPdf(true);
     try {
       const response = await base44.functions.invoke("gerarKitDocumental", {
@@ -161,49 +161,43 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
       });
 
       const data = response?.data;
-
-      if (!data) {
-        throw new Error("Sem resposta do servidor. Verifique a função backend.");
-      }
-
-      // Erro explícito com detalhes
+      if (!data) throw new Error("Sem resposta do servidor.");
       if (data.error) {
-        const msg = data.error + (data.etapa ? ` [etapa: ${data.etapa}]` : "");
-        setErroDetalhe(msg);
+        setErroDetalhe(data.error + (data.etapa ? ` [etapa: ${data.etapa}]` : ""));
+        return;
+      }
+      if (!data.success || !data.pdf_base64) {
+        setErroDetalhe("Backend não retornou PDF: " + JSON.stringify(data).substring(0, 200));
         return;
       }
 
-      // Sucesso com URL de storage
-      if (data.success && data.pdf_url) {
-        window.open(data.pdf_url, "_blank");
-        if (onRefresh) onRefresh();
-        return;
-      }
+      // Converter base64 → Blob
+      const byteStr = atob(data.pdf_base64);
+      const bytes   = new Uint8Array(byteStr.length);
+      for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+      const pdfBlob = new Blob([bytes], { type: "application/pdf" });
 
-      // Fallback: base64 retornado pelo backend (storage falhou)
-      if (data.success && data.pdf_base64) {
-        try {
-          const byteStr  = atob(data.pdf_base64);
-          const bytes    = new Uint8Array(byteStr.length);
-          for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
-          const blob     = new Blob([bytes], { type: "application/pdf" });
-          const tempUrl  = URL.createObjectURL(blob);
-          window.open(tempUrl, "_blank");
-          setTimeout(() => URL.revokeObjectURL(tempUrl), 15000);
-          if (data.storage_error) {
-            setErroDetalhe("PDF gerado, mas não salvo no storage. Use Imprimir Kit para garantir acesso permanente. Detalhe: " + data.storage_error);
-          }
-          return;
-        } catch (b64Err) {
-          setErroDetalhe("PDF retornado mas falhou ao abrir: " + b64Err.message);
-          return;
+      // Abrir para download imediato
+      const tempUrl = URL.createObjectURL(pdfBlob);
+      window.open(tempUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(tempUrl), 15000);
+
+      // Fazer upload para storage e persistir URL no kit
+      try {
+        const nomeArq = data.pdf_file_name || `Kit_${kit.id}_${Date.now()}.pdf`;
+        const pdfFile = new File([pdfBlob], nomeArq, { type: "application/pdf" });
+        const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
+        if (up?.file_url) {
+          const campo = data.is_signed ? { pdf_final_url: up.file_url } : { pdf_url: up.file_url };
+          await base44.entities.DossieKitDocumental.update(kit.id, { ...campo, pdf_file_name: nomeArq });
+          if (onRefresh) onRefresh();
         }
+      } catch (upErr) {
+        // Upload falhou — PDF já foi aberto, não bloquear o usuário
+        console.warn("Upload do PDF para storage falhou:", upErr.message);
       }
-
-      // Nenhum dos casos acima
-      setErroDetalhe("Resposta inesperada do servidor: " + JSON.stringify(data).substring(0, 200));
     } catch (error) {
-      setErroDetalhe("Erro de comunicação: " + error.message);
+      setErroDetalhe("Erro: " + error.message);
     } finally {
       setBaixandoPdf(false);
     }

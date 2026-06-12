@@ -156,7 +156,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         }
       }
 
-      // 4. Gerar PDF final assinado — a função faz upload e salva pdf_final_url no kit
+      // 4. Gerar PDF final assinado e fazer upload no frontend
       let pdfFinalUrl = null;
       try {
         const pdfResp = await base44.functions.invoke("gerarKitDocumental", {
@@ -165,23 +165,21 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
           assinatura_id: assinaturaCriada.id,
         });
         const pdfData = pdfResp?.data;
-        // Resposta JSON com URL do storage
-        if (pdfData && pdfData.pdf_url) {
-          pdfFinalUrl = pdfData.pdf_url;
-        }
-        // Fallback: se retornou PDF binário, fazer upload manualmente
-        if (!pdfFinalUrl) {
-          let blob = null;
-          if (pdfData instanceof Blob && pdfData.size > 500) blob = pdfData;
-          else if (pdfData instanceof ArrayBuffer && pdfData.byteLength > 500) blob = new Blob([pdfData], { type: "application/pdf" });
-          if (blob) {
-            const nomeArq = `KitDocumental_${(kit.procedimento_nome || "Procedimento").replace(/[^a-zA-Z0-9]/g, "_")}_Assinado_${Date.now()}.pdf`;
-            const pdfFile = new File([blob], nomeArq, { type: "application/pdf" });
-            const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
-            if (up?.file_url) {
-              pdfFinalUrl = up.file_url;
-              await base44.entities.DossieKitDocumental.update(kit.id, { pdf_final_url: up.file_url, pdf_file_name: nomeArq });
-            }
+
+        if (pdfData?.success && pdfData.pdf_base64) {
+          const byteStr = atob(pdfData.pdf_base64);
+          const bytes   = new Uint8Array(byteStr.length);
+          for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+          const blob    = new Blob([bytes], { type: "application/pdf" });
+          const nomeArq = pdfData.pdf_file_name || `Kit_${kit.id}_Assinado_${Date.now()}.pdf`;
+          const pdfFile = new File([blob], nomeArq, { type: "application/pdf" });
+          const up      = await base44.integrations.Core.UploadFile({ file: pdfFile });
+          if (up?.file_url) {
+            pdfFinalUrl = up.file_url;
+            await base44.entities.DossieKitDocumental.update(kit.id, {
+              pdf_final_url: pdfFinalUrl,
+              pdf_file_name: nomeArq,
+            });
           }
         }
       } catch (pdfErr) {
