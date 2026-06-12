@@ -3,18 +3,22 @@ import { base44 } from "@/api/base44Client";
 import { T, S } from "@/lib/designTokens";
 import {
   Zap, Shield, Download, Upload, Eye, RotateCcw, History,
-  CheckCircle2, Clock, AlertTriangle, FileText, Trash2
+  CheckCircle2, Clock, AlertTriangle, FileText, Trash2, Bug
 } from "lucide-react";
 import KitStatusBadge from "./KitStatusBadge";
 import KitChecklistInterno from "./KitChecklistInterno";
 import KitAssinaturaModal from "./KitAssinaturaModal";
 import KitUploadExternoModal from "./KitUploadExternoModal";
+import KitDiagnosticoModal from "./KitDiagnosticoModal";
 
 export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh, onRegerar }) {
   const [showAssinatura, setShowAssinatura] = useState(false);
   const [showUploadExterno, setShowUploadExterno] = useState(false);
   const [baixandoPdf, setBaixandoPdf] = useState(false);
   const [showHistorico, setShowHistorico] = useState(false);
+  const [showDiagnostico, setShowDiagnostico] = useState(false);
+
+  const isAdmin = currentUser?.role === "admin";
 
   const isAssinado = ["assinado", "pdf_externo_anexado"].includes(kit.status);
   const podeAssinar = ["gerado", "em_revisao", "aguardando_assinatura"].includes(kit.status);
@@ -103,6 +107,13 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
           currentUser={currentUser}
           onClose={() => setShowUploadExterno(false)}
           onAnexado={() => { setShowUploadExterno(false); onRefresh(); }}
+        />
+      )}
+      {showDiagnostico && (
+        <KitDiagnosticoModal
+          kit={kit}
+          patient={patient}
+          onClose={() => setShowDiagnostico(false)}
         />
       )}
 
@@ -245,6 +256,15 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
             >
               <History size={13} /> Histórico
             </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => setShowDiagnostico(true)}
+                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#7C3AED", color: "#7C3AED" }}
+              >
+                <Bug size={13} /> Diagnosticar PDF
+              </button>
+            )}
           </div>
 
           {/* Histórico */}
