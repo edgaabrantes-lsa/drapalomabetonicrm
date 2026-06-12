@@ -338,7 +338,7 @@ async function buildPdf(kit, patient, clinica, financeiro, assinatura) {
     y = field('Concordou Termos',    assinatura.concordou_termos ? 'Sim' : 'Não', y);
     y += 6;
 
-    // Imagem da assinatura (falha silenciosa — nunca quebra o PDF)
+    // Imagem da assinatura
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...GOLD);
@@ -347,23 +347,48 @@ async function buildPdf(kit, patient, clinica, financeiro, assinatura) {
 
     let imgCarregada = false;
     const sigUrl = assinatura.assinatura_data_url;
-    if (sigUrl && typeof sigUrl === 'string' && sigUrl.startsWith('http')) {
-      try {
-        const ctrl = new AbortController();
-        setTimeout(() => ctrl.abort(), 7000);
-        const imgResp = await fetch(sigUrl, { signal: ctrl.signal });
-        if (imgResp.ok) {
-          const imgBuf = await imgResp.arrayBuffer();
-          if (imgBuf.byteLength > 100 && imgBuf.byteLength < 5 * 1024 * 1024) {
-            const b64 = ab2b64(imgBuf);
-            const ct  = imgResp.headers.get('content-type') || 'image/png';
-            y = chk(y, 50);
-            doc.addImage('data:' + ct + ';base64,' + b64, 'PNG', 15, y, 100, 30);
-            y += 34;
-            imgCarregada = true;
+
+    // Tentar obter b64 da imagem — suporta data:image e URL http
+    let sigB64 = null;
+    let sigMime = 'image/png';
+
+    if (sigUrl && typeof sigUrl === 'string') {
+      if (sigUrl.startsWith('data:image')) {
+        // data URL — extrair base64 diretamente
+        try {
+          const comma = sigUrl.indexOf(',');
+          if (comma > -1) {
+            const meta = sigUrl.substring(5, comma); // "image/png;base64"
+            sigMime = meta.split(';')[0] || 'image/png';
+            sigB64 = sigUrl.substring(comma + 1);
           }
-        }
-      } catch (_) { /* falha silenciosa */ }
+        } catch (_) { /* falha silenciosa */ }
+      } else if (sigUrl.startsWith('http')) {
+        // URL remota — baixar e converter
+        try {
+          const ctrl = new AbortController();
+          setTimeout(() => ctrl.abort(), 7000);
+          const imgResp = await fetch(sigUrl, { signal: ctrl.signal });
+          if (imgResp.ok) {
+            const imgBuf = await imgResp.arrayBuffer();
+            if (imgBuf.byteLength > 100 && imgBuf.byteLength < 5 * 1024 * 1024) {
+              sigB64 = ab2b64(imgBuf);
+              sigMime = imgResp.headers.get('content-type') || 'image/png';
+            }
+          }
+        } catch (_) { /* falha silenciosa */ }
+      }
+    }
+
+    if (sigB64) {
+      try {
+        y = chk(y, 50);
+        doc.addImage('data:' + sigMime + ';base64,' + sigB64, 'PNG', 15, y, 100, 30);
+        y += 34;
+        imgCarregada = true;
+      } catch (imgErr) {
+        console.warn('[gerarKit] addImage falhou:', imgErr.message);
+      }
     }
 
     if (!imgCarregada) {
@@ -371,7 +396,7 @@ async function buildPdf(kit, patient, clinica, financeiro, assinatura) {
       doc.setTextColor(...GRAY);
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);
-      doc.text('[ Assinatura eletrônica registrada — imagem não disponível neste relatório ]', 15, y + 6);
+      doc.text('[ Assinatura eletrônica registrada — imagem gráfica indisponível ]', 15, y + 6);
       y += 14;
     }
 

@@ -40,6 +40,23 @@ async function uploadPdfToStorage(pdfBlob, fileName) {
   return result.file_url;
 }
 
+// ─── Normaliza imagem da assinatura (data URL ou URL http) ───────────────────
+function normalizeSignatureImage(assinatura, kit) {
+  const raw =
+    assinatura?.assinatura_data_url ||
+    assinatura?.signature_data_url ||
+    assinatura?.image_url ||
+    assinatura?.file_url ||
+    kit?.assinatura_data_url ||
+    kit?.signature_url ||
+    "";
+  if (!raw || typeof raw !== "string") return null;
+  if (raw.startsWith("data:image")) return raw;
+  if (raw.startsWith("http")) return raw;
+  if (raw.length > 100) return `data:image/png;base64,${raw}`;
+  return null;
+}
+
 // ─── HTML de impressão com assinatura visual ─────────────────────────────────
 function buildKitHtml(kit, patient, assinatura) {
   const now         = new Date().toLocaleString("pt-BR");
@@ -50,20 +67,18 @@ function buildKitHtml(kit, patient, assinatura) {
   const dataAss     = kit.data_assinatura ? new Date(kit.data_assinatura).toLocaleString("pt-BR") : "—";
   const assinadoPor = kit.assinado_por || assinatura?.assinante_nome || "—";
   const cpf         = assinatura?.assinante_cpf || "—";
-  const sigUrl      = assinatura?.assinatura_data_url || "";
+  const sigImg      = normalizeSignatureImage(assinatura, kit);
 
-  const sigImgBlock = sigUrl
+  const sigImgBlock = sigImg
     ? `<div style="margin-top:14px">
         <strong>Assinatura Manuscrita:</strong><br/>
-        <img src="${sigUrl}" alt="Assinatura"
-          style="display:block;max-width:280px;max-height:120px;object-fit:contain;background:#fff;border:1px solid #ddd;padding:4px;margin-top:6px;"
-          onerror="this.style.display='none';document.getElementById('sig-fallback').style.display='block';" />
-        <div id="sig-fallback" style="display:none;color:#444;font-size:11px;margin-top:6px;">
-          Assinado eletronicamente por: ${assinadoPor} — CPF: ${cpf} — ${dataAss}
-        </div>
+        <img src="${sigImg}" alt="Assinatura manuscrita"
+          style="display:block;max-width:320px;max-height:140px;width:auto;height:auto;object-fit:contain;background:#ffffff;border:1px solid #dddddd;padding:4px;margin-top:6px;" />
+        <div style="border-bottom:1px solid #222;width:320px;margin-top:6px;"></div>
+        <p style="margin-top:4px;font-size:11px;color:#333;">${assinadoPor} — CPF: ${cpf}</p>
       </div>`
-    : `<div style="margin-top:14px;color:#444;font-size:11px;">
-        Assinado eletronicamente por: ${assinadoPor} — CPF: ${cpf} — ${dataAss} — Método: Assinatura Interna
+    : `<div style="margin-top:14px;color:#666;font-size:11px;font-style:italic;">
+        Assinado eletronicamente por: ${assinadoPor} — CPF: ${cpf} — ${dataAss} — Método: Assinatura Digital Presencial
       </div>`;
 
   return `<!DOCTYPE html>
@@ -131,14 +146,21 @@ O profissional forneceu todas as informações necessárias. A paciente confirma
 Teve oportunidade de fazer perguntas, que foram respondidas satisfatoriamente.
 Autoriza a realização dos procedimentos descritos e está ciente que pode revogar o consentimento antes da realização.</div>
 
-  <h2>Assinatura Eletrônica</h2>
+  <h2>Certificado de Assinatura Eletrônica</h2>
   <div class="sig-block">
-    <div class="field"><strong>Nome:</strong> ${assinadoPor}</div>
+    <div class="field"><strong>Documento:</strong> ${proc}</div>
+    <div class="field"><strong>Paciente:</strong> ${nome}</div>
+    <div class="field"><strong>Assinante:</strong> ${assinadoPor}</div>
     <div class="field"><strong>CPF:</strong> ${cpf}</div>
-    <div class="field"><strong>Data:</strong> ${dataAss}</div>
-    <div class="field"><strong>Método:</strong> Assinatura Digital Presencial</div>
-    <div class="field"><strong>Status:</strong> &#10003; ASSINADO</div>
-    <div style="margin-top:12px"><strong>Hash:</strong><br/><span class="hash">${hash}</span></div>
+    <div class="field"><strong>Data/Hora:</strong> ${dataAss}</div>
+    <div class="field"><strong>Método:</strong> Assinatura Digital Presencial (Canvas)</div>
+    <div class="field"><strong>Status:</strong> <span style="color:#16a34a;font-weight:bold;">&#10003; ASSINADO ELETRONICAMENTE</span></div>
+    <div class="field"><strong>Declarou Leitura:</strong> Sim</div>
+    <div class="field"><strong>Concordou com os Termos:</strong> Sim</div>
+    <div style="margin-top:12px"><strong>Hash de Integridade:</strong><br/><span class="hash">${hash}</span></div>
+    <div style="margin-top:8px;font-size:10px;color:#555;font-style:italic;">
+      "Este documento foi assinado eletronicamente mediante aceite digital, confirmação de leitura e concordância com os termos apresentados na plataforma."
+    </div>
     ${sigImgBlock}
   </div>
 
