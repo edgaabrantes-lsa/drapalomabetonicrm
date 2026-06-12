@@ -1,34 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { appParams } from "@/lib/app-params";
 import { T, S } from "@/lib/designTokens";
 import { X, PenLine, RotateCcw, CheckCircle2, Shield, FileText } from "lucide-react";
-
-// Upload via FormData real (evita { files: {} } vazio no JSON)
-async function uploadFileToStorage(fileOrBlob, fileName, mimeType) {
-  const file = fileOrBlob instanceof File
-    ? fileOrBlob
-    : new File([fileOrBlob], fileName, { type: mimeType });
-  if (file.size === 0) throw new Error("Arquivo para upload está vazio");
-  const formData = new FormData();
-  formData.append("file", file);
-  const baseUrl = (appParams.appBaseUrl || window.location.origin).replace(/\/$/, "");
-  const uploadUrl = `${baseUrl}/api/integrations/Core/UploadFile`;
-  const token = appParams.token;
-  const resp = await fetch(uploadUrl, {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: formData,
-    credentials: "include",
-  });
-  if (!resp.ok) {
-    const errText = await resp.text().catch(() => resp.statusText);
-    throw new Error("Upload HTTP " + resp.status + ": " + errText.substring(0, 300));
-  }
-  const result = await resp.json();
-  if (!result?.file_url) throw new Error("Upload sem file_url: " + JSON.stringify(result).substring(0, 200));
-  return result.file_url;
-}
 
 const CHECKBOXES_PADRAO = [
   { id: "leitura",     label: "Li e compreendi integralmente todo o Kit Documental." },
@@ -118,11 +91,9 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
 
     setSaving(true);
     try {
+      // Captura assinatura como data URL — sem upload externo (evita erro X-App-Id)
       const canvas = canvasRef.current;
-      const dataUrl = canvas.toDataURL("image/png");
-      const blob = await fetch(dataUrl).then(r => r.blob());
-      const sigUrl = await uploadFileToStorage(blob, "assinatura_kit.png", "image/png");
-      const uploadRes = { file_url: sigUrl };
+      const assinaturaDataUrl = canvas.toDataURL("image/png");
 
       const hashInput = `${kit.id}-${assinanteNome}-${assinanteCpf}-${now.toISOString()}`;
       let hash = 0;
@@ -138,7 +109,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         documento_tipo: "contrato_mestre",
         documento_versao: String(kit.versao || "1.0"),
         documento_hash: documentoHash,
-        assinatura_data_url: uploadRes.file_url,
+        assinatura_data_url: assinaturaDataUrl,
         assinante_nome: assinanteNome,
         assinante_cpf: assinanteCpf,
         assinante_tipo: tipoAssinante,
@@ -182,7 +153,7 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
         }
       }
 
-      // 4. Gerar PDF final assinado e fazer upload correto via File object
+      // 4. Tentar gerar PDF final (opcional — não bloqueia a assinatura)
       let pdfFinalUrl = null;
       try {
         const pdfResp = await base44.functions.invoke("gerarKitDocumental", {
@@ -191,31 +162,25 @@ export default function KitAssinaturaModal({ kit, patient, currentUser, onClose,
           assinatura_id: assinaturaCriada.id,
         });
         const pdfData = pdfResp?.data;
-
         if (pdfData?.success && pdfData.pdf_base64) {
-          // Converter base64 → Blob → File
           const byteStr = atob(pdfData.pdf_base64);
-          const bytes   = new Uint8Array(byteStr.length);
+          const bytes = new Uint8Array(byteStr.length);
           for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
           const pdfBlob = new Blob([bytes], { type: "application/pdf" });
-          if (pdfBlob.size === 0) throw new Error("Blob PDF vazio");
           const nomeArq = pdfData.pdf_file_name || `Kit_${kit.id}_Assinado_${Date.now()}.pdf`;
           const pdfFile = new File([pdfBlob], nomeArq, { type: "application/pdf" });
-          // Upload via FormData real
-          const up = { file_url: await uploadFileToStorage(pdfFile, nomeArq, "application/pdf") };
-          if (up?.file_url) {
-            pdfFinalUrl = up.file_url;
+          // Upload via SDK nativo (autenticado)
+          const upResult = await base44.integrations.Core.UploadFile({ file: pdfFile });
+          if (upResult?.file_url) {
+            pdfFinalUrl = upResult.file_url;
             await base44.entities.DossieKitDocumental.update(kit.id, {
               pdf_final_url: pdfFinalUrl,
               pdf_file_name: nomeArq,
             });
-            console.log("[KitModal] pdf_final_url salvo:", pdfFinalUrl);
-          } else {
-            console.warn("[KitModal] upload retornou sem file_url:", up);
           }
         }
       } catch (pdfErr) {
-        console.warn("[KitModal] PDF final não gerado após assinatura:", pdfErr.message);
+        console.warn("[KitModal] PDF final não gerado (não crítico):", pdfErr.message);
       }
 
       // 6. Log
