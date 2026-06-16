@@ -40,6 +40,7 @@ export default function KitDocumentalModal({ patient, financeiros, kitParaEditar
 
     try {
       const docs = getDocsParaProcedimento(categoria, tecnicas);
+      if (!docs || docs.length === 0) throw new Error("Nenhum documento encontrado para a categoria selecionada.");
       const now = new Date().toISOString();
       const user = await base44.auth.me().catch(() => null);
       const criado_por = user?.full_name || "Sistema";
@@ -146,6 +147,9 @@ export default function KitDocumentalModal({ patient, financeiros, kitParaEditar
       queryClient.invalidateQueries({ queryKey: ["dossie-docs", patient.id] });
       setResultado({ kit: kitCriado, docs: docsAtualizados });
       if (onKitGerado) onKitGerado(kitCriado);
+    } catch (err) {
+      console.error("[KitModal] Erro ao gerar kit:", err);
+      setErros([err.message || "Erro desconhecido ao gerar o kit. Tente novamente."]);
     } finally {
       setGerando(false);
     }
