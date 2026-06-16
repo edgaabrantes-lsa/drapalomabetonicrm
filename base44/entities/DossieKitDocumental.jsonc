@@ -108,6 +108,9 @@
     "assinatura_id": {
       "type": "string"
     },
+    "assinatura_image_url": {
+      "type": "string"
+    },
     "assinatura_status": {
       "type": "string",
       "enum": [
@@ -191,42 +194,9 @@
     "procedimento_nome"
   ],
   "rls": {
-    "create": {
-      "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
+    "create": {},
+    "read": {},
+    "update": {},
     "delete": {
       "user_condition": {
         "role": "admin"
