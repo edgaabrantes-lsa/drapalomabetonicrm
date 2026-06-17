@@ -13,6 +13,11 @@ export const PERFIS = {
     color: "#C8A96A",
     descricao: "Acesso total ao sistema",
   },
+  profissional_clinico_premium: {
+    label: "Profissional Clínico Premium",
+    color: "#06B6D4",
+    descricao: "Acesso clínico completo — sem financeiro/admin",
+  },
   gestor: {
     label: "Gestor",
     color: "#6366F1",
@@ -57,6 +62,11 @@ export const MENU_PERMISSIONS = {
   recepcao: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "Governanca", "CRM", "Chat",
   ],
+  profissional_clinico_premium: [
+    "Patients", "DossiePatient", "Agenda", "MedicalRecords",
+    "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
+    "CRM", "Chat",
+  ],
   profissional: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
@@ -84,6 +94,11 @@ export const ACTION_PERMISSIONS = {
   recepcao: {
     criar: true, editar: true, excluir: false, aprovar: false,
     assinar: false, configurar: false, gerenciar_usuarios: false,
+    ver_financeiro: false, ver_auditoria: false, exportar: false,
+  },
+  profissional_clinico_premium: {
+    criar: true, editar: true, excluir: false, aprovar: false,
+    assinar: true, configurar: false, gerenciar_usuarios: false,
     ver_financeiro: false, ver_auditoria: false, exportar: false,
   },
   profissional: {

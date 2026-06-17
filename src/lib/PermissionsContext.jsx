@@ -34,9 +34,8 @@ export function PermissionsProvider({ children }) {
     load();
   }, []);
 
-  // MODO TREINAMENTO — acesso total liberado temporariamente
-  const hasMenu = (_menuKey) => true;
-  const hasAction = (_action) => true;
+  const hasMenu = (menuKey) => canAccessMenu(perfil, menuKey);
+  const hasAction = (action) => canDo(perfil, action);
 
   return (
     <PermissionsContext.Provider value={{ user, clinicUser, perfil, loading, hasMenu, hasAction }}>

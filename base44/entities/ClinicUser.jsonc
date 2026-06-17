@@ -22,6 +22,7 @@
         "gestor",
         "recepcao",
         "profissional",
+        "profissional_clinico_premium",
         "financeiro",
         "visualizacao"
       ],
