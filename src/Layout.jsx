@@ -28,7 +28,8 @@ import {
   ScanFace,
   Layers,
   ShieldCheck,
-  FolderOpen
+  FolderOpen,
+  GitBranch
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -59,6 +60,7 @@ const navigation = [
   { name: "Bate-papo",           href: "Chat",               icon: MessagesSquare,   group: "comercial" },
   { name: "Triagem IA",          href: "Intake",             icon: ClipboardList,    group: "comercial" },
   // Administrativo
+  { name: "GitHub Monitor",      href: "GitHubMonitor",      icon: GitBranch,        group: "admin" },
   { name: "Governança Doc.",     href: "Governanca",         icon: ShieldCheck,      group: "admin" },
   { name: "Vigilância Sanitária",href: "VigilanciaPage",     icon: ShieldCheck,      group: "admin" },
   { name: "Config. da Clínica",  href: "ClinicSettingsPage", icon: Settings,         group: "admin" },

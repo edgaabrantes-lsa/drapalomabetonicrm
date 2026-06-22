@@ -14,6 +14,7 @@ import DossiePatient from './pages/DossiePatient.jsx';
 import Governanca from './pages/Governanca.jsx';
 import ClinicSettingsPage from './pages/ClinicSettingsPage.jsx';
 import UsuariosPermissoes from './pages/UsuariosPermissoes.jsx';
+import GitHubMonitor from './pages/GitHubMonitor.jsx';
 import { PermissionsProvider } from '@/lib/PermissionsContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -114,6 +115,13 @@ const AuthenticatedApp = () => {
       <Route path="/ClinicSettingsPage" element={
         <LayoutWrapper currentPageName="ClinicSettingsPage">
           <ClinicSettingsPage />
+        </LayoutWrapper>
+      } />
+
+      {/* GitHub Monitor */}
+      <Route path="/GitHubMonitor" element={
+        <LayoutWrapper currentPageName="GitHubMonitor">
+          <GitHubMonitor />
         </LayoutWrapper>
       } />
 
