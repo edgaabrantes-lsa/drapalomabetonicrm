@@ -13,21 +13,47 @@ Deno.serve(async (req) => {
 
   try {
     const base44 = createClientFromRequest(req);
+    const svc = base44.asServiceRole;
     const body = await req.json();
 
-    const paciente = body.paciente || {};
+    const nome = body.paciente?.nome_completo || body.patient_name || '';
+    const cpf = body.paciente?.cpf || body.cpf || '';
+    const telefone = body.paciente?.telefone_whatsapp || body.paciente?.phone || body.phone || '';
+    const email = body.paciente?.email || body.email || '';
+    const dataNascimento = body.paciente?.data_nascimento || body.birthdate || '';
 
-    await base44.asServiceRole.entities.Pacientes.create({
-      nome_completo: paciente.nome_completo || body.patient_name || '',
-      cpf: paciente.cpf || body.cpf || '',
-      telefone: paciente.telefone_whatsapp || paciente.phone || body.phone || '',
-      email: paciente.email || body.email || '',
-      data_nascimento: paciente.data_nascimento || body.birthdate || '',
-      origem: 'SensorlyFlow - Clínica Alba',
-    });
+    // Busca paciente existente por CPF ou email
+    let existing = [];
+    if (cpf) {
+      existing = await svc.entities.Patient.filter({ document_number: cpf });
+    }
+    if (existing.length === 0 && email) {
+      existing = await svc.entities.Patient.filter({ email });
+    }
 
-    return Response.json({ success: true });
-  } catch (e) {
-    return Response.json({ error: e.message }, { status: 500 });
+    if (existing.length > 0) {
+      // Atualiza paciente existente
+      const updates = {};
+      if (telefone) updates.phone = telefone;
+      if (email) updates.email = email;
+      if (dataNascimento) updates.birth_date = dataNascimento;
+      if (nome) updates.full_name = nome;
+      await svc.entities.Patient.update(existing[0].id, updates);
+      return Response.json({ success: true, action: 'updated', id: existing[0].id });
+    } else {
+      // Cria novo paciente
+      const created = await svc.entities.Patient.create({
+        full_name: nome,
+        document_number: cpf,
+        phone: telefone,
+        email,
+        birth_date: dataNascimento,
+        source: 'other',
+        notes: 'Cadastrado via SensorlyFlow',
+      });
+      return Response.json({ success: true, action: 'created', id: created.id });
+    }
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
   }
 });
