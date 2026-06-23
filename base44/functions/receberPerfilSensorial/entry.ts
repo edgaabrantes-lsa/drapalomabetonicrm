@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
         email,
         birth_date: dataNascimento,
         source: 'other',
+        dossie_status: 'lead',
         notes: 'Cadastrado via SensorlyFlow',
       });
       patientId = created.id;
