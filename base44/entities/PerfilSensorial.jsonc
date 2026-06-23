@@ -1,0 +1,108 @@
+{
+  "name": "PerfilSensorial",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "submission_id": {
+      "type": "string"
+    },
+    "appointment_periods": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "beverage_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "food_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dietary_restrictions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "environment_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "temperature_preference": {
+      "type": "string"
+    },
+    "likes_aromas": {
+      "type": "boolean",
+      "default": false
+    },
+    "aroma_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "service_style": {
+      "type": "string"
+    },
+    "hospitality_summary": {
+      "type": "string"
+    },
+    "lgpd_consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "lgpd_consent_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lgpd_consent_version": {
+      "type": "string"
+    },
+    "form_source": {
+      "type": "string",
+      "default": "SensorlyFlow"
+    },
+    "url_origem": {
+      "type": "string"
+    },
+    "dispositivo": {
+      "type": "string"
+    },
+    "navegador": {
+      "type": "string"
+    },
+    "crm_status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

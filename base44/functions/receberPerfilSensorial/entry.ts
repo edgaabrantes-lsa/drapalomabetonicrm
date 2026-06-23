@@ -16,14 +16,17 @@ Deno.serve(async (req) => {
     const svc = base44.asServiceRole;
     const body = await req.json();
 
-    const nome = body.paciente?.nome_completo || body.patient_name || '';
-    const cpf = body.paciente?.cpf || body.cpf || '';
-    const telefone = body.paciente?.telefone_whatsapp || body.paciente?.phone || body.phone || '';
-    const email = body.paciente?.email || body.email || '';
-    const dataNascimento = body.paciente?.data_nascimento || body.birthdate || '';
+    // Campos de identificação
+    const nome = body.client_name || body.paciente?.nome_completo || body.patient_name || '';
+    const cpf = body.client_cpf || body.paciente?.cpf || body.cpf || '';
+    const telefone = body.client_phone || body.paciente?.telefone_whatsapp || body.phone || '';
+    const email = body.client_email || body.paciente?.email || body.email || '';
+    const dataNascimento = body.client_birthdate || body.paciente?.data_nascimento || body.birthdate || '';
 
-    // Busca paciente existente por CPF ou email
+    // 1. Upsert do paciente
+    let patientId = null;
     let existing = [];
+
     if (cpf) {
       existing = await svc.entities.Patient.filter({ document_number: cpf });
     }
@@ -32,16 +35,14 @@ Deno.serve(async (req) => {
     }
 
     if (existing.length > 0) {
-      // Atualiza paciente existente
+      patientId = existing[0].id;
       const updates = {};
+      if (nome) updates.full_name = nome;
       if (telefone) updates.phone = telefone;
       if (email) updates.email = email;
       if (dataNascimento) updates.birth_date = dataNascimento;
-      if (nome) updates.full_name = nome;
-      await svc.entities.Patient.update(existing[0].id, updates);
-      return Response.json({ success: true, action: 'updated', id: existing[0].id });
+      await svc.entities.Patient.update(patientId, updates);
     } else {
-      // Cria novo paciente
       const created = await svc.entities.Patient.create({
         full_name: nome,
         document_number: cpf,
@@ -51,9 +52,51 @@ Deno.serve(async (req) => {
         source: 'other',
         notes: 'Cadastrado via SensorlyFlow',
       });
-      return Response.json({ success: true, action: 'created', id: created.id });
+      patientId = created.id;
     }
+
+    // 2. Salvar/atualizar perfil sensorial
+    const perfilData = {
+      patient_id: patientId,
+      patient_name: nome,
+      submission_id: body.submission_id || req.headers.get('X-Submission-ID') || '',
+      appointment_periods: toArray(body.appointment_periods),
+      beverage_preferences: toArray(body.beverage_preferences),
+      food_preferences: toArray(body.food_preferences),
+      dietary_restrictions: toArray(body.dietary_restrictions),
+      environment_preferences: toArray(body.environment_preferences),
+      temperature_preference: body.temperature_preference || '',
+      likes_aromas: body.likes_aromas === true || body.likes_aromas === 'true',
+      aroma_preferences: toArray(body.aroma_preferences),
+      service_style: body.service_style || '',
+      hospitality_summary: body.hospitality_summary || '',
+      lgpd_consent: body.lgpd_consent === true || body.lgpd_consent === 'true',
+      lgpd_consent_date: body.lgpd_consent_date || null,
+      lgpd_consent_version: body.lgpd_consent_version || '',
+      form_source: body.form_source || 'SensorlyFlow',
+      url_origem: body.url_origem || '',
+      dispositivo: body.dispositivo || '',
+      navegador: body.navegador || '',
+      crm_status: body.crm_status || '',
+    };
+
+    // Se já existe perfil para este paciente, atualiza; senão cria
+    const existingPerfil = await svc.entities.PerfilSensorial.filter({ patient_id: patientId });
+    if (existingPerfil.length > 0) {
+      await svc.entities.PerfilSensorial.update(existingPerfil[0].id, perfilData);
+    } else {
+      await svc.entities.PerfilSensorial.create(perfilData);
+    }
+
+    return Response.json({ success: true, patient_id: patientId, action: existing.length > 0 ? 'updated' : 'created' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
+
+function toArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+  return [];
+}
