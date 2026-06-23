@@ -1,113 +1,180 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-SensorlyFlow-Secret, X-SensorFlow-Secret, X-Submission-ID',
+};
+
 Deno.serve(async (req) => {
+  const log = { timestamp: new Date().toISOString(), method: req.method, url: req.url, steps: [] };
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-SensorlyFlow-Secret, X-Submission-ID',
-      },
-    });
+    return new Response(null, { headers: CORS_HEADERS });
   }
 
   try {
-    // Segurança: verificar API key
+    // ── AUTH: aceita header X-SensorlyFlow-Secret, X-SensorFlow-Secret, Authorization, ou query param api_key ──
     const expectedKey = Deno.env.get('SENSORFLOW_API_KEY');
-    const receivedKey = req.headers.get('X-SensorlyFlow-Secret') || req.headers.get('Authorization')?.replace('Bearer ', '');
-    if (!receivedKey || receivedKey !== expectedKey) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const url = new URL(req.url);
+    const receivedKey =
+      req.headers.get('X-SensorlyFlow-Secret') ||
+      req.headers.get('X-SensorFlow-Secret') ||
+      req.headers.get('x-sensorlyflow-secret') ||
+      req.headers.get('x-sensorflow-secret') ||
+      req.headers.get('Authorization')?.replace('Bearer ', '') ||
+      url.searchParams.get('api_key');
+
+    // Capturar headers para log (sem expor a chave)
+    log.headers_received = {
+      'content-type': req.headers.get('content-type'),
+      'x-sensorlyflow-secret': receivedKey ? '***presente***' : 'AUSENTE',
+      'x-submission-id': req.headers.get('X-Submission-ID'),
+    };
+
+    if (!expectedKey) {
+      log.steps.push('ERRO: SENSORFLOW_API_KEY não configurada no ambiente');
+      console.error('[SENSORFLOW] ERRO CRÍTICO: variável SENSORFLOW_API_KEY não definida', JSON.stringify(log));
+      return Response.json({ error: 'Server configuration error', log }, { status: 500, headers: CORS_HEADERS });
     }
+
+    if (!receivedKey) {
+      log.steps.push('AUTH: chave ausente → 401');
+      console.warn('[SENSORFLOW] 401 - Chave ausente', JSON.stringify(log));
+      return Response.json({ error: 'Unauthorized: missing X-SensorlyFlow-Secret header', log }, { status: 401, headers: CORS_HEADERS });
+    }
+
+    if (receivedKey !== expectedKey) {
+      log.steps.push(`AUTH: chave inválida → 401`);
+      console.warn('[SENSORFLOW] 401 - Chave inválida', JSON.stringify(log));
+      return Response.json({ error: 'Unauthorized: invalid key', log }, { status: 401, headers: CORS_HEADERS });
+    }
+
+    log.steps.push('AUTH: ok');
+
+    // ── PARSE BODY ──
+    let body;
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      body = await req.json();
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      const text = await req.text();
+      body = Object.fromEntries(new URLSearchParams(text));
+    } else {
+      const text = await req.text();
+      try { body = JSON.parse(text); } catch { body = {}; }
+    }
+
+    log.payload_received = body;
+    log.steps.push('BODY: parseado com sucesso');
+
+    // ── VALIDAÇÃO MÍNIMA ──
+    const nome      = body.client_name     || body.nome     || body.name     || body.full_name     || body.paciente?.nome_completo || '';
+    const cpf       = body.client_cpf      || body.cpf      || body.document_number || body.paciente?.cpf || '';
+    const telefone  = body.client_phone    || body.telefone || body.phone    || body.whatsapp      || body.paciente?.telefone || body.paciente?.telefone_whatsapp || '';
+    const email     = body.client_email    || body.email    || body.paciente?.email || '';
+    const nascimento= body.client_birthdate|| body.data_nascimento || body.birthdate || body.birth_date || '';
+    const cidade    = body.cidade          || body.city     || body.paciente?.cidade || '';
+    const interesse = body.interesse       || body.procedimento_interesse || body.interest || body.paciente?.interesse || '';
+
+    if (!nome && !telefone && !email) {
+      log.steps.push('VALIDAÇÃO: payload inválido - nome, telefone e email ausentes');
+      console.warn('[SENSORFLOW] 400 - Payload sem dados de identificação', JSON.stringify(log));
+      return Response.json({ error: 'Bad Request: payload must contain at least name, phone or email', log }, { status: 400, headers: CORS_HEADERS });
+    }
+
+    log.steps.push(`IDENTIFICAÇÃO: nome="${nome}" tel="${telefone}" email="${email}"`);
 
     const base44 = createClientFromRequest(req);
     const svc = base44.asServiceRole;
-    const body = await req.json();
 
-    // ── Extração de campos de identificação (aceita múltiplos formatos) ──
-    const nome      = body.client_name     || body.nome     || body.paciente?.nome_completo || body.patient_name || body.name || '';
-    const cpf       = body.client_cpf      || body.cpf      || body.paciente?.cpf           || body.document_number || '';
-    const telefone  = body.client_phone    || body.telefone || body.paciente?.telefone_whatsapp || body.phone || body.whatsapp || '';
-    const email     = body.client_email    || body.email    || body.paciente?.email          || '';
-    const nascimento= body.client_birthdate|| body.data_nascimento || body.birthdate || body.birth_date || '';
-    const cidade    = body.cidade          || body.city     || body.paciente?.cidade         || '';
-    const interesse = body.interesse       || body.procedimento_interesse || body.interest   || '';
+    const cleanPhone = (p) => p ? String(p).replace(/\D/g, '') : '';
+    const cleanCpf   = (c) => c ? String(c).replace(/\D/g, '') : '';
+    const telClean   = cleanPhone(telefone);
 
-    // ── 1. Buscar paciente existente: CPF → email → telefone ──
+    // ── BUSCA DE PACIENTE EXISTENTE ──
     let existing = [];
-    let patientId = null;
-    let isNew = false;
 
-    const cleanPhone = (p) => p ? p.replace(/\D/g, '') : '';
-    const cleanCpf   = (c) => c ? c.replace(/\D/g, '') : '';
-
+    // 1. Por CPF
     if (cpf && cleanCpf(cpf).length >= 11) {
-      existing = await svc.entities.Patient.filter({ document_number: cpf });
-      // Tenta também sem formatação
-      if (existing.length === 0) {
-        existing = await svc.entities.Patient.filter({ document_number: cleanCpf(cpf) });
-      }
+      const r1 = await svc.entities.Patient.filter({ document_number: cpf });
+      const r2 = r1.length === 0 ? await svc.entities.Patient.filter({ document_number: cleanCpf(cpf) }) : r1;
+      existing = r2;
+      if (existing.length > 0) log.steps.push(`BUSCA: encontrado por CPF`);
     }
 
+    // 2. Por e-mail
     if (existing.length === 0 && email) {
       existing = await svc.entities.Patient.filter({ email });
+      if (existing.length > 0) log.steps.push(`BUSCA: encontrado por email`);
     }
 
+    // 3. Por telefone (formato original e normalizado)
     if (existing.length === 0 && telefone) {
-      const tel = cleanPhone(telefone);
-      // Busca por telefone ou whatsapp
-      const byPhone = await svc.entities.Patient.filter({ phone: telefone });
-      if (byPhone.length > 0) {
-        existing = byPhone;
-      } else {
-        const byWa = await svc.entities.Patient.filter({ whatsapp: telefone });
-        if (byWa.length > 0) existing = byWa;
-      }
+      const byPhone1 = await svc.entities.Patient.filter({ phone: telefone });
+      const byPhone2 = byPhone1.length === 0 && telClean ? await svc.entities.Patient.filter({ phone: telClean }) : byPhone1;
+      const byWa1    = byPhone2.length === 0 ? await svc.entities.Patient.filter({ whatsapp: telefone }) : byPhone2;
+      const byWa2    = byWa1.length === 0 && telClean ? await svc.entities.Patient.filter({ whatsapp: telClean }) : byWa1;
+      existing = byWa2;
+      if (existing.length > 0) log.steps.push(`BUSCA: encontrado por telefone`);
     }
+
+    let patientId;
+    let isNew = false;
 
     if (existing.length > 0) {
-      // ── Paciente já existe: atualizar apenas campos não preenchidos ──
       patientId = existing[0].id;
+      log.steps.push(`PACIENTE: existente ID=${patientId} nome="${existing[0].full_name}"`);
+
+      // Atualizar campos vazios
       const updates = {};
-      if (nome     && !existing[0].full_name)       updates.full_name       = nome;
-      if (telefone && !existing[0].phone)            updates.phone           = telefone;
-      if (email    && !existing[0].email)            updates.email           = email;
-      if (nascimento && !existing[0].birth_date)     updates.birth_date      = nascimento;
-      if (cidade   && !existing[0].address?.city)   updates.address         = { ...(existing[0].address || {}), city: cidade };
-      if (interesse && !existing[0].interest)        updates.interest        = interesse;
+      if (nome      && !existing[0].full_name)        updates.full_name       = nome;
+      if (telefone  && !existing[0].phone)             updates.phone           = telefone;
+      if (email     && !existing[0].email)             updates.email           = email;
+      if (nascimento&& !existing[0].birth_date)        updates.birth_date      = nascimento;
+      if (cpf       && !existing[0].document_number)  updates.document_number = cpf;
+      if (interesse && !existing[0].interest)          updates.interest        = interesse;
+      if (cidade    && !existing[0].address?.city)     updates.address        = { ...(existing[0].address || {}), city: cidade };
       if (Object.keys(updates).length > 0) {
         await svc.entities.Patient.update(patientId, updates);
+        log.steps.push(`PACIENTE: atualizado campos=${Object.keys(updates).join(',')}`);
+      } else {
+        log.steps.push('PACIENTE: nenhum campo novo para atualizar');
       }
     } else {
-      // ── Paciente novo: criar com todos os dados disponíveis ──
+      // Criar novo paciente
       isNew = true;
       const novoPatient = {
-        full_name:       nome || 'Paciente SensorFlow',
-        phone:           telefone,
-        email:           email,
-        birth_date:      nascimento,
-        document_number: cpf,
+        full_name:       nome || `Lead SensorFlow ${new Date().toLocaleDateString('pt-BR')}`,
+        phone:           telefone || '',
+        email:           email || '',
+        birth_date:      nascimento || '',
+        document_number: cpf || '',
         source:          'other',
         dossie_status:   'lead',
-        interest:        interesse,
+        interest:        interesse || '',
+        tags:            ['SensorFlow'],
         notes:           `Cadastrado automaticamente via SensorlyFlow em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
       };
       if (cidade) novoPatient.address = { city: cidade };
       const created = await svc.entities.Patient.create(novoPatient);
       patientId = created.id;
+      log.steps.push(`PACIENTE: criado ID=${patientId}`);
     }
 
-    // ── 2. Montar e salvar Perfil Sensorial ──
-    // Captura campos extras/livres que o SensorFlow possa enviar além dos mapeados
+    // ── PERFIL SENSORIAL ──
+    // Campos extras além dos mapeados são salvos no hospitality_summary
     const camposMapeados = new Set([
-      'client_name','nome','patient_name','name','client_cpf','cpf','document_number',
-      'client_phone','telefone','phone','whatsapp','client_email','email',
-      'client_birthdate','data_nascimento','birthdate','birth_date','cidade','city',
-      'interesse','procedimento_interesse','interest',
+      'client_name','nome','patient_name','name','full_name',
+      'client_cpf','cpf','document_number','paciente',
+      'client_phone','telefone','phone','whatsapp',
+      'client_email','email',
+      'client_birthdate','data_nascimento','birthdate','birth_date',
+      'cidade','city','interesse','procedimento_interesse','interest',
       'submission_id','form_source','url_origem','dispositivo','navegador','crm_status',
       'appointment_periods','beverage_preferences','food_preferences','dietary_restrictions',
       'environment_preferences','temperature_preference','likes_aromas','aroma_preferences',
       'service_style','hospitality_summary','lgpd_consent','lgpd_consent_date','lgpd_consent_version',
-      'paciente',
     ]);
 
     const camposExtras = {};
@@ -117,54 +184,61 @@ Deno.serve(async (req) => {
       }
     }
 
+    const extrasSummary = Object.keys(camposExtras).length > 0
+      ? '\n\nDados adicionais: ' + Object.entries(camposExtras).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' | ')
+      : '';
+
     const perfilData = {
-      patient_id:            patientId,
-      patient_name:          nome,
-      submission_id:         body.submission_id || req.headers.get('X-Submission-ID') || crypto.randomUUID(),
-      appointment_periods:   toArray(body.appointment_periods),
-      beverage_preferences:  toArray(body.beverage_preferences),
-      food_preferences:      toArray(body.food_preferences),
-      dietary_restrictions:  toArray(body.dietary_restrictions),
+      patient_id:              patientId,
+      patient_name:            nome || existing?.[0]?.full_name || '',
+      submission_id:           body.submission_id || req.headers.get('X-Submission-ID') || crypto.randomUUID(),
+      appointment_periods:     toArray(body.appointment_periods),
+      beverage_preferences:    toArray(body.beverage_preferences),
+      food_preferences:        toArray(body.food_preferences),
+      dietary_restrictions:    toArray(body.dietary_restrictions),
       environment_preferences: toArray(body.environment_preferences),
-      temperature_preference:body.temperature_preference || '',
-      likes_aromas:          body.likes_aromas === true || body.likes_aromas === 'true',
-      aroma_preferences:     toArray(body.aroma_preferences),
-      service_style:         body.service_style || '',
-      hospitality_summary:   body.hospitality_summary || '',
-      lgpd_consent:          body.lgpd_consent === true || body.lgpd_consent === 'true',
-      lgpd_consent_date:     body.lgpd_consent_date || new Date().toISOString(),
-      lgpd_consent_version:  body.lgpd_consent_version || '',
-      form_source:           body.form_source || 'SensorlyFlow',
-      url_origem:            body.url_origem || '',
-      dispositivo:           body.dispositivo || '',
-      navegador:             body.navegador || '',
-      crm_status:            isNew ? 'novo_lead' : 'atualizado',
+      temperature_preference:  body.temperature_preference || '',
+      likes_aromas:            body.likes_aromas === true || body.likes_aromas === 'true',
+      aroma_preferences:       toArray(body.aroma_preferences),
+      service_style:           body.service_style || '',
+      hospitality_summary:     (body.hospitality_summary || '') + extrasSummary,
+      lgpd_consent:            body.lgpd_consent === true || body.lgpd_consent === 'true',
+      lgpd_consent_date:       body.lgpd_consent_date || new Date().toISOString(),
+      lgpd_consent_version:    body.lgpd_consent_version || '',
+      form_source:             body.form_source || 'SensorlyFlow',
+      url_origem:              body.url_origem || '',
+      dispositivo:             body.dispositivo || '',
+      navegador:               body.navegador || '',
+      crm_status:              isNew ? 'novo_lead' : 'atualizado',
     };
 
-    // Armazena campos extras no hospitality_summary se não houver resumo
-    if (Object.keys(camposExtras).length > 0 && !perfilData.hospitality_summary) {
-      perfilData.hospitality_summary = 'Dados adicionais: ' + Object.entries(camposExtras)
-        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-        .join(' | ');
-    }
-
-    // Upsert do perfil sensorial
     const existingPerfil = await svc.entities.PerfilSensorial.filter({ patient_id: patientId });
     if (existingPerfil.length > 0) {
       await svc.entities.PerfilSensorial.update(existingPerfil[0].id, perfilData);
+      log.steps.push(`PERFIL_SENSORIAL: atualizado ID=${existingPerfil[0].id}`);
     } else {
-      await svc.entities.PerfilSensorial.create(perfilData);
+      const criado = await svc.entities.PerfilSensorial.create(perfilData);
+      log.steps.push(`PERFIL_SENSORIAL: criado ID=${criado.id}`);
     }
 
-    return Response.json({
+    log.steps.push('SUCESSO');
+    const responseBody = {
       success: true,
       patient_id: patientId,
+      patient_name: nome || existing?.[0]?.full_name,
       action: isNew ? 'patient_created' : 'patient_updated',
-      perfil_sensorial: isNew ? 'created' : 'updated',
-    });
+      perfil_sensorial: existingPerfil?.length > 0 ? 'updated' : 'created',
+      log,
+    };
+
+    console.log('[SENSORFLOW] Sucesso:', JSON.stringify(responseBody));
+    return Response.json(responseBody, { status: isNew ? 201 : 200, headers: CORS_HEADERS });
 
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    log.steps.push(`ERRO: ${error.message}`);
+    log.error_stack = error.stack;
+    console.error('[SENSORFLOW] Erro interno:', error.message, JSON.stringify(log));
+    return Response.json({ error: error.message, log }, { status: 500, headers: CORS_HEADERS });
   }
 });
 
@@ -172,5 +246,5 @@ function toArray(val) {
   if (!val) return [];
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
-  return [];
+  return [String(val)];
 }
