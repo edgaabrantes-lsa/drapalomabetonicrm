@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
 
   try {
     // ── AUTH: aceita header X-SensorlyFlow-Secret, X-SensorFlow-Secret, Authorization, ou query param api_key ──
-    const expectedKey = Deno.env.get('SENSORFLOW_API_KEY');
+    const expectedKey = Deno.env.get('CRM_WEBHOOK_SECRET');
     const url = new URL(req.url);
     const receivedKey =
       req.headers.get('X-SensorlyFlow-Secret') ||
@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
     };
 
     if (!expectedKey) {
-      log.steps.push('ERRO: SENSORFLOW_API_KEY não configurada no ambiente');
-      console.error('[SENSORFLOW] ERRO CRÍTICO: variável SENSORFLOW_API_KEY não definida', JSON.stringify(log));
+      log.steps.push('ERRO: CRM_WEBHOOK_SECRET não configurada no ambiente');
+      console.error('[SENSORFLOW] ERRO CRÍTICO: variável CRM_WEBHOOK_SECRET não definida', JSON.stringify(log));
       return Response.json({ error: 'Server configuration error', log }, { status: 500, headers: CORS_HEADERS });
     }
 
