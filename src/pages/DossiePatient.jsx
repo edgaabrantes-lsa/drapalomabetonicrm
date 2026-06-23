@@ -10,14 +10,16 @@ import DossieImagensArquivos        from "@/components/dossie/DossieImagensArqui
 import DossieFinanceiroTab          from "@/components/dossie/DossieFinanceiroTab";
 import DossieObservacoes            from "@/components/dossie/DossieObservacoes";
 import DossieDocumentacaoNew        from "@/components/documentacao/DossieDocumentacaoNew";
+import DossiePerfilSensorial         from "@/components/dossie/DossiePerfilSensorial";
 
 const ABAS = [
-  { id: "cadastro",       label: "Cadastro" },
-  { id: "prontuario",     label: "Prontuário" },
-  { id: "fotos",          label: "Fotos" },
-  { id: "financeiro",     label: "Financeiro" },
-  { id: "documentacao",   label: "Documentação" },
-  { id: "observacoes",    label: "Observações" },
+  { id: "cadastro",         label: "Cadastro" },
+  { id: "prontuario",       label: "Prontuário" },
+  { id: "fotos",            label: "Fotos" },
+  { id: "financeiro",       label: "Financeiro" },
+  { id: "documentacao",     label: "Documentação" },
+  { id: "observacoes",      label: "Observações" },
+  { id: "perfil_sensorial", label: "Perfil Sensorial" },
 ];
 
 export default function DossiePatient() {
@@ -316,7 +318,8 @@ export default function DossiePatient() {
                   {activeTab === "fotos"         && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "financeiro"    && <DossieFinanceiroTab patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "documentacao"  && <DossieDocumentacaoNew patient={selectedPatient} currentUser={currentUser} />}
-                  {activeTab === "observacoes"   && <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "observacoes"      && <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "perfil_sensorial" && <DossiePerfilSensorial patient={selectedPatient} />}
                 </div>
               </div>
             </div>
