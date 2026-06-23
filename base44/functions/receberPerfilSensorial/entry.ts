@@ -15,7 +15,8 @@ Deno.serve(async (req) => {
 
   try {
     // ── AUTH: aceita header X-SensorlyFlow-Secret, X-SensorFlow-Secret, Authorization, ou query param api_key ──
-    const expectedKey = Deno.env.get('CRM_WEBHOOK_SECRET');
+    // Tenta CRM_WEBHOOK_SECRET primeiro, fallback para SENSORFLOW_API_KEY
+    const expectedKey = Deno.env.get('CRM_WEBHOOK_SECRET') || Deno.env.get('SENSORFLOW_API_KEY');
     const url = new URL(req.url);
     const receivedKey =
       req.headers.get('X-SensorlyFlow-Secret') ||
@@ -32,9 +33,17 @@ Deno.serve(async (req) => {
       'x-submission-id': req.headers.get('X-Submission-ID'),
     };
 
+    // Debug: verificar quais variáveis estão disponíveis
+    const crmSecret = Deno.env.get('CRM_WEBHOOK_SECRET');
+    const sensorSecret = Deno.env.get('SENSORFLOW_API_KEY');
+    log.env_vars_available = {
+      CRM_WEBHOOK_SECRET: crmSecret ? 'presente (***' + crmSecret.slice(-4) + ')' : 'AUSENTE',
+      SENSORFLOW_API_KEY: sensorSecret ? 'presente (***' + sensorSecret.slice(-4) + ')' : 'AUSENTE',
+    };
+
     if (!expectedKey) {
-      log.steps.push('ERRO: CRM_WEBHOOK_SECRET não configurada no ambiente');
-      console.error('[SENSORFLOW] ERRO CRÍTICO: variável CRM_WEBHOOK_SECRET não definida', JSON.stringify(log));
+      log.steps.push('ERRO: CRM_WEBHOOK_SECRET e SENSORFLOW_API_KEY não configuradas');
+      console.error('[SENSORFLOW] ERRO CRÍTICO: variáveis de ambiente não definidas', JSON.stringify(log));
       return Response.json({ error: 'Server configuration error', log }, { status: 500, headers: CORS_HEADERS });
     }
 
