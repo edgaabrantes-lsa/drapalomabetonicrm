@@ -12,6 +12,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validação de segurança: verificar API key do SensorlyFlow
+    const expectedKey = Deno.env.get('SENSORFLOW_API_KEY');
+    const receivedKey = req.headers.get('X-SensorlyFlow-Secret') || req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!receivedKey || receivedKey !== expectedKey) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const base44 = createClientFromRequest(req);
     const svc = base44.asServiceRole;
     const body = await req.json();
