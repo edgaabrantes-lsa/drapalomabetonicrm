@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { Camera, Upload, X, Check, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -160,62 +161,36 @@ export default function FullFaceSimulationModal({
     setError("");
 
     try {
-      // Upload da imagem original
-      const uploadForm = new FormData();
-      uploadForm.append("file", imageFile);
+      // Upload da imagem original via SDK
+      const { file_url: original_image_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
+      if (!original_image_url) throw new Error("Falha no upload da imagem");
 
-      const uploadResponse = await fetch("https://api.base44.com/v1/files/upload", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("base44_token")}`
-        },
-        body: uploadForm
+      // Chamar backend function via SDK
+      const response = await base44.functions.invoke("generateFullFaceSimulation", {
+        patient_id: patientId,
+        original_image_url,
+        source_type: sourceType || "upload",
+        consent_lgpd: true,
+        simulation_options: ["full_face"],
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error("Falha no upload da imagem");
-      }
-
-      const uploadResult = await uploadResponse.json();
-      const original_image_url = uploadResult.file_url;
-
-      // Chamar backend function
-      const response = await fetch("https://api.base44.com/v1/functions/generateFullFaceSimulation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("base44_token")}`
-        },
-        body: JSON.stringify({
-          patient_id: patientId,
-          original_image_url,
-          source_type: sourceType,
-          consent_lgpd: true,
-          requested_protocol: "full_face_premium"
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Falha na geração");
-      }
+      const result = response.data;
+      if (!result?.generated_image_url) throw new Error(result?.error || "Nenhuma imagem gerada.");
 
       setGeneratedImage(result.generated_image_url);
       setTechnicalReport(result.technical_report || "");
       setStep("result");
 
-      // Callback de sucesso
       if (onSuccess) {
         onSuccess({
           simulation_id: result.simulation_id,
           generated_image_url: result.generated_image_url,
-          technical_report: result.technical_report
+          technical_report: result.technical_report,
         });
       }
     } catch (err) {
-      console.error("Erro na geração:", err);
-      setError(err.message || "Não conseguimos gerar a simulação neste momento.");
+      const msg = err?.response?.data?.error || err?.message || "Não conseguimos gerar a simulação neste momento.";
+      setError(msg);
       setStep("preview");
     } finally {
       setIsGenerating(false);
