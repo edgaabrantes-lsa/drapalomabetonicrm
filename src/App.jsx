@@ -15,6 +15,7 @@ import Governanca from './pages/Governanca.jsx';
 import ClinicSettingsPage from './pages/ClinicSettingsPage.jsx';
 import UsuariosPermissoes from './pages/UsuariosPermissoes.jsx';
 import GitHubMonitor from './pages/GitHubMonitor.jsx';
+import DREClinica from './pages/DREClinica.jsx';
 import { PermissionsProvider } from '@/lib/PermissionsContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -129,6 +130,13 @@ const AuthenticatedApp = () => {
       <Route path="/UsuariosPermissoes" element={
         <LayoutWrapper currentPageName="UsuariosPermissoes">
           <UsuariosPermissoes />
+        </LayoutWrapper>
+      } />
+
+      {/* DRE da Clínica */}
+      <Route path="/DREClinica" element={
+        <LayoutWrapper currentPageName="DREClinica">
+          <DREClinica />
         </LayoutWrapper>
       } />
     </Routes>

@@ -1,0 +1,65 @@
+{
+  "name": "DRECategoria",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "receita",
+        "deducoes",
+        "custo_direto",
+        "despesa_fixa",
+        "despesa_variavel",
+        "outra_despesa"
+      ]
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "cor": {
+      "type": "string",
+      "default": "#C8A96A"
+    },
+    "ordem": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    },
+    "predefinida": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "nome",
+    "tipo"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -29,7 +29,8 @@ import {
   Layers,
   ShieldCheck,
   FolderOpen,
-  GitBranch
+  GitBranch,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -54,6 +55,7 @@ const navigation = [
   { name: "Protocolos",          href: "Protocols",          icon: ClipboardList,    group: "clinico" },
   { name: "Protocolos Premium",  href: "ProtocolosPremium",  icon: Layers,           group: "clinico" },
   { name: "Financeiro",          href: "Financial",          icon: DollarSign,       group: "clinico" },
+  { name: "DRE da Clínica",      href: "DREClinica",         icon: BarChart3,        group: "clinico" },
   { name: "Estoque",             href: "Inventory",          icon: Package,          group: "clinico" },
   // Comercial
   { name: "CRM",                 href: "CRM",                icon: MessageSquare,    group: "comercial" },

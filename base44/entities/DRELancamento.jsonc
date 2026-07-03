@@ -1,0 +1,167 @@
+{
+  "name": "DRELancamento",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "receita",
+        "deducoes",
+        "custo_direto",
+        "despesa_fixa",
+        "despesa_variavel",
+        "outra_despesa"
+      ]
+    },
+    "categoria": {
+      "type": "string"
+    },
+    "categoria_id": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "valor": {
+      "type": "number"
+    },
+    "data_vencimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_pagamento": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pago",
+        "pendente",
+        "vencido",
+        "cancelado"
+      ],
+      "default": "pendente"
+    },
+    "forma_pagamento": {
+      "type": "string",
+      "enum": [
+        "dinheiro",
+        "pix",
+        "cartao_credito",
+        "cartao_debito",
+        "transferencia",
+        "boleto",
+        "link_pagamento",
+        "outro"
+      ]
+    },
+    "recorrencia": {
+      "type": "string",
+      "enum": [
+        "unica",
+        "mensal",
+        "anual"
+      ],
+      "default": "unica"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "comprovante_url": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "procedimento_id": {
+      "type": "string"
+    },
+    "procedimento_nome": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "profissional_id": {
+      "type": "string"
+    },
+    "profissional_nome": {
+      "type": "string"
+    },
+    "centro_custo": {
+      "type": "string",
+      "enum": [
+        "clinical",
+        "administrative",
+        "marketing",
+        "infrastructure",
+        "personnel"
+      ]
+    }
+  },
+  "required": [
+    "tipo",
+    "descricao",
+    "valor",
+    "data_vencimento"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

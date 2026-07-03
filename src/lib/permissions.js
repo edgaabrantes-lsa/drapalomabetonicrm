@@ -52,7 +52,7 @@ export const MENU_PERMISSIONS = {
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
     "Financial", "Inventory", "CRM", "Chat", "Intake",
     "Governanca", "VigilanciaPage", "ClinicSettingsPage", "Settings",
-    "UsuariosPermissoes", "GitHubMonitor",
+    "UsuariosPermissoes", "GitHubMonitor", "DREClinica",
   ],
   gestor: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
@@ -72,7 +72,7 @@ export const MENU_PERMISSIONS = {
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
   ],
   financeiro: [
-    "Dashboard", "Financial", "DossiePatient", "Governanca",
+    "Dashboard", "Financial", "DREClinica", "DossiePatient", "Governanca",
   ],
   visualizacao: [
     "Dashboard",
