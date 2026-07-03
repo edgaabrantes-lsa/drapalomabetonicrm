@@ -52,7 +52,7 @@ export const MENU_PERMISSIONS = {
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
     "Financial", "Inventory", "CRM", "Chat", "Intake",
     "Governanca", "VigilanciaPage", "ClinicSettingsPage", "Settings",
-    "UsuariosPermissoes",
+    "UsuariosPermissoes", "GitHubMonitor",
   ],
   gestor: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
