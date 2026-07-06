@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInYears, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
-import { Plus, Search, FileUp, Loader2 } from "lucide-react";
+import { Plus, Search, FileUp, Loader2, AlertTriangle } from "lucide-react";
+import { clonePatientForEdit, createEmptyPatient, findDuplicateCandidates } from "@/lib/patientUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -76,20 +77,39 @@ function validate(formData) {
 
 // ─── Formulário ─────────────────────────────────────────────────────────────
 const PatientForm = ({ patient, onSave, onClose, isSaving }) => {
-  const [formData, setFormData] = useState(patient || {
-    full_name: "", document_type: "cpf", document_number: "", rg: "",
-    birth_date: "", gender: "female", phone: "", whatsapp: "", email: "",
-    address: { street: "", number: "", complement: "", neighborhood: "", city: "", state: "", zip_code: "" },
-    status: "active", dossie_status: "lead", source: "instagram", notes: "",
-    consent_whatsapp: false, consent_images: false, consent_terms_signed: false, tags: []
-  });
+  // Estado sempre inicializado a partir de uma cópia isolada (nunca referência compartilhada).
+  // patient=null  => novo cadastro com objeto vazio fresco
+  // patient=obj   => clone profundo para edição
+  const [formData, setFormData] = useState(() => patient ? clonePatientForEdit(patient) : createEmptyPatient());
   const [error, setError] = useState("");
+  const [dupAlert, setDupAlert] = useState(null); // { candidates, payload }
+
+  const submitRef = useRef(false);
+
+  const doSave = () => {
+    if (submitRef.current) return; // proteção contra duplo clique
+    submitRef.current = true;
+    setDupAlert(null);
+    onSave(buildPayload(formData));
+    // reativa após pequeno delay para permitir re-tentativa caso onSave falhe síncrono
+    setTimeout(() => { submitRef.current = false; }, 800);
+  };
 
   const handleSubmit = () => {
     setError("");
     const validationError = validate(formData);
     if (validationError) { setError(validationError); return; }
-    onSave(buildPayload(formData));
+    if (!patient) {
+      // Novo cadastro: delega ao parent para checar duplicidade contra o catálogo completo
+      onSave(buildPayload(formData), { checkDup: true });
+    } else {
+      doSave();
+    }
+  };
+
+  const confirmForceCreate = () => {
+    setDupAlert(null);
+    doSave();
   };
 
   const set = (field, value) => setFormData(p => ({ ...p, [field]: value }));
@@ -359,6 +379,8 @@ export default function Patients() {
   const [isWizardOpen, setIsWizardOpen]           = useState(false);
   const [patientForWizard, setPatientForWizard]   = useState(null);
   const [saveError, setSaveError]                 = useState("");
+  const [dupWarning, setDupWarning]               = useState(null); // { candidates, payload }
+  const [formSession, setFormSession]             = useState(0); // garante remount limpo do formulário
 
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ["patients"],
@@ -367,11 +389,21 @@ export default function Patients() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Patient.create(data),
-    onSuccess: () => {
+    onSuccess: async (created) => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      // Log de auditoria de criação
+      try {
+        const me = await base44.auth.me().catch(() => ({ email: "sistema" }));
+        await base44.asServiceRole.entities.AuditLog.create({
+          action: "create", entity_type: "Patient", entity_id: created.id,
+          user_email: me.email, details: { nome: created.full_name, telefone: created.phone, origem: "form_recepcao" },
+        });
+      } catch { /* auditoria não bloqueia fluxo */ }
       setSaveError("");
+      setDupWarning(null);
       setIsFormOpen(false);
       setEditingPatient(null);
+      setFormSession(s => s + 1);
     },
     onError: (err) => {
       setSaveError(err?.message || "Não foi possível finalizar o cadastro. Verifique os campos obrigatórios.");
@@ -380,11 +412,19 @@ export default function Patients() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Patient.update(id, data),
-    onSuccess: () => {
+    onSuccess: async (updated) => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      try {
+        const me = await base44.auth.me().catch(() => ({ email: "sistema" }));
+        await base44.asServiceRole.entities.AuditLog.create({
+          action: "update", entity_type: "Patient", entity_id: updated.id,
+          user_email: me.email, details: { nome: updated.full_name },
+        });
+      } catch { /* auditoria não bloqueia fluxo */ }
       setSaveError("");
       setIsFormOpen(false);
       setEditingPatient(null);
+      setFormSession(s => s + 1);
     },
     onError: (err) => {
       setSaveError(err?.message || "Erro ao atualizar paciente.");
@@ -394,18 +434,34 @@ export default function Patients() {
   const isSaving = createMutation.isPending || updateMutation.isPending ||
                    createMutation.isLoading || updateMutation.isLoading;
 
-  const handleSave = (payload) => {
+  const handleSave = (payload, opts = {}) => {
     setSaveError("");
     if (editingPatient) {
       updateMutation.mutate({ id: editingPatient.id, data: payload });
+    } else if (opts.checkDup) {
+      // Nova criação: verificar duplicidade antes de salvar
+      const candidates = findDuplicateCandidates(payload, patients);
+      if (candidates.length > 0) {
+        setDupWarning({ candidates, payload });
+        return;
+      }
+      createMutation.mutate(payload);
     } else {
+      // bypass intencional (usuário confirmou criar mesmo assim)
       createMutation.mutate(payload);
     }
+  };
+
+  const handleForceCreate = () => {
+    if (dupWarning?.payload) createMutation.mutate(dupWarning.payload);
+    setDupWarning(null);
   };
 
   const handleOpenForm = (patient = null) => {
     setEditingPatient(patient);
     setSaveError("");
+    setDupWarning(null);
+    setFormSession(s => s + 1); // força remount limpo do formulário
     setIsFormOpen(true);
   };
 
@@ -549,8 +605,40 @@ export default function Patients() {
             </div>
           )}
 
+          {dupWarning && (
+            <div className="px-3 py-3 rounded-md text-sm flex-shrink-0 space-y-3" style={{ backgroundColor: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24" }}>
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Possível duplicidade detectada</p>
+                  <p className="text-xs mt-1" style={{ color: "#B0B0B0" }}>
+                    Já existe {dupWarning.candidates.length > 1 ? `${dupWarning.candidates.length} pacientes` : "1 paciente"} com dados semelhantes. Deseja abrir o cadastro existente ou confirmar a criação de um novo?
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {dupWarning.candidates.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between px-2 py-1.5 rounded" style={{ background: "rgba(255,255,255,0.03)" }}>
+                    <span className="text-xs" style={{ color: "#FFFFFF" }}>{c.full_name} · {c.phone} · {c.document_number || "sem CPF"}</span>
+                    <Link to={`/DossiePatient?patient_id=${c.id}`} onClick={() => { setIsFormOpen(false); setDupWarning(null); setEditingPatient(null); }}>
+                      <button className="text-xs px-2 py-1 rounded" style={{ background: "rgba(200,169,106,0.15)", border: "1px solid rgba(200,169,106,0.3)", color: "#C8A96A" }}>
+                        Abrir cadastro
+                      </button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="ghost" size="sm" onClick={() => setDupWarning(null)} className="text-gray-400 h-8">Cancelar</Button>
+                <Button size="sm" onClick={handleForceCreate} disabled={isSaving} className="bg-amber-600 hover:bg-amber-700 text-white h-8">
+                  {isSaving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null} Confirmar novo cadastro
+                </Button>
+              </div>
+            </div>
+          )}
+
           <PatientForm
-            key={editingPatient?.id ?? "new"}
+            key={`${editingPatient?.id ?? "new"}-${formSession}`}
             patient={editingPatient}
             onSave={handleSave}
             onClose={handleCloseForm}

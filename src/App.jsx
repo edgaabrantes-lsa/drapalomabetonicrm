@@ -16,6 +16,7 @@ import ClinicSettingsPage from './pages/ClinicSettingsPage.jsx';
 import UsuariosPermissoes from './pages/UsuariosPermissoes.jsx';
 import GitHubMonitor from './pages/GitHubMonitor.jsx';
 import DREClinica from './pages/DREClinica.jsx';
+import MesclarPacientes from './pages/MesclarPacientes.jsx';
 import { PermissionsProvider } from '@/lib/PermissionsContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -137,6 +138,13 @@ const AuthenticatedApp = () => {
       <Route path="/DREClinica" element={
         <LayoutWrapper currentPageName="DREClinica">
           <DREClinica />
+        </LayoutWrapper>
+      } />
+
+      {/* Mesclar Pacientes Duplicados (admin) */}
+      <Route path="/MesclarPacientes" element={
+        <LayoutWrapper currentPageName="MesclarPacientes">
+          <MesclarPacientes />
         </LayoutWrapper>
       } />
     </Routes>

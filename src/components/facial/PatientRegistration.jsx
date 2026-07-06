@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Mail, Phone, MapPin, Calendar, FileText, CheckCircle } from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, FileText, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { findDuplicateCandidates } from "@/lib/patientUtils";
 
 export default function PatientRegistration({ existingPatient, onComplete, onCancel }) {
   const [formData, setFormData] = useState({
@@ -36,8 +37,10 @@ export default function PatientRegistration({ existingPatient, onComplete, onCan
   });
 
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false); // proteção contra duplo clique
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
     if (!formData.full_name || !formData.phone) {
       toast.error("Preencha nome e telefone obrigatórios");
       return;
@@ -47,6 +50,28 @@ export default function PatientRegistration({ existingPatient, onComplete, onCan
       toast.error("Aceite os termos LGPD para continuar");
       return;
     }
+
+    // Verificação de duplicidade contra pacientes existentes
+    try {
+      const existing = await base44.entities.Patient.list("-created_date", 1000);
+      const candidates = findDuplicateCandidates(formData, existing);
+      if (candidates.length > 0) {
+        const nomes = candidates.map((c) => `${c.full_name} (${c.phone})`).join(", ");
+        const confirmar = window.confirm(
+          `Já existe um paciente com dados semelhantes:\n\n${nomes}\n\nDeseja abrir o cadastro existente (Cancelar) ou confirmar a criação de um novo cadastro (OK)?`
+        );
+        if (!confirmar) {
+          onComplete?.(candidates[0]); // abre o cadastro existente
+          return;
+        }
+      }
+    } catch (e) {
+      // se a checagem falhar, segue o fluxo (não bloqueia cadastro)
+      console.warn("Checagem de duplicidade indisponível:", e);
+    }
+
+    submittingRef.current = true;
+    setLoading(true);
 
     try {
       const patientData = {
@@ -61,6 +86,9 @@ export default function PatientRegistration({ existingPatient, onComplete, onCan
     } catch (error) {
       console.error("Erro ao cadastrar paciente:", error);
       toast.error("Erro ao cadastrar paciente. Tente novamente.");
+    } finally {
+      submittingRef.current = false;
+      setLoading(false);
     }
   };
 
@@ -309,10 +337,12 @@ export default function PatientRegistration({ existingPatient, onComplete, onCan
         <div className="flex gap-3 pt-4 border-t border-[#1e1e2a]">
           <Button
             onClick={handleSubmit}
+            disabled={loading}
             className="flex-1 bg-[#C5A059] text-[#111620] hover:bg-[#D9BB82]"
           >
-            <CheckCircle className="mr-2 h-4 w-4" />
-            Salvar e Vincular Análise
+            {loading
+              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>
+              : <><CheckCircle className="mr-2 h-4 w-4" /> Salvar e Vincular Análise</>}
           </Button>
           <Button
             type="button"
