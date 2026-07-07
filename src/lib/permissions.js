@@ -53,6 +53,7 @@ export const MENU_PERMISSIONS = {
     "Financial", "Inventory", "CRM", "Chat", "Intake",
     "Governanca", "VigilanciaPage", "ClinicSettingsPage", "Settings",
     "UsuariosPermissoes", "GitHubMonitor", "DREClinica", "MesclarPacientes",
+    "AuditoriaDuplicidades",
   ],
   gestor: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
@@ -86,6 +87,7 @@ export const ACTION_PERMISSIONS = {
     assinar: true, configurar: true, gerenciar_usuarios: true,
     ver_financeiro: true, ver_auditoria: true, exportar: true,
     mesclar_pacientes: true,
+    auditar_duplicidades: true,
   },
   gestor: {
     criar: true, editar: true, excluir: false, aprovar: true,

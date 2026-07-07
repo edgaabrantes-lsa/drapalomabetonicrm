@@ -17,6 +17,7 @@ import UsuariosPermissoes from './pages/UsuariosPermissoes.jsx';
 import GitHubMonitor from './pages/GitHubMonitor.jsx';
 import DREClinica from './pages/DREClinica.jsx';
 import MesclarPacientes from './pages/MesclarPacientes.jsx';
+import AuditoriaDuplicidades from './pages/AuditoriaDuplicidades.jsx';
 import { PermissionsProvider } from '@/lib/PermissionsContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -145,6 +146,13 @@ const AuthenticatedApp = () => {
       <Route path="/MesclarPacientes" element={
         <LayoutWrapper currentPageName="MesclarPacientes">
           <MesclarPacientes />
+        </LayoutWrapper>
+      } />
+
+      {/* Auditoria de Duplicidades (admin) */}
+      <Route path="/AuditoriaDuplicidades" element={
+        <LayoutWrapper currentPageName="AuditoriaDuplicidades">
+          <AuditoriaDuplicidades />
         </LayoutWrapper>
       } />
     </Routes>

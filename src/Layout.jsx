@@ -65,6 +65,7 @@ const navigation = [
   // Administrativo
   { name: "GitHub Monitor",      href: "GitHubMonitor",      icon: GitBranch,        group: "admin" },
   { name: "Mesclar Pacientes",   href: "MesclarPacientes",   icon: Copy,             group: "admin" },
+  { name: "Auditoria Duplicid.", href: "AuditoriaDuplicidades", icon: ShieldCheck,    group: "admin" },
   { name: "Governança Doc.",     href: "Governanca",         icon: ShieldCheck,      group: "admin" },
   { name: "Vigilância Sanitária",href: "VigilanciaPage",     icon: ShieldCheck,      group: "admin" },
   { name: "Config. da Clínica",  href: "ClinicSettingsPage", icon: Settings,         group: "admin" },

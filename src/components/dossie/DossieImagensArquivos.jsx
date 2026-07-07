@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format, parseISO } from "date-fns";
-import { Camera, Upload, X, RotateCcw, Check } from "lucide-react";
+import { Camera, Upload, X, RotateCcw, Check, AlertCircle } from "lucide-react";
 
 const CATEGORIAS = {
   antes: { label: "Antes", color: "bg-blue-500/20 text-blue-400" },
@@ -81,11 +81,20 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
     }
   });
 
+  const [dupWarn, setDupWarn] = useState("");
+
   const handleUpload = async () => {
     if (!form.file) return;
     setUploading(true);
+    setDupWarn("");
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: form.file });
+      // Trava de duplicidade: evita cadastrar a mesma foto duas vezes para o paciente
+      const existentes = imagensDossie.filter((i) => i.file_url === file_url);
+      if (existentes.length > 0) {
+        setDupWarn("Esta imagem já existe no dossiê desta paciente. Upload cancelado para evitar duplicidade.");
+        return;
+      }
       await createMutation.mutateAsync({
         patient_id: patient.id,
         patient_name: patient.full_name,
@@ -159,10 +168,16 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
   const savePhoto = async () => {
     if (!capturedPhoto) return;
     setUploading(true);
+    setDupWarn("");
     try {
       const blob = await fetch(capturedPhoto).then(r => r.blob());
       const file = new File([blob], `foto-${Date.now()}.jpg`, { type: "image/jpeg" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const existentes = imagensDossie.filter((i) => i.file_url === file_url);
+      if (existentes.length > 0) {
+        setDupWarn("Esta foto já existe no dossiê desta paciente. Captura descartada para evitar duplicidade.");
+        return;
+      }
       await createMutation.mutateAsync({
         patient_id: patient.id,
         patient_name: patient.full_name,
@@ -305,6 +320,12 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
               {uploading ? "Enviando..." : "Fazer Upload"}
             </Button>
           </div>
+        </div>
+      )}
+
+      {dupWarn && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+          <AlertCircle className="h-4 w-4" /> {dupWarn}
         </div>
       )}
 

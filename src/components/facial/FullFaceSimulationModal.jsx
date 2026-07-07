@@ -34,6 +34,7 @@ export default function FullFaceSimulationModal({
   const [generatedImage, setGeneratedImage] = useState(null);
   const [technicalReport, setTechnicalReport] = useState("");
   const [error, setError] = useState("");
+  const generatingRef = useRef(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -147,6 +148,7 @@ export default function FullFaceSimulationModal({
 
   // Gerar simulação
   const handleGenerate = async () => {
+    if (generatingRef.current) return; // trava duplo clique
     if (!consentChecked) {
       setError("É necessário confirmar o consentimento LGPD para continuar.");
       return;
@@ -157,6 +159,25 @@ export default function FullFaceSimulationModal({
       return;
     }
 
+    // Trava de duplicidade: impede nova simulação se já existe uma em processamento
+    // ou uma concluída nos últimos 90 segundos para a mesma paciente.
+    try {
+      const recentes = await base44.entities.FullFaceSimulation.filter({ patient_id: patientId }, "-created_date", 5);
+      const agora = Date.now();
+      const duplicada = recentes.find((s) => {
+        const criado = new Date(s.created_date).getTime();
+        return (s.status === "processing" || s.status === "pending") ||
+               (s.status === "completed" && (agora - criado) < 90000);
+      });
+      if (duplicada) {
+        setError("Já existe uma simulação recente/em processamento para esta paciente. Aguarde a conclusão ou use a simulação existente no histórico.");
+        return;
+      }
+    } catch (e) {
+      // se a checagem falhar, segue (não bloqueia)
+    }
+
+    generatingRef.current = true;
     setIsGenerating(true);
     setError("");
 
@@ -194,6 +215,7 @@ export default function FullFaceSimulationModal({
       setStep("preview");
     } finally {
       setIsGenerating(false);
+      generatingRef.current = false;
     }
   };
 
