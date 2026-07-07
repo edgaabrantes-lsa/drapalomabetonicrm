@@ -49,8 +49,18 @@ const SIMULATION_OPTIONS = [
   { id: "melasma", label: "Melasma / Manchas", desc: "Irregularidades de pigmentação" },
   { id: "olheiras", label: "Olheiras", desc: "Região infraorbital e escurecimento" },
   { id: "labios", label: "Lábios", desc: "Volume e definição labial natural" },
+  { id: "malar", label: "Malar", desc: "Maçãs do rosto (projeção)" },
+  { id: "sulcos", label: "Sulcos (Nasogeniano)", desc: "Linhas ao redor do nariz" },
+  { id: "temporas", label: "Têmporas", desc: "Sustentação lateral" },
+  { id: "bioestimulador", label: "Bioestimulador", desc: "Qualidade e firmeza da pele" },
   { id: "nariz", label: "Nariz / Rinomodelação", desc: "Refinamento nasal sutil" },
   { id: "papada", label: "Papada / Contorno Inferior", desc: "Região submentoniana" },
+];
+
+const INTENSITY_LEVELS = [
+  { value: 1, label: "Suave", desc: "Mudança discreta e natural" },
+  { value: 2, label: "Moderada", desc: "Mudança equilibrada e perceptível" },
+  { value: 3, label: "Mais evidente", desc: "Mudança expressiva e visível" },
 ];
 
 const statusConfig = {
@@ -390,6 +400,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   const [imagePreview, setImagePreview] = useState(null);
   const [consentChecked, setConsentChecked] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState(["full_face"]);
+  const [intensity, setIntensity] = useState(2);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [originalImageUrl, setOriginalImageUrl] = useState(null);
   const [technicalReport, setTechnicalReport] = useState("");
@@ -463,10 +474,14 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
         source_type: sourceType,
         consent_lgpd: true,
         simulation_options: selectedOptions,
+        intensity,
       });
 
       const result = response.data;
-      if (!result?.generated_image_url) throw new Error(result?.error || "Nenhuma imagem gerada.");
+      if (result?.code === "NO_VISIBLE_CHANGE" || !result?.generated_image_url) {
+        const friendly = result?.error || "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente ou selecione outro nível de intensidade.";
+        throw { message: friendly, code: result?.code };
+      }
 
       setGeneratedImage(result.generated_image_url);
       setSimulationId(result.simulation_id);
@@ -498,6 +513,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
       const optionLabels = selectedOptions.map(id => SIMULATION_OPTIONS.find(o => o.id === id)?.label || id).join(", ");
+      const intensityLabel = INTENSITY_LEVELS.find(l => l.value === intensity)?.label || "Moderada";
 
       // 1. Salvar imagem original no prontuário
       if (originalImageUrl) {
@@ -539,6 +555,8 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
       await base44.entities.FullFaceSimulation.update(simulationId, {
         facial_analysis_snapshot: {
           simulation_options: selectedOptions,
+          intensity,
+          intensity_label: intensityLabel,
           saved_to_record: true,
           saved_at: now.toISOString(),
           saved_by: user?.email || "",
@@ -562,6 +580,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
     setImagePreview(null);
     setConsentChecked(false);
     setSelectedOptions(["full_face"]);
+    setIntensity(2);
     setGeneratedImage(null);
     setOriginalImageUrl(null);
     setTechnicalReport("");
@@ -690,6 +709,27 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
         </div>
       </div>
 
+      {/* Nível da Simulação */}
+      <div>
+        <p className="text-xs uppercase tracking-widest mb-3" style={{ color: T.gold }}>Nível da Simulação</p>
+        <div className="grid grid-cols-3 gap-2">
+          {INTENSITY_LEVELS.map(level => {
+            const active = intensity === level.value;
+            return (
+              <button key={level.value} onClick={() => setIntensity(level.value)}
+                className="p-3 rounded-lg border text-center transition-all"
+                style={{
+                  background: active ? `${T.gold}15` : T.bg,
+                  borderColor: active ? T.gold : T.border,
+                }}>
+                <p className="text-xs font-medium" style={{ color: active ? T.gold : T.text }}>{level.label}</p>
+                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: T.muted }}>{level.desc}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {error && <ErrorMsg msg={error} />}
 
       <div className="flex gap-3 pt-1">
@@ -713,6 +753,9 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
         <p className="text-base font-medium" style={{ color: T.text }}>Gerando simulação facial...</p>
         <p className="text-sm" style={{ color: T.muted }}>
           {selectedOptions.includes("full_face") ? "Full Face Premium" : selectedOptions.map(id => SIMULATION_OPTIONS.find(o => o.id === id)?.label).join(" + ")}
+        </p>
+        <p className="text-xs" style={{ color: T.muted }}>
+          Intensidade: {INTENSITY_LEVELS.find(l => l.value === intensity)?.label || "Moderada"}
         </p>
         <p className="text-xs" style={{ color: T.muted }}>Isso pode levar até 60 segundos</p>
       </div>
@@ -783,8 +826,8 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
             </div>
           )}
 
-          {/* Tags de áreas simuladas */}
-          <div className="flex flex-wrap gap-1.5">
+          {/* Tags de áreas simuladas + intensidade */}
+          <div className="flex flex-wrap items-center gap-1.5">
             {selectedOptions.map(id => {
               const opt = SIMULATION_OPTIONS.find(o => o.id === id);
               return opt ? (
@@ -794,6 +837,10 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
                 </span>
               ) : null;
             })}
+            <span className="text-xs px-2 py-0.5 rounded-full"
+              style={{ background: T.bg, color: T.muted, border: `1px solid ${T.border}` }}>
+              Nível {intensity} — {INTENSITY_LEVELS.find(l => l.value === intensity)?.label || "Moderada"}
+            </span>
           </div>
 
           {/* Relatório técnico */}
@@ -972,6 +1019,18 @@ function SimulationHistory() {
                     <p className="text-xs" style={{ color: T.muted }}>
                       {sim.created_date && format(parseISO(sim.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sim.protocol_type && sim.protocol_type !== "full_face_premium" && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${T.gold}10`, color: T.gold, border: `1px solid ${T.gold}25` }}>
+                          {String(sim.protocol_type).split(",").slice(0, 3).map(p => SIMULATION_OPTIONS.find(o => o.id === p)?.label || p).join(", ")}
+                        </span>
+                      )}
+                      {sim.intensity && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: T.bg, color: T.muted, border: `1px solid ${T.border}` }}>
+                          Nível {sim.intensity} — {sim.intensity === 1 ? "Suave" : sim.intensity === 3 ? "Mais evidente" : "Moderada"}
+                        </span>
+                      )}
+                    </div>
                     {sim.facial_analysis_snapshot?.saved_to_record && (
                       <div className="flex items-center gap-1.5 text-xs py-1"
                         style={{ color: "#34d399" }}>
@@ -1023,6 +1082,8 @@ function SimulationHistory() {
                 {[
                   { label: "Paciente", value: getPatient(selected.patient_id)?.full_name || "—" },
                   { label: "Data", value: selected.created_date ? format(parseISO(selected.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "—" },
+                  { label: "Procedimento", value: String(selected.protocol_type || "").split(",").map(p => SIMULATION_OPTIONS.find(o => o.id === p)?.label || p).filter(Boolean).join(", ") || "—" },
+                  { label: "Intensidade", value: selected.intensity ? `Nível ${selected.intensity} — ${selected.intensity === 1 ? "Suave" : selected.intensity === 3 ? "Mais evidente" : "Moderada"}` : "—" },
                   { label: "Origem", value: { front_camera: "Câmera Frontal", back_camera: "Câmera Traseira", webcam: "Webcam", upload: "Upload" }[selected.source_type] || "—" },
                   { label: "Profissional", value: selected.user_email || "—" },
                 ].map(item => (
@@ -1165,9 +1226,10 @@ export default function BeforeAfterIA() {
 
                   <div className="space-y-2">
                     {[
-                      "12 tipos de simulação selecionáveis",
+                      "16 áreas de simulação selecionáveis",
                       "Câmera ou upload de foto",
-                      "Comparação lado a lado com slider",
+                      "3 níveis de intensidade (Suave, Moderada, Mais evidente)",
+                      "Comparação lado a lado antes e depois",
                       "Download da imagem gerada",
                       "Registro automático no histórico",
                     ].map(item => (
