@@ -24,32 +24,28 @@ function buildPrompt(options: string[], originalImageUrl: string): string {
   const areaLabels = options.map(o => AREA_LABELS[o] || o).join(", ");
   const isFull = options.includes("full_face");
 
-  return `You are a professional medical-aesthetic photo editor. Based on the patient's original photo provided, create a realistic before/after simulation showing subtle aesthetic improvements.
+  return `Edit this patient's photo to show the realistic, natural-looking result of these aesthetic procedures: ${areaLabels}.
 
-ORIGINAL PATIENT PHOTO: Use the patient from this photo as reference — same person, same face, same ethnicity, same skin tone.
+The output must be the SAME PERSON in the same photo — same face, same ethnicity, same skin tone, same eyes, same hair, same clothes, same background, same lighting and angle. It must look like an authentic clinical before/after, not an AI render.
 
-SELECTED TREATMENT AREAS: ${areaLabels}
+FIDELITY RULES:
+• Keep the patient 100% recognizable — preserve identity, facial structure, and natural proportions.
+• Preserve real skin texture, pores and micro-imperfections — do not produce smooth, plastic or waxy skin.
+• Keep the patient's natural facial asymmetry — do not force a perfectly symmetrical "mask" face.
+• No generic beautification filters, no glow overlays, no over-brightening. Subtle, conservative changes only (max ~18% visible change).
+${isFull
+    ? `• Full Face: apply balanced, conservative harmonization across all zones respecting the patient's own facial proportions.`
+    : `• Edit ONLY the selected areas (${areaLabels}); leave the rest of the face unchanged.`}
 
-CORE RULES:
-• The patient must remain 100% recognizable as the same individual
-• NEVER change: ethnicity, skin color, eye color, eye shape, facial bone structure, hair, clothing, background
-• Apply ONLY minimal, realistic, clinical improvements to the selected areas
-• Result must look like professional medical photo retouching — NOT AI-generated
-• Transformation intensity: 15-20% maximum change
-• Realism level: maximum — must look like the same photo taken at the same moment
+PROCEDURE NOTES:
+• Nose (rinomodelação): refine the nose profile and tip following the patient's natural nasal anatomy, correcting asymmetries anatomically (not mirrored-perfect) — like a well-executed non-surgical rhinoplasty.
+• Lips: enhance volume and definition following the natural Cupid's bow — never exaggerated, never blurred borders.
+• Wrinkles: soften line depth partially, keeping natural residual expression lines.
+• Under-eye: reduce dark circles subtly while keeping natural periorbital shadow.
+• Jawline/chin/submental: contour with realistic shading consistent with the original light source.
+• Pigmentation: even out tone only within the affected area, blending with surrounding skin.
 
-${isFull ? `FULL FACE HARMONIZATION:
-• Apply very subtle global improvements based on the patient's OWN facial proportions
-• Minimal skin texture refinement and tone unification
-• Slightly enhance natural facial symmetry without changing identity
-• Do not impose external beauty standards` : `LOCALIZED EDITING ONLY:
-• Apply improvements STRICTLY to: ${areaLabels}
-• All other facial features must remain pixel-perfect identical to the original
-• Do not edit ANY area outside the selected treatment zones`}
-
-STYLE: Professional medical aesthetic photography. Clean, clinical, natural. Same lighting, same angle, same background as the original photo.
-
-AVISO LEGAL: Resultado ilustrativo para apoio visual em consulta estética. Não representa promessa de resultado clínico.`;
+Match the original photo's color temperature, noise and lighting exactly. The result must look like a real photograph of the same person.`;
 }
 
 Deno.serve(async (req) => {
@@ -89,7 +85,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v11_platform",
+      ai_prompt_version: "v12_natural",
     });
     simulationId = simulation.id;
 
@@ -120,7 +116,7 @@ Deno.serve(async (req) => {
 
     const generated_image_url = imageResult.url;
     const areaLabels = finalOptions.map(o => AREA_LABELS[o] || o).join(", ");
-    const technicalReport = `Simulação clínica v11 gerada com IA nas áreas: ${areaLabels}. Identidade facial, etnia, cor dos olhos, tom de pele e elementos não selecionados preservados. Resultado meramente ilustrativo para apoio visual em consulta estética.`;
+    const technicalReport = `Simulação clínica v12 gerada com IA nas áreas: ${areaLabels}. Edição fotorealista preservando identidade, textura de pele natural e assimetria característica do rosto. Procedimentos aplicados de forma anatômica e conservadora (máx. 18% de alteração visível). Resultado meramente ilustrativo para apoio visual em consulta estética.`;
 
     // Salvar resultado
     await base44Client.entities.FullFaceSimulation.update(simulationId, {
@@ -129,8 +125,9 @@ Deno.serve(async (req) => {
       technical_report: technicalReport,
       facial_analysis_snapshot: {
         simulation_options: finalOptions,
-        prompt_version: "v11_platform",
+        prompt_version: "v12_natural",
         identity_preserved: true,
+        natural_realism: true,
       },
       image_metadata: { format: "png", width: 1024, height: 1024 },
     });

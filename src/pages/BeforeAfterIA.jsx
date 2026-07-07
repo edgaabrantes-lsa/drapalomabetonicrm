@@ -723,56 +723,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   if (step === "result") return (
     <div className="space-y-8">
 
-      {/* ══ BLOCO 1 — COMPARAÇÃO ANTES E DEPOIS ══ */}
-      {originalImageUrl && generatedImage && (
-        <div className="space-y-3">
-          {/* Título do bloco */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.gold }}>
-                Comparação
-              </p>
-              <h2 className="text-base font-semibold" style={{ color: T.text }}>
-                Antes e Depois
-              </h2>
-            </div>
-            {/* Toggle slider / lado a lado */}
-            <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-              {[
-                { id: "slider", label: "Slider" },
-                { id: "sidebyside", label: "Lado a Lado" },
-              ].map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => setViewMode(m.id)}
-                  className="px-4 py-2 text-xs font-medium transition-colors"
-                  style={{
-                    background: viewMode === m.id ? T.gold : T.card,
-                    color: viewMode === m.id ? "#111620" : T.muted,
-                  }}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Comparador */}
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", background: "#000" }}>
-            {viewMode === "slider"
-              ? <BeforeAfterSlider before={originalImageUrl} after={generatedImage} />
-              : <SideBySideView before={originalImageUrl} after={generatedImage} />
-            }
-          </div>
-        </div>
-      )}
-
-      {/* Divider */}
-      {originalImageUrl && generatedImage && (
-        <div style={{ height: 1, background: T.border }} />
-      )}
-
-      {/* ══ BLOCO 2 — RESULTADO FINAL DA SIMULAÇÃO ══ */}
+      {/* ══ RESULTADO FINAL DA SIMULAÇÃO ══ */}
       {generatedImage && (
         <div className="space-y-4">
           {/* Título do bloco */}
