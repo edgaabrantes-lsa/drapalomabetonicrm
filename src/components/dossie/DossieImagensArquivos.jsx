@@ -8,8 +8,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
-import { Camera, Upload, X, RotateCcw, Check, AlertCircle } from "lucide-react";
+import { Camera, Upload, X, RotateCcw, Check, AlertCircle, Trash2, Lock } from "lucide-react";
 
 const CATEGORIAS = {
   antes: { label: "Antes", color: "bg-blue-500/20 text-blue-400" },
@@ -98,6 +108,77 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
   });
 
   const [dupWarn, setDupWarn] = useState("");
+  const [removingImage, setRemovingImage] = useState(null);
+  const [removing, setRemoving] = useState(false);
+  const [removeWarn, setRemoveWarn] = useState("");
+
+  const isAdmin = currentUser?.role === "admin";
+
+  const handleConfirmRemove = async () => {
+    if (!removingImage) return;
+    setRemoving(true);
+    setRemoveWarn("");
+    try {
+      const img = removingImage;
+      const isSim = String(img.id).startsWith("sim-");
+      const now = new Date().toISOString();
+      const operador = currentUser?.full_name || currentUser?.email || "Admin";
+
+      const oldValues = {
+        patient_id: img.patient_id,
+        patient_name: patient.full_name,
+        file_url: img.file_url,
+        file_name: img.file_name,
+        categoria: img.categoria,
+        titulo: img.titulo,
+        data_upload: img.data_upload,
+        origem: isSim ? "full_face_simulation" : "dossie_imagem",
+      };
+
+      if (isSim) {
+        const simId = img.id.replace("sim-", "");
+        await base44.entities.FullFaceSimulation.update(simId, {
+          status: "removido",
+          aprovada_dossie: false,
+          motivo_remocao: "Removida do dossiê pelo administrador via interface.",
+          removido_por: operador,
+          removido_em: now,
+        });
+      } else {
+        await base44.entities.DossieImagem.delete(img.id);
+      }
+
+      await base44.entities.AuditLog.create({
+        action: "delete",
+        entity_type: isSim ? "FullFaceSimulation" : "DossieImagem",
+        entity_id: isSim ? img.id.replace("sim-", "") : img.id,
+        user_email: currentUser?.email || operador,
+        user_role: currentUser?.role || "admin",
+        old_values: oldValues,
+        new_values: isSim ? { status: "removido", aprovada_dossie: false, removido_por: operador, removido_em: now } : null,
+        details: {
+          tipo: "remocao_imagem_dossie",
+          paciente: patient.full_name,
+          paciente_id: patient.id,
+          categoria: img.categoria,
+          titulo: img.titulo,
+          file_url: img.file_url,
+          origem: isSim ? "simulacao_ia" : "upload",
+          modo: isSim ? "soft_remove_reversivel" : "exclusao_definitiva",
+          operador,
+          data_hora: now,
+        },
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["dossie-imagens", patient.id] });
+      queryClient.invalidateQueries({ queryKey: ["fullface-sims", patient.id] });
+      setRemovingImage(null);
+    } catch (err) {
+      setRemoveWarn("Erro ao remover: " + (err?.message || "falha desconhecida"));
+    } finally {
+      setRemoving(false);
+    }
+  };
 
   const handleUpload = async () => {
     if (!form.file) return;
@@ -380,6 +461,17 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
                 <a href={img.file_url} download target="_blank" rel="noreferrer">
                   <Button size="sm" variant="ghost" className="text-xs text-[#8A95AA] h-6 px-2">Baixar</Button>
                 </a>
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => { setRemoveWarn(""); setRemovingImage(img); }}
+                    className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 h-6 px-2 ml-auto"
+                    title="Remover do dossiê (admin)"
+                  >
+                    <Trash2 className="h-3 w-3" /> Remover
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -412,6 +504,46 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {removeWarn && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+          <AlertCircle className="h-4 w-4" /> {removeWarn}
+        </div>
+      )}
+
+      <AlertDialog open={!!removingImage} onOpenChange={(open) => { if (!removing) setRemovingImage(null); }}>
+        <AlertDialogContent className="bg-[#0D1119] border-[#252D3E]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <Lock className="h-4 w-4 text-red-400" /> Remover imagem do dossiê
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[#8A95AA]">
+              Confirma a remoção de{" "}
+              <span className="text-white font-medium">{removingImage?.titulo || removingImage?.file_name}</span>{" "}
+              do dossiê de <span className="text-white font-medium">{patient?.full_name}</span>?
+              {String(removingImage?.id || "").startsWith("sim-") ? (
+                <span className="block mt-2 text-amber-400">
+                  Esta é uma simulação de IA: a remoção é <strong>reversível</strong> (a imagem é ocultada do dossiê, mas os dados são preservados para auditoria).
+                </span>
+              ) : (
+                <span className="block mt-2 text-red-400">
+                  Atenção: esta é uma <strong>exclusão definitiva</strong> do registro de imagem. A ação será registrada no histórico de auditoria.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[#252D3E] text-[#8A95AA]" disabled={removing}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRemove}
+              disabled={removing}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {removing ? "Removendo..." : "Sim, remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
