@@ -87,6 +87,16 @@
       "default": true,
       "description": "Indica se a simula\u00e7\u00e3o foi validada para exibi\u00e7\u00e3o no dossi\u00ea do paciente"
     },
+    "intensity": {
+      "type": "number",
+      "enum": [
+        1,
+        2,
+        3
+      ],
+      "default": 2,
+      "description": "N\u00edvel de intensidade da simula\u00e7\u00e3o: 1=Suave, 2=Moderada, 3=Mais evidente"
+    },
     "motivo_remocao": {
       "type": "string",
       "description": "Motivo da remo\u00e7\u00e3o do dossi\u00ea (quando status=removido)"
