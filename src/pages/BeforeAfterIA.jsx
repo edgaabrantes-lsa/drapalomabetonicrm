@@ -745,24 +745,43 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
             </button>
           </div>
 
-          {/* Imagem final — centralizada, sem corte, sem zoom */}
-          <div
-            className="flex items-center justify-center w-full rounded-2xl overflow-hidden"
-            style={{ background: "#000", border: `1px solid ${T.border}` }}
-          >
-            <img
-              src={generatedImage}
-              alt="Resultado Final da Simulação"
-              style={{
-                display: "block",
-                maxWidth: "100%",
-                width: "100%",
-                height: "auto",
-                objectFit: "contain",
-              }}
-              draggable={false}
-            />
-          </div>
+          {/* Antes e Depois — lado a lado */}
+          {originalImageUrl && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-center">
+                  <span className="text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full"
+                    style={{ background: `${T.gold}15`, color: T.gold, border: `1px solid ${T.gold}30` }}>
+                    Antes
+                  </span>
+                </div>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "#000", border: `1px solid ${T.border}` }}>
+                  <img
+                    src={originalImageUrl}
+                    alt="Foto Original"
+                    style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
+                    draggable={false}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center">
+                  <span className="text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full"
+                    style={{ background: `${T.gold}15`, color: T.gold, border: `1px solid ${T.gold}30` }}>
+                    Depois
+                  </span>
+                </div>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "#000", border: `1px solid ${T.border}` }}>
+                  <img
+                    src={generatedImage}
+                    alt="Resultado Final da Simulação"
+                    style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
+                    draggable={false}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Tags de áreas simuladas */}
           <div className="flex flex-wrap gap-1.5">
