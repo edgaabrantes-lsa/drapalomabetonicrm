@@ -43,7 +43,8 @@
         "pending",
         "processing",
         "completed",
-        "failed"
+        "failed",
+        "removido"
       ],
       "default": "pending"
     },
@@ -80,6 +81,22 @@
           "type": "number"
         }
       }
+    },
+    "aprovada_dossie": {
+      "type": "boolean",
+      "default": true,
+      "description": "Indica se a simula\u00e7\u00e3o foi validada para exibi\u00e7\u00e3o no dossi\u00ea do paciente"
+    },
+    "motivo_remocao": {
+      "type": "string",
+      "description": "Motivo da remo\u00e7\u00e3o do dossi\u00ea (quando status=removido)"
+    },
+    "removido_por": {
+      "type": "string"
+    },
+    "removido_em": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [

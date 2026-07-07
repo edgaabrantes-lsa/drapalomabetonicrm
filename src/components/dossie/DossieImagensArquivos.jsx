@@ -55,11 +55,14 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
   });
 
   // Mesclar simulações como imagens da categoria simulacao_ia
+  // Travas estruturais: só simulações concluídas, aprovadas, com imagem gerada e
+  // vinculadas ao MESMO patient_id do dossiê aberto (defesa contra mistura de pacientes).
   const simComoImagens = simulacoes
-    .filter(s => s.generated_image_url && s.status === "completed")
+    .filter(s => s.generated_image_url && s.status === "completed" && s.aprovada_dossie !== false && s.patient_id === patient.id)
     .map(s => ({
       id: `sim-${s.id}`,
       patient_id: s.patient_id,
+      simulation_id: s.id,
       file_url: s.generated_image_url,
       file_name: `Simulação IA - ${s.created_date?.substring(0,10) || ""}`,
       file_type: "image/jpeg",
@@ -68,9 +71,22 @@ export default function DossieImagensArquivos({ patient, currentUser }) {
       descricao: s.technical_report || "",
       data_upload: s.created_date,
       uploaded_by: s.user_email || "IA",
+      origem: "full_face_simulation",
+      source_type: s.source_type,
     }));
 
-  const imagens = [...imagensDossie, ...simComoImagens];
+  // Defesa em profundidade: garante vínculo correto ao paciente + remove duplicatas por URL
+  const vinculadas = [
+    ...imagensDossie.filter(i => i.patient_id === patient.id),
+    ...simComoImagens,
+  ];
+  const vistos = new Set();
+  const imagens = vinculadas.filter((img) => {
+    const key = img.file_url;
+    if (!key || vistos.has(key)) return false; // impede duplicidade de foto no dossiê
+    vistos.add(key);
+    return true;
+  });
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.DossieImagem.create(data),
