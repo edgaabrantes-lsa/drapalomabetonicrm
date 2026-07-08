@@ -128,6 +128,10 @@ Deno.serve(async (req) => {
         status: "scheduled",
         notes: notes || "Agendado via Portal da Paciente",
       });
+      // Sincroniza com Google Agenda (ignora erro — não bloqueia o agendamento)
+      try {
+        await base44.asServiceRole.functions.invoke("syncGoogleAgenda", { op: "create", appointment_id: appt.id });
+      } catch (_) {}
       await logEvent(patient, "solicitacao_agendamento", "documento", `Novo agendamento: ${procedure_name} em ${start.toLocaleString("pt-BR")}.`);
       return Response.json({ appointment: appt });
     }

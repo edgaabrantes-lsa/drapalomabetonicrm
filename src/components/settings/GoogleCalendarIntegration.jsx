@@ -1,46 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar, CheckCircle, XCircle, RefreshCw, Link2, Link2Off, ArrowRight, ArrowLeft, ArrowLeftRight, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-
-const SYNC_MODES = [
-  { value: "platform_to_google", label: "Plataforma → Google", icon: ArrowRight, desc: "Envia agendamentos da clínica para o Google Agenda" },
-  { value: "google_to_platform", label: "Google → Plataforma", icon: ArrowLeft, desc: "Traz eventos do Google Agenda para a plataforma" },
-  { value: "bidirectional", label: "Sincronização bidirecional", icon: ArrowLeftRight, desc: "Sincroniza em ambas as direções automaticamente" },
-];
+import { base44 } from "@/api/base44Client";
 
 export default function GoogleCalendarIntegration() {
   const [connected, setConnected] = useState(false);
-  const [syncMode, setSyncMode] = useState("bidirectional");
-  const [autoSync, setAutoSync] = useState(true);
-  const [syncConflicts, setSyncConflicts] = useState("platform_wins");
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [autoSync, setAutoSync] = useState(true);
   const [logs, setLogs] = useState([]);
 
-  const handleConnect = () => {
-    // Estrutura pronta para OAuth Google — conectar quando credenciais forem configuradas
-    alert("Para conectar o Google Agenda, acesse Configurações → Integrações e insira as credenciais OAuth do Google. Contate o suporte para obter as instruções.");
+  // Verifica status real da conexão ao montar
+  useEffect(() => {
+    let done = false;
+    const checkStatus = async () => {
+      try {
+        const res = await base44.functions.invoke("syncGoogleAgenda", { op: "status" });
+        if (res.data?.connected) {
+          setConnected(true);
+          setLastSync(new Date());
+        } else {
+          setConnected(false);
+        }
+      } catch (_) {
+        setConnected(false);
+      }
+      if (!done) setLoading(false);
+    };
+    checkStatus();
+    return () => { done = true; };
+  }, []);
+
+  const handleManualSync = async () => {
+    if (!connected) return;
+    setSyncing(true);
+    try {
+      const res = await base44.functions.invoke("syncGoogleAgenda", { op: "status" });
+      const count = res.data?.events?.length || 0;
+      setLastSync(new Date());
+      setLogs(prev => [{ time: new Date().toLocaleTimeString("pt-BR"), msg: `Sincronização concluída. ${count} eventos futuros encontrados no Google Agenda.`, type: "ok" }, ...prev]);
+    } catch (err) {
+      setLogs(prev => [{ time: new Date().toLocaleTimeString("pt-BR"), msg: `Falha na sincronização: ${err.message}`, type: "error" }, ...prev]);
+    }
+    setSyncing(false);
   };
 
   const handleDisconnect = () => {
     setConnected(false);
-    setLogs(prev => [{ time: new Date().toLocaleTimeString("pt-BR"), msg: "Google Agenda desconectado.", type: "warn" }, ...prev]);
+    setLogs(prev => [{ time: new Date().toLocaleTimeString("pt-BR"), msg: "Google Agenda desconectado (reautorize nas configurações da plataforma para reconectar).", type: "warn" }, ...prev]);
   };
-
-  const handleManualSync = async () => {
-    if (!connected) return;
-    setIsSyncing(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setIsSyncing(false);
-    setLastSync(new Date());
-    setLogs(prev => [{ time: new Date().toLocaleTimeString("pt-BR"), msg: "Sincronização manual concluída. 0 novos eventos.", type: "ok" }, ...prev]);
-  };
-
-  const SyncModeIcon = SYNC_MODES.find(m => m.value === syncMode)?.icon || ArrowLeftRight;
 
   return (
     <div className="space-y-6">
@@ -48,36 +60,42 @@ export default function GoogleCalendarIntegration() {
       <div className={`rounded-xl border p-5 flex items-start justify-between gap-4 ${connected ? "bg-emerald-500/5 border-emerald-500/20" : "bg-[#1a1a25] border-[#1e1e2a]"}`}>
         <div className="flex items-center gap-4">
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${connected ? "bg-emerald-500/15" : "bg-[#12121a]"}`}>
-            <Calendar className={`h-6 w-6 ${connected ? "text-emerald-400" : "text-gray-500"}`} />
+            {loading ? (
+              <RefreshCw className="h-6 w-6 text-gray-500 animate-spin" />
+            ) : (
+              <Calendar className={`h-6 w-6 ${connected ? "text-emerald-400" : "text-gray-500"}`} />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <p className="text-white font-medium">Google Agenda</p>
               <Badge className={connected ? "bg-emerald-500/20 text-emerald-400" : "bg-gray-500/20 text-gray-400"}>
-                {connected ? "Conectado" : "Desconectado"}
+                {loading ? "Verificando..." : connected ? "Conectado" : "Desconectado"}
               </Badge>
             </div>
             {connected ? (
               <p className="text-sm text-gray-400 mt-0.5">
-                Última sincronização: {lastSync ? lastSync.toLocaleTimeString("pt-BR") : "Nunca"}
+                Última verificação: {lastSync ? lastSync.toLocaleTimeString("pt-BR") : "Agora"}
               </p>
             ) : (
-              <p className="text-sm text-gray-500 mt-0.5">Conecte para sincronizar agendamentos automaticamente</p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {loading ? "" : "Conexão não ativa — contate o suporte para autorizar o Google Agenda."}
+              </p>
             )}
           </div>
         </div>
         <div className="flex gap-2 flex-shrink-0">
-          {connected ? (
+          {connected && (
             <>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleManualSync}
-                disabled={isSyncing}
+                disabled={syncing}
                 className="border-[#1e1e2a] text-gray-300 hover:text-white"
               >
-                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isSyncing ? "animate-spin" : ""}`} />
-                {isSyncing ? "Sincronizando..." : "Sincronizar"}
+                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncing ? "animate-spin" : ""}`} />
+                {syncing ? "Verificando..." : "Verificar agora"}
               </Button>
               <Button
                 size="sm"
@@ -89,98 +107,46 @@ export default function GoogleCalendarIntegration() {
                 Desconectar
               </Button>
             </>
-          ) : (
-            <Button
-              size="sm"
-              onClick={handleConnect}
-              className="bg-[#c9a55c] hover:bg-[#a17f3f] text-black"
-            >
-              <Link2 className="h-3.5 w-3.5 mr-1.5" />
-              Conectar Google Agenda
-            </Button>
           )}
         </div>
       </div>
 
-      {/* Info Banner quando desconectado */}
-      {!connected && (
-        <div className="bg-[#c9a55c]/5 border border-[#c9a55c]/20 rounded-lg p-4 flex gap-3">
-          <Info className="h-5 w-5 text-[#c9a55c] flex-shrink-0 mt-0.5" />
+      {/* Info Banner quando conectado */}
+      {connected && (
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 flex gap-3">
+          <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-gray-400 space-y-1">
-            <p className="text-[#c9a55c] font-medium">Estrutura pronta para integração</p>
-            <p>Toda a infraestrutura técnica está preparada. Para ativar a conexão real com o Google, as credenciais OAuth devem ser configuradas pelo administrador da plataforma.</p>
-            <p className="text-gray-500">Requisitos: Google Cloud Console → OAuth 2.0 → Escopo: calendar.events</p>
+            <p className="text-emerald-400 font-medium">Sincronização ativa</p>
+            <p>Todos os agendamentos criados ou atualizados no CRM e no Portal da Paciente são sincronizados automaticamente com o Google Agenda da clínica.</p>
+            <p className="text-gray-500">Cancelamentos no CRM removem o evento correspondente no Google Agenda.</p>
           </div>
         </div>
       )}
 
       {/* Configurações de Sincronização */}
       <div className="bg-[#1a1a25] rounded-xl border border-[#1e1e2a] p-5 space-y-5">
-        <h3 className="text-white font-medium">Preferências de Sincronização</h3>
-
-        {/* Modo de sincronização */}
-        <div className="space-y-2">
-          <Label className="text-gray-400 text-sm">Direção da sincronização</Label>
-          <div className="grid grid-cols-1 gap-2">
-            {SYNC_MODES.map(mode => {
-              const Icon = mode.icon;
-              return (
-                <button
-                  key={mode.value}
-                  type="button"
-                  onClick={() => setSyncMode(mode.value)}
-                  className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${syncMode === mode.value ? "border-[#c9a55c]/50 bg-[#c9a55c]/10" : "border-[#1e1e2a] bg-[#12121a] hover:border-[#c9a55c]/20"}`}
-                >
-                  <Icon className={`h-4 w-4 flex-shrink-0 ${syncMode === mode.value ? "text-[#c9a55c]" : "text-gray-500"}`} />
-                  <div>
-                    <p className={`text-sm font-medium ${syncMode === mode.value ? "text-[#c9a55c]" : "text-gray-300"}`}>{mode.label}</p>
-                    <p className="text-xs text-gray-500">{mode.desc}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Sincronização automática */}
-        <div className="flex items-center justify-between py-3 border-t border-[#1e1e2a]">
-          <div>
-            <p className="text-sm text-white">Sincronização automática</p>
-            <p className="text-xs text-gray-500">Sincronizar a cada 15 minutos</p>
-          </div>
-          <Switch checked={autoSync} onCheckedChange={setAutoSync} />
-        </div>
-
-        {/* Conflitos */}
-        <div className="space-y-2 border-t border-[#1e1e2a] pt-3">
-          <Label className="text-gray-400 text-sm">Em caso de conflito</Label>
-          <Select value={syncConflicts} onValueChange={setSyncConflicts}>
-            <SelectTrigger className="bg-[#12121a] border-[#1e1e2a] text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#12121a] border-[#1e1e2a]">
-              <SelectItem value="platform_wins" className="text-white">Priorizar plataforma</SelectItem>
-              <SelectItem value="google_wins" className="text-white">Priorizar Google Agenda</SelectItem>
-              <SelectItem value="ask" className="text-white">Perguntar sempre</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Tratamentos */}
-        <div className="grid grid-cols-2 gap-3 border-t border-[#1e1e2a] pt-3 text-sm">
+        <h3 className="text-white font-medium">Como funciona a sincronização</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           {[
-            { label: "Criação de eventos", ok: true },
-            { label: "Atualização de eventos", ok: true },
-            { label: "Cancelamento", ok: true },
-            { label: "Prevenção de duplicatas", ok: true },
-            { label: "Timezone correto (BRT)", ok: true },
-            { label: "Conflitos de horário", ok: true },
+            "Criação de agendamentos → evento criado no Google",
+            "Alteração de horário → evento atualizado",
+            "Cancelamento → evento removido do Google",
+            "Prevenção de duplicatas (google_event_id)",
+            "Fuso horário: America/Sao_Paulo",
+            "Origem marcada no título do evento",
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-2 text-gray-400">
               <CheckCircle className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-              {item.label}
+              {item}
             </div>
           ))}
+        </div>
+        <div className="flex items-center justify-between py-3 border-t border-[#1e1e2a]">
+          <div>
+            <p className="text-sm text-white">Sincronização automática</p>
+            <p className="text-xs text-gray-500">A cada criação/alteração de agendamento (tempo real)</p>
+          </div>
+          <Switch checked={autoSync} onCheckedChange={setAutoSync} />
         </div>
       </div>
 

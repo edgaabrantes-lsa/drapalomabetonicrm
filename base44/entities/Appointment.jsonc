@@ -73,6 +73,10 @@
     "is_vip": {
       "type": "boolean",
       "default": false
+    },
+    "google_event_id": {
+      "type": "string",
+      "description": "ID do evento criado/sincronizado no Google Agenda"
     }
   },
   "required": [
