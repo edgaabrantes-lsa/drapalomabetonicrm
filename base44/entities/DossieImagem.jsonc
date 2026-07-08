@@ -45,6 +45,19 @@
     },
     "uploaded_by": {
       "type": "string"
+    },
+    "portal_visible": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a imagem deve aparecer no Portal da Paciente"
+    },
+    "portal_category": {
+      "type": "string",
+      "description": "Categoria de exibi\u00e7\u00e3o no portal (ex.: antes, depois, evolucao)"
+    },
+    "patient_note": {
+      "type": "string",
+      "description": "Nota da paciente ao enviar foto de evolu\u00e7\u00e3o"
     }
   },
   "required": [

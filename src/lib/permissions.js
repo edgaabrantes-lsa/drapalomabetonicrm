@@ -53,7 +53,7 @@ export const MENU_PERMISSIONS = {
     "Financial", "Inventory", "CRM", "Chat", "Intake",
     "Governanca", "VigilanciaPage", "ClinicSettingsPage", "Settings",
     "UsuariosPermissoes", "GitHubMonitor", "DREClinica", "MesclarPacientes",
-    "AuditoriaDuplicidades",
+    "AuditoriaDuplicidades", "PortalAdmin",
   ],
   gestor: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",

@@ -113,6 +113,16 @@
     "observacoes": {
       "type": "string"
     },
+    "portal_visible": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o documento deve aparecer no Portal da Paciente"
+    },
+    "requires_patient_action": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o documento exige a\u00e7\u00e3o/aceite da paciente no portal"
+    },
     "historico_status": {
       "type": "array",
       "items": {

@@ -1,0 +1,70 @@
+{
+  "name": "PatientPortalAccess",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "patient_phone": {
+      "type": "string"
+    },
+    "access_token": {
+      "type": "string",
+      "description": "Token \u00fanico e opaco de acesso ao portal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "expirado",
+        "revogado"
+      ],
+      "default": "ativo"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_access_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "access_token",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
