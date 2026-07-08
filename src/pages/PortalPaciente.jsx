@@ -70,7 +70,7 @@ export default function PortalPaciente() {
       case "plano": return <MeuPlano token={token} whatsappNumber={whatsappNumber} onNavigate={setSection} />;
       case "agenda": return <MeusAgendamentos token={token} whatsappNumber={whatsappNumber} />;
       case "cuidados": return <CuidadosPosProcedimento token={token} whatsappNumber={whatsappNumber} onNavigate={setSection} />;
-      case "evolucao": return <MinhaEvolucao token={token} />;
+      case "evolucao": return <MinhaEvolucao token={token} whatsappNumber={whatsappNumber} />;
       case "termos": return <TermosConsentimentos token={token} />;
       case "clube": return <ClubeRecorrencia token={token} whatsappNumber={whatsappNumber} onNavigate={setSection} />;
       case "biblioteca": return <BibliotecaConteudos />;

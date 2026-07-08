@@ -58,6 +58,21 @@
     "patient_note": {
       "type": "string",
       "description": "Nota da paciente ao enviar foto de evolu\u00e7\u00e3o"
+    },
+    "deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Exclus\u00e3o l\u00f3gica \u2014 se true, n\u00e3o exibir no portal nem na evolu\u00e7\u00e3o"
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deleted_by": {
+      "type": "string"
+    },
+    "deletion_reason": {
+      "type": "string"
     }
   },
   "required": [

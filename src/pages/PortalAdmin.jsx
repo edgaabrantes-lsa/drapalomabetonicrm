@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { T } from "@/components/portalPaciente/portalConfig";
 import { Loader2, Link2, Search, Copy, Check, Users } from "lucide-react";
+import AdminFotosEvolucao from "@/components/portalPaciente/AdminFotosEvolucao";
 
 const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
 
 export default function PortalAdmin() {
+  const [tab, setTab] = useState("links");
   const [search, setSearch] = useState("");
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(null);
   const [links, setLinks] = useState({});
+  const [copied, setCopied] = useState(null);
 
   async function buscar() {
     if (!search.trim()) return;
@@ -43,68 +45,90 @@ export default function PortalAdmin() {
     setCopied(url);
     setTimeout(() => setCopied(null), 1500);
   }
-  const [copied, setCopied] = useState(null);
 
   return (
     <div className="space-y-6">
       <div>
         <p className="text-[11px] uppercase tracking-widest mb-1" style={{ color: "#666" }}>Administrativo</p>
-        <h1 className="text-2xl font-semibold" style={{ color: "#FFFFFF" }}>Portal da Paciente — Links de acesso</h1>
+        <h1 className="text-2xl font-semibold" style={{ color: "#FFFFFF" }}>Portal da Paciente</h1>
         <p className="text-sm mt-1" style={{ color: "#B0B0B0" }}>
-          Gere links individuais e seguros da Jornada da Beleza Natural para suas pacientes.
+          Gere links de acesso da Jornada da Beleza Natural e modere as fotos de evolução enviadas pelas pacientes.
         </p>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#555" }} />
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && buscar()}
-          placeholder="Buscar por nome, telefone ou e-mail..."
-          className="w-full rounded-md pl-10 pr-4 py-2.5 text-sm"
-          style={{ background: "#121212", border: "1px solid #2B2B2B", color: "#FFFFFF" }}
-        />
+      {/* Tabs */}
+      <div className="flex gap-1 border-b" style={{ borderColor: "#1E1E1E" }}>
+        <TabBtn active={tab === "links"} onClick={() => setTab("links")}>Links de acesso</TabBtn>
+        <TabBtn active={tab === "fotos"} onClick={() => setTab("fotos")}>Fotos da evolução</TabBtn>
       </div>
-      <button onClick={buscar} className="rounded-md px-4 py-2 text-sm font-medium" style={{ background: "#C8A96A", color: "#0A0A0A" }}>
-        Buscar pacientes
-      </button>
 
-      {loading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "#C8A96A" }} /></div>}
+      {tab === "fotos" ? (
+        <AdminFotosEvolucao />
+      ) : (
+        <>
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#555" }} />
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && buscar()}
+              placeholder="Buscar por nome, telefone ou e-mail..."
+              className="w-full rounded-md pl-10 pr-4 py-2.5 text-sm"
+              style={{ background: "#121212", border: "1px solid #2B2B2B", color: "#FFFFFF" }}
+            />
+          </div>
+          <button onClick={buscar} className="rounded-md px-4 py-2 text-sm font-medium" style={{ background: "#C8A96A", color: "#0A0A0A" }}>
+            Buscar pacientes
+          </button>
 
-      {!loading && patients.length > 0 && (
-        <div className="space-y-2">
-          {patients.map(p => (
-            <div key={p.id} className="rounded-lg p-4" style={{ background: "#1A1A1A", border: "1px solid #2B2B2B" }}>
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: "#FFFFFF" }}>{p.full_name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "#666" }}>{p.phone || p.email || "—"}</p>
+          {loading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "#C8A96A" }} /></div>}
+
+          {!loading && patients.length > 0 && (
+            <div className="space-y-2">
+              {patients.map(p => (
+                <div key={p.id} className="rounded-lg p-4" style={{ background: "#1A1A1A", border: "1px solid #2B2B2B" }}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "#FFFFFF" }}>{p.full_name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "#666" }}>{p.phone || p.email || "—"}</p>
+                    </div>
+                    <button onClick={() => gerar(p)} disabled={generating === p.id}
+                      className="flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium disabled:opacity-60 flex-shrink-0"
+                      style={{ background: "#C8A96A", color: "#0A0A0A" }}>
+                      {generating === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Link2 className="h-3.5 w-3.5" /> Gerar link</>}
+                    </button>
+                  </div>
+                  {links[p.id] && (
+                    <div className="mt-3 flex items-center gap-2 rounded-md p-2.5" style={{ background: "#121212", border: "1px solid #2B2B2B" }}>
+                      <input readOnly value={links[p.id]} className="flex-1 bg-transparent text-xs outline-none" style={{ color: "#C8A96A" }} />
+                      <button onClick={() => copiar(links[p.id])} className="flex-shrink-0 p-1.5 rounded" style={{ background: "#2B2B2B" }}>
+                        {copied === links[p.id] ? <Check className="h-3.5 w-3.5" style={{ color: "#34d399" }} /> : <Copy className="h-3.5 w-3.5" style={{ color: "#B0B0B0" }} />}
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button onClick={() => gerar(p)} disabled={generating === p.id}
-                  className="flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium disabled:opacity-60 flex-shrink-0"
-                  style={{ background: "#C8A96A", color: "#0A0A0A" }}>
-                  {generating === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Link2 className="h-3.5 w-3.5" /> Gerar link</>}
-                </button>
-              </div>
-              {links[p.id] && (
-                <div className="mt-3 flex items-center gap-2 rounded-md p-2.5" style={{ background: "#121212", border: "1px solid #2B2B2B" }}>
-                  <input readOnly value={links[p.id]} className="flex-1 bg-transparent text-xs outline-none" style={{ color: "#C8A96A" }} />
-                  <button onClick={() => copiar(links[p.id])} className="flex-shrink-0 p-1.5 rounded" style={{ background: "#2B2B2B" }}>
-                    {copied === links[p.id] ? <Check className="h-3.5 w-3.5" style={{ color: "#34d399" }} /> : <Copy className="h-3.5 w-3.5" style={{ color: "#B0B0B0" }} />}
-                  </button>
-                </div>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {!loading && patients.length === 0 && search && (
-        <div className="text-center py-12">
-          <Users className="mx-auto mb-3" style={{ width: 32, height: 32, color: "#374151" }} />
-          <p className="text-sm" style={{ color: "#666" }}>Busque uma paciente para gerar o link.</p>
-        </div>
+          {!loading && patients.length === 0 && search && (
+            <div className="text-center py-12">
+              <Users className="mx-auto mb-3" style={{ width: 32, height: 32, color: "#374151" }} />
+              <p className="text-sm" style={{ color: "#666" }}>Busque uma paciente para gerar o link.</p>
+            </div>
+          )}
+        </>
       )}
     </div>
+  );
+}
+
+function TabBtn({ active, onClick, children }) {
+  return (
+    <button onClick={onClick}
+      className="px-4 py-2.5 text-sm transition-colors relative"
+      style={{ color: active ? "#FFFFFF" : "#666", fontWeight: active ? 600 : 500 }}>
+      {children}
+      {active && <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: "#C8A96A" }} />}
+    </button>
   );
 }
