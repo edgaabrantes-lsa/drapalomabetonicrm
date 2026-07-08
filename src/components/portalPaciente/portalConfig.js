@@ -19,8 +19,13 @@ export const DEFAULT_WHATSAPP = "5599999999999";
 
 // ── Helper de chamadas ao backend do portal ──
 export async function portalApi(action, payload = {}) {
-  const res = await base44.functions.invoke("portalPaciente", { action, ...payload });
-  return res.data;
+  try {
+    const res = await base44.functions.invoke("portalPaciente", { action, ...payload });
+    return res.data;
+  } catch (err) {
+    const msg = err?.response?.data?.error || err?.message || "Erro de comunicação com o portal.";
+    throw new Error(msg);
+  }
 }
 
 // ── Link de WhatsApp ──
