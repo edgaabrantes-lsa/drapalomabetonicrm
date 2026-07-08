@@ -119,6 +119,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── BUSY: consultar horários ocupados no Google Agenda ──
+    if (op === "busy") {
+      const { timeMin, timeMax } = body;
+      if (!timeMin || !timeMax) return Response.json({ error: "timeMin e timeMax obrigatórios." }, { status: 400 });
+      try {
+        const res = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ timeMin, timeMax, items: [{ id: "primary" }] }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          return Response.json({ error: err.error?.message || "Falha ao consultar disponibilidade.", busy: [] }, { status: 502 });
+        }
+        const data = await res.json();
+        const busy = (data.calendars?.primary?.busy || []).map(b => ({ start: b.start, end: b.end }));
+        return Response.json({ busy });
+      } catch (e) {
+        return Response.json({ error: e.message, busy: [] }, { status: 500 });
+      }
+    }
+
     // ── CREATE: criar evento no Google a partir de um Appointment ──
     if (op === "create") {
       const { appointment_id } = body;

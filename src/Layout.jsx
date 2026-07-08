@@ -31,8 +31,7 @@ import {
   FolderOpen,
   GitBranch,
   BarChart3,
-  Copy,
-  Sparkles
+  Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -72,7 +71,7 @@ const navigation = [
   { name: "Config. da Clínica",  href: "ClinicSettingsPage", icon: Settings,         group: "admin" },
   { name: "Configurações",       href: "Settings",           icon: Settings,         group: "admin" },
   { name: "Usuários",            href: "UsuariosPermissoes",  icon: Users,            group: "admin" },
-  { name: "Portal da Paciente",  href: "PortalAdmin",        icon: Sparkles,         group: "admin" },
+  { name: "Portal da Paciente",  href: "PortalAdmin",        icon: Users,            group: "admin" },
 ];
 
 const SIDEBAR_W_OPEN   = 240;

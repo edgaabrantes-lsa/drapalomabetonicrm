@@ -152,14 +152,33 @@ Deno.serve(async (req) => {
       return Response.json({ appointments: appts, procedures });
     }
 
+    // ── DISPONIBILIDADE (horários ocupados na semana) ──────
+    if (action === "disponibilidade") {
+      const { start_date, end_date } = body;
+      if (!start_date || !end_date) return Response.json({ error: "Intervalo de datas obrigatório." }, { status: 400 });
+      const appts = await base44.asServiceRole.entities.Appointment.filter({
+        status: { $in: ["scheduled", "confirmed", "in_progress"] },
+        start_time: { $gte: start_date, $lt: end_date },
+      });
+      const busy = (appts || []).map(a => ({ start: a.start_time, end: a.end_time, professional_id: a.professional_id || null }));
+      let google_configured = false;
+      let google_busy = [];
+      try {
+        const g = await base44.asServiceRole.functions.invoke("syncGoogleAgenda", { op: "busy", timeMin: start_date, timeMax: end_date });
+        const b = g?.busy || g?.data?.busy;
+        if (Array.isArray(b)) { google_configured = true; google_busy = b; }
+      } catch (_) {}
+      return Response.json({ busy, google_configured, google_busy });
+    }
+
     if (action === "agendar") {
-      const { procedure_name, start_time, duration_minutes, notes, procedure_id } = body;
+      const { procedure_name, start_time, duration_minutes, notes, procedure_id, tipo } = body;
       if (!procedure_name || !start_time) return Response.json({ error: "Procedimento e horário são obrigatórios." }, { status: 400 });
       const start = new Date(start_time);
       const dur = duration_minutes || 60;
       const end = new Date(start.getTime() + dur * 60000);
+      // Conflito de horário (capacidade clínica — qualquer agendamento ativo sobreposto)
       const conflict = await base44.asServiceRole.entities.Appointment.filter({
-        professional_id: body.professional_id || { $exists: false },
         status: { $in: ["scheduled", "confirmed", "in_progress"] },
         start_time: { $lt: end.toISOString() },
         end_time: { $gt: start.toISOString() },
@@ -176,7 +195,7 @@ Deno.serve(async (req) => {
         end_time: end.toISOString(),
         duration_minutes: dur,
         status: "scheduled",
-        notes: notes || "Agendado via Portal da Paciente",
+        notes: notes || `Agendado via Portal da Paciente${tipo ? ` (${tipo})` : ""}`,
       });
       // Sincroniza com Google Agenda (ignora erro — não bloqueia o agendamento)
       try {
@@ -415,15 +434,15 @@ Deno.serve(async (req) => {
       let contents = await base44.asServiceRole.entities.PortalContent.filter({ status: "ativo" }, "order");
       if (!contents || contents.length === 0) {
         const seeds = [
-          { title: "O que significa uma beleza natural e equilibrada", category: "Beleza natural", description: "Entenda o conceito de beleza como equilíbrio, proporção e individualidade.", content: "A beleza natural não está em seguir padrões, mas em realçar o que já é seu. Quando cuidamos da pele, do contorno e da harmonia facial com leveza, o resultado é uma aparência descansada, viva e coerente com a sua identidade. O equilíbrio é o princípio que guia cada decisão estética: nada em excesso, nada em falta. A beleza mora no equilíbrio.", order: 1 },
-          { title: "Harmonização facial não é transformação: é planejamento", category: "Harmonização facial", description: "O objetivo da harmonização é realçar, não transformar.", content: "A harmonização facial parte de um planejamento cuidadoso. Avaliamos proporções, simetria e o seu desejo para construir um plano gradual. Cada etapa é pensada para respeitar a sua fisionomia e o tempo do seu organismo. O resultado é uma evolução sutil, percebida por você e por quem convive com você — sem perder a naturalidade.", order: 1 },
-          { title: "Quando a toxina botulínica é indicada", category: "Toxina botulínica", description: "Entenda em quais situações a toxina botulínica é uma boa escolha.", content: "A toxina botulínica atua suavizando linhas de expressão dinâmicas, como as da testa e ao redor dos olhos. É indicada quando o movimento muscular gera rugas que incomodam. O resultado aparece de forma gradual e temporária, permitindo ajustes ao longo do tempo. A indicação é sempre personalizada, após avaliação clínica.", order: 1 },
-          { title: "Preenchimento facial com naturalidade e proporção", category: "Preenchimentos", description: "Como o preenchimento restaura volume sem perder a identidade.", content: "O preenchimento devolve volume e contorno onde o tempo e a genética criaram sulcos ou perda de sustentação. A chave está na proporção: usamos a quantidade certa, no lugar certo, para evitar resultados artificiais. O movimento trabalha por etapas, respeitando a sua anatomia e o tempo de assentamento do produto.", order: 1 },
-          { title: "Bioestimuladores e o cuidado com a qualidade da pele", category: "Bioestimuladores", description: "Bioestimuladores agem na firmeza e na espessura da pele.", content: "Os bioestimuladores incentivam a produção de colágeno, melhorando a firmeza e a qualidade da pele ao longo das semanas. Não é um efeito imediato: é um investimento gradual na estrutura da sua pele. O acompanhamento define o número de sessões e o intervalo ideal para o seu caso.", order: 1 },
-          { title: "Por que a qualidade da pele muda o resultado estético", category: "Skin Quality", description: "A pele é a base de qualquer resultado facial harmonioso.", content: "Antes de pensar em volume ou contorno, cuidamos da pele. Uma pele saudável reflete a luz de forma natural e valoriza qualquer procedimento. Avaliamos hidratação, textura, manchas e firmeza para construir uma base sólida. Skin Quality é o cuidado que sustenta todos os outros resultados.", order: 1 },
-          { title: "Como se preparar para um procedimento estético", category: "Cuidados antes e depois", description: "Pequenos cuidados antes potencializam o resultado.", content: "Antes de um procedimento, evite anti-inflamatórios e álcool, mantenha a pele limpa e hidratada e siga as orientações enviadas pela equipe. Depois, respeite o tempo de recuperação, evite calor intenso e exercícios no primeiro dia. Cada procedimento tem um protocolo específico — a equipe detalhará os cuidados para a sua etapa.", order: 1 },
-          { title: "Mitos comuns sobre harmonização facial", category: "Mitos e verdades", description: "Esclarecemos dúvidas frequentes com clareza.", content: "Existe a ideia de que harmonização sempre muda o rosto — na verdade, o objetivo é equilibrar, não transformar. Outro mito é que os resultados são permanentes; a maioria dos procedimentos é temporária e ajustável. E não é necessário fazer tudo de uma vez: o planejamento é gradual e respeita o seu tempo.", order: 1 },
-          { title: "Por que a manutenção faz parte da jornada estética", category: "Manutenção dos resultados", description: "O resultado é construído e mantido ao longo do tempo.", content: "Os resultados estéticos não são definitivos porque a pele e o organismo continuam envelhecendo naturalmente. A manutenção garante que o equilíbrio conquistado se mantenha. Definimos juntos o ritmo ideal de retorno, com sessões de reforço e cuidados contínuos. Manter é parte da jornada — não um recomeço.", order: 1 },
+          { title: "O que significa buscar uma beleza natural", category: "Beleza natural", description: "Beleza natural é sobre respeitar a identidade de cada paciente, valorizando proporções, equilíbrio e expressão individual.", content: "A beleza natural não significa ausência de cuidado. Significa cuidar da aparência com critério, respeitando a identidade, os traços e a expressão de cada paciente.\n\nNa estética facial, o objetivo não deve ser transformar uma pessoa em outra, mas realçar aquilo que já existe de forma harmônica. Cada rosto possui proporções, movimentos, assimetrias naturais e características únicas. Por isso, um bom planejamento considera não apenas o procedimento, mas o conjunto: pele, estrutura facial, idade, histórico, expectativas e estilo pessoal.\n\nA Jornada da Beleza Natural parte da ideia de que beleza e equilíbrio caminham juntos. O cuidado estético deve trazer leveza, segurança e coerência, evitando exageros e preservando a individualidade.", order: 1 },
+          { title: "Harmonização facial é planejamento, não exagero", category: "Harmonização facial", description: "A harmonização facial deve ser conduzida com análise, proporção e respeito à identidade da paciente.", content: "A harmonização facial é um conjunto de estratégias que busca melhorar a harmonia do rosto, considerando proporções, sustentação, contorno, pele e expressão.\n\nMais do que realizar procedimentos isolados, a harmonização exige planejamento. A indicação correta depende da avaliação individual, da estrutura facial, da queixa da paciente e do resultado desejado.\n\nQuando bem conduzida, a harmonização não precisa deixar o rosto artificial. O objetivo é criar equilíbrio, suavizar sinais de envelhecimento, valorizar pontos fortes e preservar a naturalidade. Cada etapa deve ser indicada com responsabilidade, respeitando limites anatômicos e expectativas reais.", order: 1 },
+          { title: "Quando a toxina botulínica é indicada", category: "Toxina botulínica", description: "A toxina botulínica pode suavizar linhas de expressão e ajudar na prevenção de marcas mais profundas.", content: "A toxina botulínica é um dos procedimentos mais conhecidos na estética facial. Ela atua reduzindo temporariamente a contração de determinados músculos, ajudando a suavizar linhas de expressão e prevenir marcas mais profundas.\n\nPode ser indicada para regiões como testa, glabela, área dos olhos e outros pontos específicos, sempre após avaliação profissional. O objetivo não é paralisar a expressão, mas equilibrar movimento, suavidade e naturalidade.\n\nA aplicação deve ser personalizada. Cada paciente possui força muscular, expressões e necessidades diferentes. Por isso, a dose, os pontos e a estratégia devem ser definidos individualmente.", order: 1 },
+          { title: "Preenchimento facial com naturalidade e proporção", category: "Preenchimentos", description: "O preenchimento pode restaurar volume, melhorar contornos e equilibrar proporções quando bem indicado.", content: "Os preenchimentos faciais podem ser utilizados para restaurar volume, melhorar contornos, suavizar sulcos e equilibrar proporções do rosto.\n\nA naturalidade depende da indicação correta, da técnica utilizada e do respeito à anatomia da paciente. Nem todo incômodo precisa de preenchimento, e nem todo rosto precisa de volume. Em muitos casos, o segredo está na precisão e na moderação.\n\nUm bom planejamento considera o rosto como um todo. Lábios, mento, mandíbula, malar, olheiras e sulcos devem ser avaliados dentro do conjunto facial, evitando resultados exagerados ou desconectados da identidade da paciente.", order: 1 },
+          { title: "Bioestimuladores e a qualidade da pele", category: "Bioestimuladores", description: "Bioestimuladores podem auxiliar na firmeza, sustentação e melhora progressiva da qualidade da pele.", content: "Os bioestimuladores de colágeno são procedimentos voltados à melhora progressiva da qualidade da pele, firmeza e sustentação.\n\nDiferente de procedimentos que entregam volume imediato, os bioestimuladores trabalham estimulando respostas naturais do organismo ao longo do tempo. Por isso, fazem parte de uma estratégia de cuidado contínuo, especialmente em pacientes que buscam prevenção, rejuvenescimento e melhora da textura da pele.\n\nA indicação deve considerar idade, grau de flacidez, qualidade da pele, histórico da paciente e objetivo do tratamento. O resultado tende a ser progressivo e deve ser acompanhado em retornos definidos pela clínica.", order: 1 },
+          { title: "Por que a qualidade da pele muda o resultado estético", category: "Skin Quality", description: "Uma pele bem cuidada valoriza qualquer tratamento facial e melhora a percepção global do resultado.", content: "A qualidade da pele é uma das bases mais importantes da estética facial. Textura, viço, hidratação, poros, manchas, linhas finas e luminosidade influenciam diretamente a percepção de beleza e saúde.\n\nMuitas vezes, antes de pensar em volume ou contorno, é necessário cuidar da pele. Procedimentos voltados para Skin Quality ajudam a melhorar o aspecto geral e a preparar a pele para outros tratamentos.\n\nUma pele mais saudável valoriza os resultados estéticos, traz mais naturalidade e contribui para uma aparência mais leve e equilibrada. Por isso, o cuidado com a pele deve fazer parte da jornada, e não ser tratado como algo secundário.", order: 1 },
+          { title: "Como se preparar e se cuidar após um procedimento", category: "Cuidados antes e depois", description: "O resultado também depende dos cuidados antes e depois do atendimento.", content: "Os cuidados antes e depois de um procedimento são fundamentais para segurança, conforto e boa evolução.\n\nAntes do atendimento, é importante seguir as orientações da clínica, informar medicamentos em uso, alergias, histórico de saúde e procedimentos anteriores. Essas informações ajudam a profissional a conduzir o planejamento com mais segurança.\n\nApós o procedimento, a paciente deve respeitar as orientações recebidas, evitar manipular a região, observar sinais esperados e entrar em contato com a equipe sempre que tiver dúvida. Cada procedimento possui cuidados específicos, por isso as instruções devem ser seguidas de acordo com o tratamento realizado.", order: 1 },
+          { title: "Mitos comuns sobre procedimentos estéticos", category: "Mitos e verdades", description: "Informação correta ajuda a paciente a tomar decisões mais seguras.", content: "Muitos mitos cercam os procedimentos estéticos. Um dos mais comuns é acreditar que todo procedimento deixa o rosto artificial. Na realidade, o resultado depende da indicação, da técnica, da quantidade utilizada e do planejamento individual.\n\nOutro mito é pensar que todas as pacientes precisam dos mesmos procedimentos. Cada rosto tem uma estrutura, uma necessidade e uma história. O que funciona para uma pessoa pode não ser indicado para outra.\n\nTambém é importante entender que estética não deve ser baseada em modismos. Tendências passam, mas a identidade facial permanece. Por isso, uma boa avaliação considera equilíbrio, segurança e naturalidade.", order: 1 },
+          { title: "Por que a manutenção faz parte da jornada estética", category: "Manutenção dos resultados", description: "O cuidado estético não termina no procedimento; ele continua com acompanhamento e manutenção.", content: "A manutenção é uma parte importante da jornada estética. Muitos procedimentos possuem tempo de ação, evolução progressiva ou necessidade de acompanhamento periódico.\n\nRetornos e revisões ajudam a avaliar a resposta individual da paciente, acompanhar a evolução e definir os próximos passos com mais precisão.\n\nCuidar da beleza de forma natural envolve constância, planejamento e acompanhamento. A manutenção não deve ser vista apenas como repetição de procedimentos, mas como uma estratégia para preservar equilíbrio, qualidade da pele e harmonia ao longo do tempo.", order: 1 },
         ];
         await base44.asServiceRole.entities.PortalContent.bulkCreate(seeds.map(s => ({ ...s, status: "ativo" })));
         contents = await base44.asServiceRole.entities.PortalContent.filter({ status: "ativo" }, "order");
@@ -452,6 +471,21 @@ Deno.serve(async (req) => {
         data_hora: new Date().toISOString(),
       });
       await logEvent(patient, "contato_whatsapp_portal", "atendimento", `Paciente solicitou contato: ${motivo}.`);
+      return Response.json({ ok: true });
+    }
+
+    // ── CLIQUE EM WHATSAPP (registro padronizado) ──────────
+    if (action === "whatsapp_click") {
+      const { origem } = body;
+      await base44.asServiceRole.entities.DossieObservacao.create({
+        patient_id: pid,
+        patient_name: patient.full_name,
+        observacao: `paciente clicou para falar no WhatsApp pela Jornada da Beleza Natural${origem ? ` (${origem})` : ""}`,
+        categoria: "pos_venda",
+        prioridade: "media",
+        usuario: "Portal da Paciente",
+        data_hora: new Date().toISOString(),
+      });
       return Response.json({ ok: true });
     }
 

@@ -73,14 +73,14 @@ export default function PortalPaciente() {
       case "evolucao": return <MinhaEvolucao token={token} whatsappNumber={whatsappNumber} />;
       case "termos": return <TermosConsentimentos token={token} />;
       case "clube": return <ClubeRecorrencia token={token} whatsappNumber={whatsappNumber} onNavigate={setSection} />;
-      case "biblioteca": return <BibliotecaConteudos />;
+      case "biblioteca": return <BibliotecaConteudos token={token} />;
       case "falar": return <FalarEquipe token={token} whatsappNumber={whatsappNumber} onNavigate={setSection} />;
       default: return <PortalHome patient={patient} onNavigate={setSection} />;
     }
   }
 
   return (
-    <PortalLayout patient={patient} section={section} onNavigate={setSection} whatsappUrl={whatsappUrl}>
+    <PortalLayout patient={patient} section={section} onNavigate={setSection} token={token}>
       {renderSection()}
     </PortalLayout>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { T, portalApi, whatsappLink, WHATSAPP_MESSAGES } from "./portalConfig";
+import { T, portalApi, openWhatsapp } from "./portalConfig";
 import { PROCEDIMENTOS_GUIAS } from "./cuidadosData";
 import { ChevronRight, MessageCircle, Camera, ChevronLeft, Clock, Heart } from "lucide-react";
 
@@ -7,7 +7,7 @@ export default function CuidadosPosProcedimento({ token, whatsappNumber, onNavig
   const [selected, setSelected] = useState(null);
 
   if (selected) {
-    return <GuideDetail guide={selected} onBack={() => setSelected(null)} whatsappNumber={whatsappNumber} onNavigate={onNavigate} />;
+    return <GuideDetail guide={selected} onBack={() => setSelected(null)} whatsappNumber={whatsappNumber} onNavigate={onNavigate} token={token} />;
   }
 
   return (
@@ -37,7 +37,7 @@ export default function CuidadosPosProcedimento({ token, whatsappNumber, onNavig
   );
 }
 
-function GuideDetail({ guide, onBack, whatsappNumber, onNavigate }) {
+function GuideDetail({ guide, onBack, whatsappNumber, onNavigate, token }) {
   const sections = [
     { title: "Antes do procedimento", icon: Clock, items: guide.antes },
     { title: "Nas primeiras horas", icon: Heart, items: guide.primeiras_horas },
@@ -83,21 +83,21 @@ function GuideDetail({ guide, onBack, whatsappNumber, onNavigate }) {
 
       {/* Ações */}
       <div className="grid grid-cols-1 gap-2.5 mt-6">
-        <a href={whatsappLink(whatsappNumber, WHATSAPP_MESSAGES.duvida)} target="_blank" rel="noopener noreferrer"
+        <button onClick={() => openWhatsapp(token, "cuidados")}
           className="flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-medium"
           style={{ background: T.goldSoft, border: `1px solid ${T.gold}40`, color: T.gold }}>
           <MessageCircle className="h-4 w-4" /> Tenho uma dúvida
-        </a>
+        </button>
         <button onClick={() => onNavigate("evolucao")}
           className="flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold"
-          style={{ background: T.gold, color: "#0A0A0A" }}>
+          style={{ background: T.gold, color: T.offWhite }}>
           <Camera className="h-4 w-4" /> Enviar foto de evolução
         </button>
-        <a href={whatsappLink(whatsappNumber, WHATSAPP_MESSAGES.duvida)} target="_blank" rel="noopener noreferrer"
+        <button onClick={() => openWhatsapp(token, "cuidados")}
           className="flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium"
           style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted }}>
           <MessageCircle className="h-4 w-4" /> Falar no WhatsApp
-        </a>
+        </button>
       </div>
     </div>
   );

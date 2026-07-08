@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { T, portalApi, whatsappLink, WHATSAPP_MESSAGES } from "./portalConfig";
+import { T, portalApi, whatsappLink, WHATSAPP_MESSAGES, WHATSAPP_URL } from "./portalConfig";
 import { MessageCircle, ChevronRight, Loader2 } from "lucide-react";
 
 const OPCOES = [
@@ -25,7 +25,7 @@ export default function FalarEquipe({ token, whatsappNumber, onNavigate }) {
       setBusy(null);
       return;
     }
-    window.open(whatsappLink(whatsappNumber, op.msg), "_blank", "noopener,noreferrer");
+    window.open(WHATSAPP_URL, "_blank", "noopener,noreferrer");
     setBusy(null);
   }
 

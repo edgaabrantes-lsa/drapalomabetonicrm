@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { T, portalApi, whatsappLink, WHATSAPP_MESSAGES } from "./portalConfig";
+import { T, portalApi, openWhatsapp } from "./portalConfig";
 import { Loader2, Camera, X, Upload, MessageCircle, ImageOff, Sparkles, Eye, ClipboardList, Stethoscope, CalendarDays, ArrowRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -20,10 +20,7 @@ export default function MinhaEvolucao({ token, whatsappNumber }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const falarEquipe = async () => {
-    try { await portalApi("falar_evolucao", { token }); } catch {}
-    window.open(whatsappLink(whatsappNumber, WHATSAPP_MESSAGES.duvida), "_blank", "noopener,noreferrer");
-  };
+  const falarEquipe = () => openWhatsapp(token, "evolucao");
 
   if (loading) {
     return <div className="px-5 py-20 flex justify-center"><Loader2 className="h-7 w-7 animate-spin" style={{ color: T.gold }} /></div>;
@@ -195,7 +192,7 @@ export default function MinhaEvolucao({ token, whatsappNumber }) {
       {/* Enviar nova foto */}
       <button onClick={() => setShowUpload(true)}
         className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm mb-3"
-        style={{ background: T.gold, color: "#0A0A0A", fontWeight: 600 }}>
+        style={{ background: T.gold, color: T.offWhite, fontWeight: 600 }}>
         <Camera className="h-4 w-4" /> Enviar nova foto
       </button>
 
@@ -389,7 +386,7 @@ function UploadModal({ token, onClose, onDone }) {
 
         <button onClick={submit} disabled={loading || !file}
           className="w-full flex items-center justify-center gap-2 rounded-lg py-3 mt-4 text-sm disabled:opacity-60"
-          style={{ background: T.gold, color: "#0A0A0A", fontWeight: 600 }}>
+          style={{ background: T.gold, color: T.offWhite, fontWeight: 600 }}>
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</> : "Enviar foto"}
         </button>
       </div>

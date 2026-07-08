@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { T, portalApi, whatsappLink, WHATSAPP_MESSAGES } from "./portalConfig";
+import { T, portalApi, openWhatsapp } from "./portalConfig";
 import { Loader2, CalendarDays, ChevronRight, MessageCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -22,11 +22,11 @@ export default function MeuPlano({ token, whatsappNumber, onNavigate }) {
         <div className="rounded-2xl p-8 text-center" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <SparklesMuted />
           <p className="text-sm mt-3" style={{ color: T.muted }}>Seu plano está sendo preparado pela equipe.</p>
-          <a href={whatsappLink(whatsappNumber, WHATSAPP_MESSAGES.plano)} target="_blank" rel="noopener noreferrer"
+          <button onClick={() => openWhatsapp(token, "plano")}
             className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-lg text-sm font-medium"
             style={{ background: T.goldSoft, border: `1px solid ${T.gold}40`, color: T.gold }}>
             <MessageCircle className="h-4 w-4" /> Falar com a equipe
-          </a>
+          </button>
         </div>
       </Section>
     );
@@ -59,14 +59,14 @@ export default function MeuPlano({ token, whatsappNumber, onNavigate }) {
             <div className="flex gap-2 pt-3 border-t" style={{ borderColor: T.border }}>
               <button onClick={() => onNavigate("agenda")}
                 className="flex-1 rounded-lg py-2.5 text-sm font-medium"
-                style={{ background: T.gold, color: "#0A0A0A" }}>
+                style={{ background: T.gold, color: T.offWhite }}>
                 Agendar próxima etapa
               </button>
-              <a href={whatsappLink(whatsappNumber, WHATSAPP_MESSAGES.plano)} target="_blank" rel="noopener noreferrer"
+              <button onClick={() => openWhatsapp(token, "plano")}
                 className="flex items-center justify-center rounded-lg px-4"
                 style={{ background: T.goldSoft, border: `1px solid ${T.gold}40` }}>
                 <MessageCircle className="h-4 w-4" style={{ color: T.gold }} />
-              </a>
+              </button>
             </div>
           </div>
         ))}
