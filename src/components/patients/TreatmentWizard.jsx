@@ -183,12 +183,25 @@ const StepTipo = ({ onSelect }) => (
 const StepProcedimento = ({ sel, onUpdate }) => {
   const [search, setSearch] = useState("");
   const filtered = PROCEDIMENTOS.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
+  const items = sel.items || [];
+
+  const toggle = (proc) => {
+    const exists = items.find(i => i.id === proc.id);
+    if (exists) {
+      onUpdate({ ...sel, items: items.filter(i => i.id !== proc.id) });
+    } else {
+      onUpdate({ ...sel, items: [...items, { ...proc, valorFinal: proc.valor, qty: 1, regioes: "", obs: "" }] });
+    }
+  };
+  const updateItem = (id, patch) => {
+    onUpdate({ ...sel, items: items.map(i => (i.id === id ? { ...i, ...patch } : i)) });
+  };
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-serif text-white mb-1">Procedimentos Avulsos</h2>
-        <p className="text-sm text-gray-400">Selecione o procedimento e ajuste os detalhes</p>
+        <p className="text-sm text-gray-400">Selecione um ou mais procedimentos e ajuste os valores individualmente</p>
       </div>
 
       <input
@@ -198,18 +211,22 @@ const StepProcedimento = ({ sel, onUpdate }) => {
         className="w-full px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#252D3E] text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#C5A059]"
       />
 
-      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-        {filtered.map(proc => (
-          <button
-            key={proc.id}
-            onClick={() => onUpdate({ ...sel, item: proc, valorFinal: proc.valor, qty: 1, ml: "" })}
-            className={`w-full text-left p-4 rounded-lg border transition-all ${
-              sel.item?.id === proc.id
-                ? "border-[#C5A059] bg-[#C5A059]/8"
-                : "border-[#252D3E] bg-[#141820] hover:border-[#C5A059]/40"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-3">
+      <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+        {filtered.map(proc => {
+          const selected = items.find(i => i.id === proc.id);
+          return (
+            <button
+              key={proc.id}
+              onClick={() => toggle(proc)}
+              className={`w-full text-left p-4 rounded-lg border transition-all flex items-center gap-3 ${
+                selected
+                  ? "border-[#C5A059] bg-[#C5A059]/8"
+                  : "border-[#252D3E] bg-[#141820] hover:border-[#C5A059]/40"
+              }`}
+            >
+              <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${selected ? "bg-[#C5A059] text-black" : "border border-[#252D3E]"}`}>
+                {selected && <CheckCircle className="h-3.5 w-3.5" />}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-white text-sm truncate">{proc.nome}</p>
                 <p className="text-xs text-gray-500 mt-0.5 truncate">{proc.objetivo}</p>
@@ -218,53 +235,67 @@ const StepProcedimento = ({ sel, onUpdate }) => {
                 <p className="text-[#C5A059] font-semibold text-sm">{fmtBRL(proc.valor)}</p>
                 <Badge className="text-xs bg-[#1e2535] text-gray-400 border-0 mt-0.5">{proc.categoria}</Badge>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
-      {sel.item && (
+      {items.length > 0 && (
         <div className="mt-3 p-4 bg-[#0d1017] rounded-xl border border-[#C5A059]/20 space-y-3">
-          <p className="text-sm font-medium text-[#C5A059]">Detalhes — {sel.item.nome}</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-gray-400 text-xs">Valor (editável)</Label>
-              <Input
-                type="number"
-                value={sel.valorFinal || ""}
-                onChange={(e) => onUpdate({ ...sel, valorFinal: parseFloat(e.target.value) || 0 })}
-                className="bg-[#141820] border-[#252D3E] text-white mt-1"
-              />
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[#C5A059]">Procedimentos selecionados ({items.length})</p>
+            <p className="text-sm font-semibold text-white">
+              Total: {fmtBRL(items.reduce((s, i) => s + (i.valorFinal || 0), 0))}
+            </p>
+          </div>
+          {items.map(it => (
+            <div key={it.id} className="p-3 bg-[#141820] rounded-lg border border-[#252D3E] space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-white">{it.nome}</p>
+                <button onClick={() => toggle(it)} className="text-gray-500 hover:text-red-400 transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-gray-400 text-xs">Valor (editável)</Label>
+                  <Input
+                    type="number"
+                    value={it.valorFinal || ""}
+                    onChange={(e) => updateItem(it.id, { valorFinal: parseFloat(e.target.value) || 0 })}
+                    className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-400 text-xs">Qtd / ml</Label>
+                  <Input
+                    placeholder="1"
+                    value={it.qty || ""}
+                    onChange={(e) => updateItem(it.id, { qty: e.target.value })}
+                    className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-400 text-xs">Regiões</Label>
+                  <Input
+                    placeholder="Ex: lábio..."
+                    value={it.regioes || ""}
+                    onChange={(e) => updateItem(it.id, { regioes: e.target.value })}
+                    className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-gray-400 text-xs">Observações Clínicas</Label>
+                <Input
+                  placeholder="Notas importantes..."
+                  value={it.obs || ""}
+                  onChange={(e) => updateItem(it.id, { obs: e.target.value })}
+                  className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
+                />
+              </div>
             </div>
-            <div>
-              <Label className="text-gray-400 text-xs">Quantidade / ml</Label>
-              <Input
-                placeholder="1"
-                value={sel.qty || ""}
-                onChange={(e) => onUpdate({ ...sel, qty: e.target.value })}
-                className="bg-[#141820] border-[#252D3E] text-white mt-1"
-              />
-            </div>
-          </div>
-          <div>
-            <Label className="text-gray-400 text-xs">Regiões Tratadas</Label>
-            <Input
-              placeholder="Ex: lábio superior, comissura..."
-              value={sel.regioes || ""}
-              onChange={(e) => onUpdate({ ...sel, regioes: e.target.value })}
-              className="bg-[#141820] border-[#252D3E] text-white mt-1"
-            />
-          </div>
-          <div>
-            <Label className="text-gray-400 text-xs">Observações Clínicas</Label>
-            <Textarea
-              rows={2}
-              placeholder="Notas importantes..."
-              value={sel.obs || ""}
-              onChange={(e) => onUpdate({ ...sel, obs: e.target.value })}
-              className="bg-[#141820] border-[#252D3E] text-white mt-1"
-            />
-          </div>
+          ))}
         </div>
       )}
     </div>
@@ -581,7 +612,9 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
 
   const STEPS = ["Tipo", tipo === "protocol" ? "Protocolo" : "Procedimento", "Pagamento", "Prontuário"];
 
-  const baseValue = sel.valorFinal || sel.item?.valor || 0;
+  const baseValue = tipo === "procedure"
+    ? (sel.items || []).reduce((s, i) => s + (i.valorFinal || 0), 0)
+    : (sel.valorFinal || sel.item?.valor || 0);
 
   const feeRate = (() => {
     const isInstallment = payment.method === "installments";
@@ -595,7 +628,7 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
 
   const canNext = () => {
     if (step === 0) return !!tipo;
-    if (step === 1) return !!sel.item;
+    if (step === 1) return tipo === "procedure" ? (sel.items?.length || 0) > 0 : !!sel.item;
     if (step === 2) return !!payment.method;
     return true;
   };
@@ -606,25 +639,52 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
     setSaving(true);
     try {
       const now = new Date().toISOString();
-      const nome = sel.item?.nome || "Tratamento";
+      const isMulti = tipo === "procedure" && (sel.items?.length || 0) > 0;
+      const nome = isMulti
+        ? sel.items.map(i => i.nome).join(" + ")
+        : (sel.item?.nome || "Tratamento");
       const isInstallment = payment.method === "installments";
       const numParcelas = isInstallment ? (payment.installments || 2) : 1;
 
-      await base44.entities.PatientTreatment.create({
-        patient_id: patient.id,
-        patient_name: patient.full_name,
-        protocolo_nome: nome,
-        categoria: sel.item?.categoria || (tipo === "protocol" ? "preenchimento" : "avulso"),
-        tipo: tipo === "procedure" ? "avulso" : "protocolo",
-        status: "realizado",
-        data_indicacao: now.split("T")[0],
-        data_realizacao: now.split("T")[0],
-        valor: valorCliente,
-        valor_pago: valorCliente,
-        quantidade_ml: parseFloat(sel.qty) || parseFloat(sel.mlUsado) || 1,
-        regioes_tratadas: sel.regioes ? [sel.regioes] : (sel.item?.regioes || []),
-        observacoes: sel.obs || record.evolucao || "",
-      });
+      if (isMulti) {
+        const items = sel.items;
+        const totalBase = items.reduce((s, i) => s + (i.valorFinal || 0), 0) || 1;
+        for (const it of items) {
+          const share = (it.valorFinal || 0) / totalBase;
+          const itemValor = Math.round(valorCliente * share * 100) / 100;
+          await base44.entities.PatientTreatment.create({
+            patient_id: patient.id,
+            patient_name: patient.full_name,
+            protocolo_nome: it.nome,
+            categoria: it.categoria || "avulso",
+            tipo: "avulso",
+            status: "realizado",
+            data_indicacao: now.split("T")[0],
+            data_realizacao: now.split("T")[0],
+            valor: itemValor,
+            valor_pago: itemValor,
+            quantidade_ml: parseFloat(it.qty) || 1,
+            regioes_tratadas: it.regioes ? [it.regioes] : [],
+            observacoes: it.obs || "",
+          });
+        }
+      } else {
+        await base44.entities.PatientTreatment.create({
+          patient_id: patient.id,
+          patient_name: patient.full_name,
+          protocolo_nome: nome,
+          categoria: sel.item?.categoria || (tipo === "protocol" ? "preenchimento" : "avulso"),
+          tipo: tipo === "procedure" ? "avulso" : "protocolo",
+          status: "realizado",
+          data_indicacao: now.split("T")[0],
+          data_realizacao: now.split("T")[0],
+          valor: valorCliente,
+          valor_pago: valorCliente,
+          quantidade_ml: parseFloat(sel.qty) || parseFloat(sel.mlUsado) || 1,
+          regioes_tratadas: sel.regioes ? [sel.regioes] : (sel.item?.regioes || []),
+          observacoes: sel.obs || record.evolucao || "",
+        });
+      }
 
       for (let i = 0; i < numParcelas; i++) {
         const due = payment.firstDueDate
@@ -654,7 +714,9 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
         recommendations: record.recomendacoes || "",
         allergies: record.alergias ? [record.alergias] : [],
         current_medications: record.medicamentos ? [record.medicamentos] : [],
-        procedures_performed: [{ procedure_name: nome, quantity_applied: parseFloat(sel.qty) || 1, unit: "un", area_treated: sel.regioes || "" }],
+        procedures_performed: isMulti
+          ? sel.items.map(it => ({ procedure_name: it.nome, quantity_applied: parseFloat(it.qty) || 1, unit: "un", area_treated: it.regioes || "" }))
+          : [{ procedure_name: nome, quantity_applied: parseFloat(sel.qty) || 1, unit: "un", area_treated: sel.regioes || "" }],
         status: "approved",
       });
 

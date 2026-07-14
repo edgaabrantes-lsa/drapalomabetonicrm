@@ -188,7 +188,7 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
           color: T.charcoal, padding: "10px 20px", cursor: "pointer",
         }}>Cancelar</button>
         <button type="submit" style={{
-          background: T.onyx, color: "#fff", border: "none", borderRadius: 2,
+          background: T.gold, color: "#000", border: "none", borderRadius: 2,
           fontFamily: "Inter", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase",
           padding: "10px 20px", cursor: "pointer",
         }}>
@@ -707,8 +707,8 @@ export default function Agenda() {
               <button key={v.id} onClick={() => setViewMode(v.id)}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  padding: "7px 14px", background: viewMode === v.id ? T.onyx : "transparent",
-                  color: viewMode === v.id ? "#fff" : T.charcoal,
+                  padding: "7px 14px", background: viewMode === v.id ? T.gold : "transparent",
+                  color: viewMode === v.id ? "#000" : T.charcoal,
                   border: "none", cursor: "pointer",
                   fontFamily: "Inter", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
                   borderRight: `1px solid ${T.subtle}`,
@@ -774,7 +774,7 @@ export default function Agenda() {
         style={{
           position: "fixed", bottom: 32, right: 32,
           width: 52, height: 52,
-          background: T.onyx, color: "#fff",
+          background: T.gold, color: "#000",
           border: "none", borderRadius: 4,
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "0 8px 32px rgba(0,0,0,0.16)",
