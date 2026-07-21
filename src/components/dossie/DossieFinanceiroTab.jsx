@@ -9,6 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import CurrencyInput from "@/components/ui/CurrencyInput";
+import { Pencil, Trash2 } from "lucide-react";
+
+// Super admins autorizados a editar/excluir registros financeiros
+const FIN_SUPER_ADMINS = ["edgar.abrantes@gmail.com"];
+
+const canManageFinanceiro = (user) => {
+  if (!user) return false;
+  const email = (user.email || "").toLowerCase().trim();
+  const name = (user.full_name || "").toLowerCase().trim();
+  if (FIN_SUPER_ADMINS.includes(email)) return true;
+  if (name.includes("paloma")) return true;
+  return false;
+};
 
 const STATUS_FIN = {
   pendente: { label: "Pendente", color: "bg-yellow-500/20 text-yellow-400" },
@@ -60,6 +73,35 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
       setEditingId(null);
     }
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.DossieFinanceiro.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["dossie-financeiro", patient.id] })
+  });
+
+  const canManage = canManageFinanceiro(currentUser);
+
+  const startEdit = (reg) => {
+    setEditingId(reg.id);
+    setForm({
+      procedimento: reg.procedimento || "",
+      valor_total: reg.valor_total != null ? String(reg.valor_total) : "",
+      entrada: reg.entrada != null ? String(reg.entrada) : "",
+      num_parcelas: reg.num_parcelas || 1,
+      forma_pagamento: reg.forma_pagamento || "pix",
+      status_financeiro: reg.status_financeiro || "pendente",
+      data_vencimento: reg.data_vencimento || "",
+      data_pagamento: reg.data_pagamento || "",
+      observacoes: reg.observacoes || ""
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = (reg) => {
+    if (window.confirm(`Excluir o registro "${reg.procedimento}"? Esta ação não pode ser desfeita.`)) {
+      deleteMutation.mutate(reg.id);
+    }
+  };
 
   const resetForm = () => setForm({ procedimento: "", valor_total: "", entrada: "", num_parcelas: 1, forma_pagamento: "pix", status_financeiro: "pendente", data_vencimento: "", data_pagamento: "", observacoes: "" });
 
@@ -165,8 +207,10 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t border-[#252D3E]">
             <Button onClick={() => setShowForm(false)} variant="ghost" size="sm" className="text-gray-400">Cancelar</Button>
-            <Button onClick={handleSave} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Salvando..." : "Salvar"}
+            <Button onClick={handleSave} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black" disabled={createMutation.isPending || updateMutation.isPending}>
+              {editingId
+                ? (updateMutation.isPending ? "Atualizando..." : "Atualizar")
+                : (createMutation.isPending ? "Salvando..." : "Salvar")}
             </Button>
           </div>
         </div>
@@ -221,10 +265,20 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
               </div>
             )}
 
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <Button onClick={() => setShowComprovante(reg.id)} size="sm" variant="outline" className="border-[#252D3E] text-[#8A95AA] text-xs h-7">
                 Anexar Comprovante
               </Button>
+              {canManage && (
+                <>
+                  <Button onClick={() => startEdit(reg)} size="sm" variant="outline" className="border-[#252D3E] text-[#C5A059] text-xs h-7">
+                    <Pencil className="h-3 w-3 mr-1" /> Editar
+                  </Button>
+                  <Button onClick={() => handleDelete(reg)} size="sm" variant="outline" className="border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs h-7" disabled={deleteMutation.isPending}>
+                    <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                  </Button>
+                </>
+              )}
             </div>
 
             {showComprovante === reg.id && (
