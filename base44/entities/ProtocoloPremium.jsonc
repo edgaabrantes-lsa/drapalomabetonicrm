@@ -13,8 +13,10 @@
         "fios",
         "bioestimulador",
         "enzimas",
-        "microagulhamento"
-      ]
+        "microagulhamento",
+        "protocolo"
+      ],
+      "default": "protocolo"
     },
     "objetivo": {
       "type": "string"
@@ -25,6 +27,20 @@
         "type": "string"
       }
     },
+    "inclui": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Procedimentos inclu\u00eddos no protocolo"
+    },
+    "beneficios": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Benef\u00edcios do protocolo"
+    },
     "regioes": {
       "type": "array",
       "items": {
@@ -32,14 +48,33 @@
       }
     },
     "valor_min": {
-      "type": "number"
+      "type": "number",
+      "description": "Valor do protocolo"
     },
     "valor_max": {
       "type": "number"
     },
+    "valor_procedimentos": {
+      "type": "number",
+      "description": "Soma dos valores individuais dos procedimentos inclu\u00eddos (refer\u00eancia)"
+    },
     "valor_por_ml": {
       "type": "boolean",
       "default": false
+    },
+    "valor_a_partir": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o valor \u00e9 'a partir de' (ex: Full Face Signature)"
+    },
+    "destaque": {
+      "type": "boolean",
+      "default": false
+    },
+    "personalizado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o protocolo tem planejamento totalmente personalizado"
     },
     "nivel_complexidade": {
       "type": "string",

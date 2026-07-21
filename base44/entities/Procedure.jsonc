@@ -13,17 +13,41 @@
         "capilar",
         "injetaveis",
         "laser",
-        "outros"
-      ]
+        "outros",
+        "preenchimento",
+        "toxina",
+        "fios",
+        "bioestimulador",
+        "enzimas",
+        "microagulhamento"
+      ],
+      "default": "facial"
+    },
+    "linha": {
+      "type": "string",
+      "description": "Linha/grupo do procedimento (ex: Harmoniza\u00e7\u00e3o Facial, UltraTox, Bioestimuladores)"
     },
     "description": {
       "type": "string"
     },
     "duration_minutes": {
-      "type": "number"
+      "type": "number",
+      "default": 60
     },
     "price": {
       "type": "number"
+    },
+    "valor_por_ml": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o valor \u00e9 cobrado por ml utilizado (ex: Harmoniza\u00e7\u00e3o Facial)"
+    },
+    "inclui": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Regi\u00f5es/itens inclu\u00eddos no procedimento (ex: UltraTox)"
     },
     "cost": {
       "type": "number"
