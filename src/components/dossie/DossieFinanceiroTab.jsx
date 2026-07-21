@@ -16,6 +16,8 @@ const FIN_SUPER_ADMINS = ["edgar.abrantes@gmail.com"];
 
 const canManageFinanceiro = (user) => {
   if (!user) return false;
+  // Super admin da plataforma (role === "admin") tem acesso total
+  if (user.role === "admin") return true;
   const email = (user.email || "").toLowerCase().trim();
   const name = (user.full_name || "").toLowerCase().trim();
   if (FIN_SUPER_ADMINS.includes(email)) return true;
