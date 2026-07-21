@@ -21,6 +21,7 @@ import AuditoriaDuplicidades from './pages/AuditoriaDuplicidades.jsx';
 import { PermissionsProvider } from '@/lib/PermissionsContext';
 import PortalPaciente from './pages/PortalPaciente.jsx';
 import PortalAdmin from './pages/PortalAdmin.jsx';
+import PlanosAssinatura from './pages/PlanosAssinatura.jsx';
 
 // Rotas do Portal da Paciente — fora do gate de autenticação (acesso por token)
 function PortalRoutes() {
@@ -173,6 +174,13 @@ const AuthenticatedApp = () => {
       <Route path="/PortalAdmin" element={
         <LayoutWrapper currentPageName="PortalAdmin">
           <PortalAdmin />
+        </LayoutWrapper>
+      } />
+
+      {/* Planos de Assinatura */}
+      <Route path="/PlanosAssinatura" element={
+        <LayoutWrapper currentPageName="PlanosAssinatura">
+          <PlanosAssinatura />
         </LayoutWrapper>
       } />
     </Routes>

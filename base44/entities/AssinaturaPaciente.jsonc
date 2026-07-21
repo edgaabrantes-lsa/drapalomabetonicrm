@@ -1,0 +1,99 @@
+{
+  "name": "AssinaturaPaciente",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "plano_id": {
+      "type": "string"
+    },
+    "plano_nome": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string"
+    },
+    "valor_mensal": {
+      "type": "number"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "vigencia_meses": {
+      "type": "number",
+      "default": 12
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "proximo_vencimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "suspenso",
+        "cancelado",
+        "finalizado"
+      ],
+      "default": "ativo"
+    },
+    "forma_pagamento": {
+      "type": "string",
+      "enum": [
+        "pix",
+        "cartao_credito",
+        "cartao_debito",
+        "boleto",
+        "transferencia",
+        "dinheiro",
+        "outro"
+      ]
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "sessoes_previstas": {
+      "type": "number",
+      "default": 12
+    },
+    "sessoes_realizadas": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "patient_id",
+    "plano_id",
+    "plano_nome",
+    "valor_mensal",
+    "data_inicio",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

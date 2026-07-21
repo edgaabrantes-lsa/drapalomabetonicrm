@@ -32,7 +32,8 @@ import {
   FolderOpen,
   GitBranch,
   BarChart3,
-  Copy
+  Copy,
+  CalendarClock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -57,6 +58,7 @@ const navigation = [
   { name: "Protocolos",          href: "Protocols",          icon: ClipboardList,    group: "clinico" },
   { name: "Protocolos e Procedimentos",  href: "ProtocolosPremium",  icon: Syringe,          group: "clinico" },
   { name: "Financeiro",          href: "Financial",          icon: DollarSign,       group: "clinico" },
+  { name: "Planos de Assinatura",href: "PlanosAssinatura",   icon: CalendarClock,    group: "clinico" },
   { name: "DRE da Clínica",      href: "DREClinica",         icon: BarChart3,        group: "clinico" },
   { name: "Estoque",             href: "Inventory",          icon: Package,          group: "clinico" },
   // Comercial
