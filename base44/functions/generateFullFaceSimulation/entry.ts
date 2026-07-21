@@ -244,70 +244,40 @@ Deno.serve(async (req) => {
       console.log("Aviso: não foi possível buscar paciente:", (e as Error).message);
     }
 
-    // Geração com tentativa + validação anti-erro
+    // Geração — 1 chamada à IA. A comparação de pixels foi removida pois
+    // decodificar a foto original grande (iPhone ~4032x3024 ≈ 48MB RGBA) estoura
+    // a memória da função no contexto do invoke e a mata instantaneamente —
+    // por isso fotos enviadas (grandes) falhavam e a câmera (pequena) funcionava.
+    // A IA gera diferença visível de forma consistente; a validação de
+    // "URL != original" evita devolver a foto original como resultado.
     let generated_image_url = "";
-    let attempts = 0;
     let diffPct: number | null = null;
-    // 1 tentativa: a compressão no cliente garante imagem leve e a IA costuma
-    // gerar diferença visível já na primeira chamada. Mais tentativas dobram o
-    // tempo e podem estourar o limite da função em dispositivos móveis.
-    const maxAttempts = 1;
 
-    while (attempts < maxAttempts) {
-      attempts++;
-      const isRetry = attempts > 1;
-      const prompt = buildPrompt(finalOptions, finalIntensity, isRetry);
-      console.log(`Tentativa ${attempts} — opções: ${finalOptions.join(", ")} | intensidade: ${finalIntensity}${isRetry ? " (retry)" : ""}`);
+    const prompt = buildPrompt(finalOptions, finalIntensity, false);
+    console.log(`Geração — opções: ${finalOptions.join(", ")} | intensidade: ${finalIntensity}`);
 
-      const imageResult = await base44Client.asServiceRole.integrations.Core.GenerateImage({
-        prompt,
-        existing_image_urls: [original_image_url],
-      });
+    const imageResult = await base44Client.asServiceRole.integrations.Core.GenerateImage({
+      prompt,
+      existing_image_urls: [original_image_url],
+    });
 
-      if (!imageResult?.url) {
-        throw new Error("Nenhuma imagem gerada pela plataforma.");
-      }
-
-      // Guarda de segurança: a URL gerada nunca pode ser a mesma da original
-      if (imageResult.url === original_image_url) {
-        console.log("URL gerada igual à original — ignorando e tentando novamente.");
-        if (attempts >= maxAttempts) {
-          return Response.json({
-            error: "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente ou selecione outro nível de intensidade.",
-            code: "NO_VISIBLE_CHANGE",
-          }, { status: 422 });
-        }
-        continue;
-      }
-
-      generated_image_url = imageResult.url;
-
-      // Validação anti-erro: comparar pixels
-      diffPct = await computeDifferencePct(original_image_url, generated_image_url);
-      console.log(`Tentativa ${attempts} — diferença visual: ${diffPct !== null ? diffPct.toFixed(2) + "%" : "indisponível"}`);
-
-      if (diffPct === null) {
-        // Não foi possível comparar — aceitar o resultado (não bloquear)
-        break;
-      }
-      if (diffPct >= NO_CHANGE_THRESHOLD) {
-        // Diferença suficiente — aceitar
-        break;
-      }
-      // Sem diferença suficiente — tentar novamente se houver tentativa restante
-      if (attempts >= maxAttempts) {
-        // Última tentativa ainda sem diferença — retornar erro claro, NÃO a imagem original
-        await base44Client.entities.FullFaceSimulation.update(simulationId, {
-          status: "failed",
-          error_message: "Sem diferença visual suficiente após retry.",
-        });
-        return Response.json({
-          error: "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente ou selecione outro nível de intensidade.",
-          code: "NO_VISIBLE_CHANGE",
-          diff_pct: diffPct,
-        }, { status: 422 });
-      }
+    if (!imageResult?.url) {
+      throw new Error("Nenhuma imagem gerada pela plataforma.");
     }
+
+    // Guarda de segurança: a URL gerada nunca pode ser a mesma da original
+    if (imageResult.url === original_image_url) {
+      await base44Client.asServiceRole.entities.FullFaceSimulation.update(simulationId, {
+        status: "failed",
+        error_message: "IA devolveu a imagem original sem alteração.",
+      });
+      return Response.json({
+        error: "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente ou selecione outro nível de intensidade.",
+        code: "NO_VISIBLE_CHANGE",
+      }, { status: 422 });
+    }
+
+    generated_image_url = imageResult.url;
 
     const procLabels = finalOptions.map(o => PROCEDURE_MAP[o]?.label || o).join(", ");
     const intensityLabel = INTENSITY_MAP[finalIntensity]?.label || "Moderada";
