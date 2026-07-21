@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,84 +14,35 @@ import {
   Calculator, AlertTriangle, Info
 } from "lucide-react";
 
-// ─── DADOS OFICIAIS ────────────────────────────────────────────────────────────
+// ─── MAPEADORES DA BASE OFICIAL (banco de dados) ────────────────────────────────
+// Procedimentos e Protocolos agora vêm das entidades Procedure e ProtocoloPremium,
+// mantidas na página "Protocolos e Procedimentos".
 
-const PROCEDIMENTOS = [
-  { id: "lab", nome: "Preenchimento Labial", objetivo: "Definição, hidratação, contorno e volumização labial", valor: 2997, categoria: "preenchimento" },
-  { id: "rino", nome: "Rinomodelação", objetivo: "Correção estética nasal sem cirurgia", valor: 6997, categoria: "preenchimento" },
-  { id: "mento", nome: "Preenchimento de Mento", objetivo: "Projetar e equilibrar o queixo", valor: 4500, categoria: "preenchimento" },
-  { id: "malar", nome: "Preenchimento Malar", objetivo: "Reposição de volume e sustentação facial", valor: 3500, categoria: "preenchimento" },
-  { id: "mandib", nome: "Preenchimento de Ângulo de Mandíbula", objetivo: "Definição mandibular e estruturação facial", valor: 4500, categoria: "preenchimento" },
-  { id: "jowls", nome: "Preenchimento Pré-Jowls", objetivo: "Correção de depressões e suavização da linha mandibular", valor: 3500, categoria: "preenchimento" },
-  { id: "tempora", nome: "Preenchimento de Têmpora", objetivo: "Reposição volumétrica e rejuvenescimento lateral da face", valor: 3500, categoria: "preenchimento" },
-  { id: "sobrancelha", nome: "Preenchimento de Cauda da Sobrancelha", objetivo: "Elevação e sustentação lateral da sobrancelha", valor: 3000, categoria: "preenchimento" },
-  { id: "olheira", nome: "Preenchimento de Olheiras", objetivo: "Suavização do aspecto cansado", valor: 3500, categoria: "preenchimento" },
-  { id: "premaxila", nome: "Preenchimento Pré-Máxila", objetivo: "Sustentação central facial", valor: 3500, categoria: "preenchimento" },
-  { id: "fossa", nome: "Preenchimento de Fossa Nasal", objetivo: "Correção estrutural nasal lateral", valor: 3500, categoria: "preenchimento" },
-  { id: "toxsup", nome: "Toxina Botulínica — Terço Superior", objetivo: "Testa, glabela e pés de galinha", valor: 3500, categoria: "toxina" },
-  { id: "toxinf", nome: "Toxina Botulínica — Terço Inferior", objetivo: "Sorriso gengival, código de barras e contorno inferior", valor: 3500, categoria: "toxina" },
-  { id: "brux", nome: "Bruxismo", objetivo: "Relaxamento do masseter e alívio funcional", valor: 3500, categoria: "toxina" },
-  { id: "micro", nome: "Microagulhamento com Peptídeos", objetivo: "Regeneração cutânea avançada", valor: 2800, categoria: "microagulhamento" },
-  { id: "enzimas", nome: "Enzimas para Papada", objetivo: "Redução de gordura submentoniana", valor: 2000, categoria: "enzimas" },
-];
+const mapProcedimento = (p) => ({
+  id: p.id,
+  nome: p.name,
+  objetivo: p.description || p.linha || "",
+  valor: p.price,
+  categoria: p.category,
+  linha: p.linha,
+  valor_por_ml: p.valor_por_ml,
+  inclui: p.inclui || [],
+});
 
-const PROTOCOLOS = [
-  {
-    id: "fullface",
-    nome: "Protocolo Premium — Full Face",
-    objetivo: "Reposicionamento global da face, harmonização estrutural e rejuvenescimento tridimensional",
-    regioes: ["Malar", "Mandíbula", "Mento", "Têmporas", "Olheiras", "Pré-Jowls", "Sulcos", "Lábios (quando necessário)"],
-    valor: 20000,
-    valorPorMl: 1700,
-    tipo: "fixo_ou_ml",
-    destaque: true,
-  },
-  {
-    id: "ultratox",
-    nome: "Ultra Toxina Botulínica",
-    objetivo: "Cobertura completa com toxina de alta performance",
-    regioes: ["Pescoço", "Terço Superior", "Terço Inferior"],
-    valor: 6000,
-    tipo: "fixo",
-  },
-  {
-    id: "fiostracao",
-    nome: "Fios de Tração",
-    objetivo: "Lifting sem cirurgia e reposicionamento tecidual",
-    regioes: ["Face", "Pescoço"],
-    valor: 7000,
-    valorMax: 15000,
-    tipo: "range",
-    aviso: "Valor exato definido após avaliação clínica.",
-  },
-  {
-    id: "fioslisos",
-    nome: "Fios Lisos",
-    objetivo: "Bioestimulação e melhora estrutural",
-    regioes: ["Face", "Pescoço"],
-    valor: 7000,
-    valorMax: 15000,
-    tipo: "range",
-    aviso: "Valor exato definido após avaliação clínica.",
-  },
-  {
-    id: "biorosto",
-    nome: "Bioestimulador — Rosto",
-    objetivo: "Estimular colágeno e firmeza facial",
-    regioes: ["Face completa"],
-    produtos: ["Sculptra", "Radiesse", "Elleva", "HarmonyCa"],
-    valor: 4000,
-    tipo: "fixo",
-  },
-  {
-    id: "biopescoço",
-    nome: "Bioestimulador — Pescoço",
-    objetivo: "Melhora da flacidez e qualidade cervical",
-    regioes: ["Pescoço", "Colo"],
-    valor: 4500,
-    tipo: "fixo",
-  },
-];
+const mapProtocolo = (p) => ({
+  id: p.id,
+  nome: p.nome,
+  objetivo: p.objetivo || "",
+  regioes: p.inclui || p.regioes || [],
+  beneficios: p.beneficios || [],
+  valor: p.valor_min,
+  valor_procedimentos: p.valor_procedimentos,
+  valor_a_partir: p.valor_a_partir,
+  personalizado: p.personalizado,
+  destaque: p.destaque,
+  tipo: p.valor_a_partir ? "a_partir" : "fixo",
+  aviso: p.personalizado ? "Planejamento personalizado. Valor definido após avaliação clínica." : null,
+});
 
 const PAYMENT_METHODS = [
   { value: "pix", label: "Pix", icon: Smartphone, fee: 0 },
@@ -131,57 +82,77 @@ const StepBar = ({ current, steps }) => (
 );
 
 // ─── STEP 1: TIPO ──────────────────────────────────────────────────────────────
-const StepTipo = ({ onSelect }) => (
-  <div className="space-y-6">
-    <div className="text-center mb-6">
-      <h2 className="text-2xl font-serif text-white mb-2">Tipo de Tratamento</h2>
-      <p className="text-gray-400 text-sm">Selecione a categoria do atendimento</p>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      <button onClick={() => onSelect("procedure")}
-        className="group p-7 rounded-xl border border-[#252D3E] hover:border-[#C5A059]/70 bg-[#141820] hover:bg-[#C5A059]/5 transition-all text-left">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-            <Syringe className="h-5 w-5 text-blue-400" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-white">Procedimentos</h3>
-            <p className="text-xs text-gray-500">16 procedimentos avulsos</p>
-          </div>
-        </div>
-        <p className="text-sm text-gray-400 leading-relaxed">
-          Procedimentos individuais com valores fixos. Preenchimentos, toxinas, microagulhamento e mais.
-        </p>
-        <div className="mt-4 flex items-center gap-2 text-[#C5A059] text-xs font-medium">
-          Selecionar <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-        </div>
-      </button>
+const StepTipo = ({ onSelect }) => {
+  const { data: procs } = useQuery({
+    queryKey: ["procedures-oficial"],
+    queryFn: () => base44.entities.Procedure.list(),
+  });
+  const { data: protos } = useQuery({
+    queryKey: ["protocolos-premium-oficial"],
+    queryFn: () => base44.entities.ProtocoloPremium.list(),
+  });
+  const nProcs = (procs || []).filter((p) => p.status !== "inactive").length;
+  const nProtos = (protos || []).filter((p) => p.status !== "inativo").length;
 
-      <button onClick={() => onSelect("protocol")}
-        className="group p-7 rounded-xl border border-[#C5A059]/30 hover:border-[#C5A059]/70 bg-gradient-to-br from-[#C5A059]/5 to-[#141820] transition-all text-left">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-lg bg-[#C5A059]/15 flex items-center justify-center border border-[#C5A059]/30">
-            <Star className="h-5 w-5 text-[#C5A059]" />
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-serif text-white mb-2">Tipo de Tratamento</h2>
+        <p className="text-gray-400 text-sm">Selecione a categoria do atendimento</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <button onClick={() => onSelect("procedure")}
+          className="group p-7 rounded-xl border border-[#252D3E] hover:border-[#C5A059]/70 bg-[#141820] hover:bg-[#C5A059]/5 transition-all text-left">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+              <Syringe className="h-5 w-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-white">Procedimentos</h3>
+              <p className="text-xs text-gray-500">{nProcs} procedimentos avulsos</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-semibold text-white">Protocolos Premium</h3>
-            <p className="text-xs text-[#C5A059]/70">6 protocolos exclusivos</p>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Procedimentos individuais com valores oficiais. Preenchimentos, UltraTox, fios, bioestimuladores e mais.
+          </p>
+          <div className="mt-4 flex items-center gap-2 text-[#C5A059] text-xs font-medium">
+            Selecionar <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
           </div>
-        </div>
-        <p className="text-sm text-gray-400 leading-relaxed">
-          Combinações estratégicas de alta performance para resultados superiores e completos.
-        </p>
-        <div className="mt-4 flex items-center gap-2 text-[#C5A059] text-xs font-medium">
-          Selecionar <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-        </div>
-      </button>
+        </button>
+
+        <button onClick={() => onSelect("protocol")}
+          className="group p-7 rounded-xl border border-[#C5A059]/30 hover:border-[#C5A059]/70 bg-gradient-to-br from-[#C5A059]/5 to-[#141820] transition-all text-left">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-[#C5A059]/15 flex items-center justify-center border border-[#C5A059]/30">
+              <Star className="h-5 w-5 text-[#C5A059]" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-white">Protocolos Premium</h3>
+              <p className="text-xs text-[#C5A059]/70">{nProtos} protocolos exclusivos</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Combinações estratégicas de alta performance para resultados superiores e completos.
+          </p>
+          <div className="mt-4 flex items-center gap-2 text-[#C5A059] text-xs font-medium">
+            Selecionar <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── STEP 2A: PROCEDIMENTOS ────────────────────────────────────────────────────
 const StepProcedimento = ({ sel, onUpdate }) => {
   const [search, setSearch] = useState("");
+  const { data: rawProcs, isLoading } = useQuery({
+    queryKey: ["procedures-oficial"],
+    queryFn: () => base44.entities.Procedure.list(),
+  });
+  const PROCEDIMENTOS = (rawProcs || [])
+    .filter((p) => p.status !== "inactive")
+    .map(mapProcedimento);
   const filtered = PROCEDIMENTOS.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
   const items = sel.items || [];
 
@@ -212,7 +183,9 @@ const StepProcedimento = ({ sel, onUpdate }) => {
       />
 
       <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-        {filtered.map(proc => {
+        {isLoading ? (
+          <p className="text-sm text-gray-500 p-4 text-center">Carregando procedimentos...</p>
+        ) : filtered.map(proc => {
           const selected = items.find(i => i.id === proc.id);
           return (
             <button
@@ -229,10 +202,10 @@ const StepProcedimento = ({ sel, onUpdate }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-white text-sm truncate">{proc.nome}</p>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{proc.objetivo}</p>
+                <p className="text-xs text-gray-500 mt-0.5 truncate">{proc.linha ? `${proc.linha} · ` : ""}{proc.objetivo}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-[#C5A059] font-semibold text-sm">{fmtBRL(proc.valor)}</p>
+                <p className="text-[#C5A059] font-semibold text-sm">{fmtBRL(proc.valor)}{proc.valor_por_ml ? "/ml" : ""}</p>
                 <Badge className="text-xs bg-[#1e2535] text-gray-400 border-0 mt-0.5">{proc.categoria}</Badge>
               </div>
             </button>
@@ -303,72 +276,82 @@ const StepProcedimento = ({ sel, onUpdate }) => {
 };
 
 // ─── STEP 2B: PROTOCOLOS PREMIUM ──────────────────────────────────────────────
-const StepProtocolo = ({ sel, onUpdate }) => (
-  <div className="space-y-4">
-    <div>
-      <h2 className="text-xl font-serif text-white mb-1">Protocolos Premium</h2>
-      <p className="text-sm text-gray-400">Soluções completas e estratégicas</p>
-    </div>
+const StepProtocolo = ({ sel, onUpdate }) => {
+  const { data: rawProtos, isLoading } = useQuery({
+    queryKey: ["protocolos-premium-oficial"],
+    queryFn: () => base44.entities.ProtocoloPremium.list(),
+  });
+  const PROTOCOLOS = (rawProtos || [])
+    .filter((p) => p.status !== "inativo")
+    .map(mapProtocolo);
 
-    <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-      {PROTOCOLOS.map(proto => {
-        const isSelected = sel.item?.id === proto.id;
-        return (
-          <div key={proto.id}
-            onClick={() => onUpdate({ ...sel, item: proto, valorFinal: proto.valor, mlUsado: "" })}
-            className={`cursor-pointer p-5 rounded-xl border transition-all ${
-              isSelected
-                ? "border-[#C5A059] bg-gradient-to-br from-[#C5A059]/8 to-[#141820]"
-                : "border-[#252D3E] bg-[#141820] hover:border-[#C5A059]/40"
-            } ${proto.destaque ? "ring-1 ring-[#C5A059]/20" : ""}`}
-          >
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                {proto.destaque && <Star className="h-4 w-4 text-[#C5A059] flex-shrink-0" />}
-                <h3 className={`font-semibold text-sm ${isSelected ? "text-[#C5A059]" : "text-white"}`}>{proto.nome}</h3>
-              </div>
-              <div className="text-right flex-shrink-0">
-                {proto.tipo === "range" ? (
-                  <div>
-                    <p className="text-[#C5A059] font-semibold text-sm">{fmtBRL(proto.valor)} — {fmtBRL(proto.valorMax)}</p>
-                  </div>
-                ) : proto.tipo === "fixo_ou_ml" ? (
-                  <div>
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-serif text-white mb-1">Protocolos Premium</h2>
+        <p className="text-sm text-gray-400">Soluções completas e estratégicas</p>
+      </div>
+
+      <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+        {isLoading ? (
+          <p className="text-sm text-gray-500 p-4 text-center">Carregando protocolos...</p>
+        ) : PROTOCOLOS.map(proto => {
+          const isSelected = sel.item?.id === proto.id;
+          return (
+            <div key={proto.id}
+              onClick={() => onUpdate({ ...sel, item: proto, valorFinal: proto.valor, mlUsado: "" })}
+              className={`cursor-pointer p-5 rounded-xl border transition-all ${
+                isSelected
+                  ? "border-[#C5A059] bg-gradient-to-br from-[#C5A059]/8 to-[#141820]"
+                  : "border-[#252D3E] bg-[#141820] hover:border-[#C5A059]/40"
+              } ${proto.destaque ? "ring-1 ring-[#C5A059]/20" : ""}`}
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  {proto.destaque && <Star className="h-4 w-4 text-[#C5A059] flex-shrink-0" />}
+                  <h3 className={`font-semibold text-sm ${isSelected ? "text-[#C5A059]" : "text-white"}`}>{proto.nome}</h3>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  {proto.tipo === "a_partir" ? (
+                    <div>
+                      <p className="text-gray-500 text-xs">a partir de</p>
+                      <p className="text-[#C5A059] font-semibold text-sm">{fmtBRL(proto.valor)}</p>
+                    </div>
+                  ) : (
                     <p className="text-[#C5A059] font-semibold text-sm">{fmtBRL(proto.valor)}</p>
-                    <p className="text-gray-500 text-xs">ou {fmtBRL(proto.valorPorMl)}/ml</p>
-                  </div>
-                ) : (
-                  <p className="text-[#C5A059] font-semibold text-sm">{fmtBRL(proto.valor)}</p>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
 
-            <p className="text-xs text-gray-400 mb-2">{proto.objetivo}</p>
+              <p className="text-xs text-gray-400 mb-2">{proto.objetivo}</p>
 
-            <div className="flex flex-wrap gap-1 mb-2">
-              {proto.regioes.map((r, i) => (
-                <Badge key={i} className="text-xs bg-[#1e2535] text-gray-400 border-0">{r}</Badge>
-              ))}
-            </div>
-
-            {proto.produtos && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {proto.produtos.map((p, i) => (
-                  <Badge key={i} className="text-xs bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20">{p}</Badge>
+                {proto.regioes.map((r, i) => (
+                  <Badge key={i} className="text-xs bg-[#1e2535] text-gray-400 border-0">{r}</Badge>
                 ))}
               </div>
-            )}
 
-            {proto.aviso && (
-              <div className="flex items-center gap-2 mt-2 p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                <AlertTriangle className="h-3 w-3 text-amber-400 flex-shrink-0" />
-                <p className="text-xs text-amber-300">{proto.aviso}</p>
-              </div>
-            )}
+              {proto.beneficios?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {proto.beneficios.map((b, i) => (
+                    <Badge key={i} className="text-xs bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20">{b}</Badge>
+                  ))}
+                </div>
+              )}
 
-            {isSelected && (
-              <div className="mt-3 pt-3 border-t border-[#252D3E] space-y-2" onClick={(e) => e.stopPropagation()}>
-                <div className="grid grid-cols-2 gap-2">
+              {proto.valor_procedimentos && !proto.valor_a_partir && (
+                <p className="text-[10px] text-gray-600 mb-1">Valor dos procedimentos separados: {fmtBRL(proto.valor_procedimentos)}</p>
+              )}
+
+              {proto.aviso && (
+                <div className="flex items-center gap-2 mt-2 p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                  <AlertTriangle className="h-3 w-3 text-amber-400 flex-shrink-0" />
+                  <p className="text-xs text-amber-300">{proto.aviso}</p>
+                </div>
+              )}
+
+              {isSelected && (
+                <div className="mt-3 pt-3 border-t border-[#252D3E] space-y-2" onClick={(e) => e.stopPropagation()}>
                   <div>
                     <Label className="text-gray-400 text-xs">Valor Final (editável)</Label>
                     <Input
@@ -378,39 +361,25 @@ const StepProtocolo = ({ sel, onUpdate }) => (
                       className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
                     />
                   </div>
-                  {proto.tipo === "fixo_ou_ml" && (
-                    <div>
-                      <Label className="text-gray-400 text-xs">ml Utilizado</Label>
-                      <Input
-                        placeholder="Ex: 12"
-                        value={sel.mlUsado || ""}
-                        onChange={(e) => {
-                          const ml = parseFloat(e.target.value) || 0;
-                          onUpdate({ ...sel, mlUsado: e.target.value, valorFinal: ml > 0 ? ml * proto.valorPorMl : proto.valor });
-                        }}
-                        className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <Label className="text-gray-400 text-xs">Observações</Label>
+                    <Textarea
+                      rows={2}
+                      placeholder="Notas clínicas do protocolo..."
+                      value={sel.obs || ""}
+                      onChange={(e) => onUpdate({ ...sel, obs: e.target.value })}
+                      className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-gray-400 text-xs">Observações</Label>
-                  <Textarea
-                    rows={2}
-                    placeholder="Notas clínicas do protocolo..."
-                    value={sel.obs || ""}
-                    onChange={(e) => onUpdate({ ...sel, obs: e.target.value })}
-                    className="bg-[#0d1017] border-[#252D3E] text-white mt-1"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── STEP 3: PAGAMENTO ─────────────────────────────────────────────────────────
 const StepPagamento = ({ baseValue, payment, onUpdate }) => {
