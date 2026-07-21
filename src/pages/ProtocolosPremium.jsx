@@ -539,7 +539,7 @@ export default function ProtocolosPremium() {
             color: tab === "protocolos" ? "#FFFFFF" : "#666",
           }}
         >
-          <Sparkles className="w-4 h-4" style={{ color: tab === "protocolos" ? "#C8A96A" : "#666" }} />
+          <Syringe className="w-4 h-4" style={{ color: tab === "protocolos" ? "#C8A96A" : "#666" }} />
           Protocolos
           {tab === "protocolos" && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: "#C8A96A" }} />
