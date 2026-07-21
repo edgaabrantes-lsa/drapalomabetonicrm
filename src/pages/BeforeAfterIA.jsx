@@ -70,6 +70,43 @@ const statusConfig = {
   failed:     { label: "Falhou",      color: "bg-red-500/20 text-red-400 border-red-500/30" },
 };
 
+// Comprimir/redimensionar a imagem no cliente antes do upload.
+// Fotos grandes de iPhone (3-4 MB, 4032x3024) travam a geração da IA e estouram
+// o tempo limite da função. Reduzir para no máx 1280px / JPEG 0.85 resolve.
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Erro ao ler a imagem."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Imagem inválida ou corrompida."));
+      img.onload = () => {
+        const MAX = 1280;
+        let { width, height } = img;
+        if (img.width < 200 || img.height < 200) {
+          return reject(new Error("Resolução muito baixa. Use uma foto mais nítida."));
+        }
+        if (width > MAX || height > MAX) {
+          const ratio = Math.min(MAX / width, MAX / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error("Falha ao processar a imagem."));
+          const name = (file.name || "foto.jpg").replace(/\.(png|webp|heic|heif)$/i, ".jpg");
+          resolve(new File([blob], name, { type: "image/jpeg" }));
+        }, "image/jpeg", 0.85);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 /* ─────────────────────────────────────
    CÂMERA — componente isolado e robusto
 ───────────────────────────────────────*/
@@ -412,7 +449,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   const [fullscreen, setFullscreen] = useState(false);
   const fileInputRef = useRef(null);
 
-  const processFile = (file, src = "upload") => {
+  const processFile = async (file, src = "upload") => {
     setError("");
     if (!VALID_FORMATS.includes(file.type) && !file.name?.endsWith(".heic")) {
       setError("Formato não suportado. Use JPG, PNG ou WEBP.");
@@ -422,21 +459,16 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
       setError(`Arquivo muito grande. Máximo ${MAX_SIZE_MB}MB.`);
       return;
     }
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      if (img.width < 200 || img.height < 200) {
-        setError("Resolução muito baixa. Use uma foto mais nítida.");
-        URL.revokeObjectURL(url);
-        return;
-      }
-      setImageFile(file);
+    try {
+      const compressed = await compressImage(file);
+      const url = URL.createObjectURL(compressed);
+      setImageFile(compressed);
       setImagePreview(url);
       setSourceType(src);
       setStep("options");
-    };
-    img.onerror = () => { setError("Imagem inválida ou corrompida."); URL.revokeObjectURL(url); };
-    img.src = url;
+    } catch (e) {
+      setError(e?.message || "Imagem inválida ou corrompida.");
+    }
   };
 
   const handleUpload = (e) => {
@@ -490,7 +522,11 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
       if (onSuccess) onSuccess(result);
       toast.success("Simulação gerada com sucesso!");
     } catch (err) {
-      const msg = err?.response?.data?.error || err?.message || "Falha ao gerar simulação. Tente novamente.";
+      let msg = err?.response?.data?.error || err?.message || "Falha ao gerar simulação. Tente novamente.";
+      const low = String(msg).toLowerCase();
+      if (low.includes("user-exception") || low.includes("timeout") || low.includes("timed out")) {
+        msg = "A simulação demorou além do limite e não concluiu. Recarregue a página e tente novamente — se persistir, use uma foto menor ou o nível Suave.";
+      }
       setError(msg);
       setStep("options");
     }

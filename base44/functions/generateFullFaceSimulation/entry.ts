@@ -248,7 +248,10 @@ Deno.serve(async (req) => {
     let generated_image_url = "";
     let attempts = 0;
     let diffPct: number | null = null;
-    const maxAttempts = 2;
+    // 1 tentativa: a compressão no cliente garante imagem leve e a IA costuma
+    // gerar diferença visível já na primeira chamada. Mais tentativas dobram o
+    // tempo e podem estourar o limite da função em dispositivos móveis.
+    const maxAttempts = 1;
 
     while (attempts < maxAttempts) {
       attempts++;
@@ -358,7 +361,7 @@ Deno.serve(async (req) => {
     console.error("Erro na geração:", errMsg);
     if (simulationId && base44Client) {
       try {
-        await base44Client.entities.FullFaceSimulation.update(simulationId, {
+        await base44Client.asServiceRole.entities.FullFaceSimulation.update(simulationId, {
           status: "failed",
           error_message: errMsg,
         });
