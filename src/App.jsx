@@ -22,6 +22,7 @@ import { PermissionsProvider } from '@/lib/PermissionsContext';
 import PortalPaciente from './pages/PortalPaciente.jsx';
 import PortalAdmin from './pages/PortalAdmin.jsx';
 import PlanosAssinatura from './pages/PlanosAssinatura.jsx';
+import SensorFlowForm from './pages/SensorFlowForm.jsx';
 
 // Rotas do Portal da Paciente — fora do gate de autenticação (acesso por token)
 function PortalRoutes() {
@@ -30,6 +31,7 @@ function PortalRoutes() {
       <Route path="/portal-paciente" element={<PortalPaciente />} />
       <Route path="/minha-jornada" element={<PortalPaciente />} />
       <Route path="/jornada-da-beleza-natural" element={<PortalPaciente />} />
+      <Route path="/sensorflow" element={<SensorFlowForm />} />
     </Routes>
   );
 }
@@ -208,7 +210,7 @@ function App() {
 function AppRouter() {
   const location = useLocation();
   const path = location.pathname;
-  const isPortal = path === "/portal-paciente" || path === "/minha-jornada" || path === "/jornada-da-beleza-natural";
+  const isPortal = path === "/portal-paciente" || path === "/minha-jornada" || path === "/jornada-da-beleza-natural" || path === "/sensorflow";
   return isPortal ? <PortalRoutes /> : <AuthenticatedApp />;
 }
 

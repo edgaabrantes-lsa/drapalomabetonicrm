@@ -8,6 +8,10 @@
     "patient_name": {
       "type": "string"
     },
+    "convite_id": {
+      "type": "string",
+      "description": "ID do convite do Sensor Flow que originou esta resposta"
+    },
     "submission_id": {
       "type": "string"
     },

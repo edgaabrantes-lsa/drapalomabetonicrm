@@ -11,6 +11,7 @@ import DossieFinanceiroTab          from "@/components/dossie/DossieFinanceiroTa
 import DossieObservacoes            from "@/components/dossie/DossieObservacoes";
 import DossieDocumentacaoNew        from "@/components/documentacao/DossieDocumentacaoNew";
 import DossiePerfilSensorial         from "@/components/dossie/DossiePerfilSensorial";
+import DossieSensorFlowTab            from "@/components/dossie/DossieSensorFlowTab";
 import PainelAssinaturaPaciente       from "@/components/assinatura/PainelAssinaturaPaciente";
 
 const ABAS = [
@@ -21,6 +22,7 @@ const ABAS = [
   { id: "documentacao",     label: "Documentação" },
   { id: "assinatura",       label: "Plano de Assinatura" },
   { id: "observacoes",      label: "Observações" },
+  { id: "sensorflow",       label: "Sensor Flow" },
   { id: "perfil_sensorial", label: "Perfil Sensorial" },
 ];
 
@@ -322,6 +324,7 @@ export default function DossiePatient() {
                   {activeTab === "documentacao"  && <DossieDocumentacaoNew patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "assinatura"    && <PainelAssinaturaPaciente patient={selectedPatient} />}
                   {activeTab === "observacoes"      && <DossieObservacoes patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "sensorflow"       && <DossieSensorFlowTab patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "perfil_sensorial" && <DossiePerfilSensorial patient={selectedPatient} />}
                 </div>
               </div>
