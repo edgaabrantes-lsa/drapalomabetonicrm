@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, Building2, User, MapPin, Phone, FileText, Palette, CheckCircle } from "lucide-react";
+import { Save, Building2, User, MapPin, Phone, FileText, Palette, CheckCircle, Upload, Trash2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +51,8 @@ export default function ClinicSettingsPage() {
     default_payment_policy: "",
     default_cancellation_policy: "",
     observacoes_legais: "",
+    assinatura_profissional_url: "",
+    assinatura_profissional_cpf: "",
     address: {
       street: "",
       number: "",
@@ -97,6 +99,20 @@ export default function ClinicSettingsPage() {
   const set = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
   const setAddr = (field, value) =>
     setForm((prev) => ({ ...prev, address: { ...prev.address, [field]: value } }));
+
+  const [uploadingSig, setUploadingSig] = useState(false);
+  const onUploadAssinatura = async (file) => {
+    if (!file) return;
+    setUploadingSig(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      set("assinatura_profissional_url", file_url);
+    } catch (e) {
+      console.error("Erro no upload da assinatura:", e);
+    } finally {
+      setUploadingSig(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl min-w-0">
@@ -243,6 +259,76 @@ export default function ClinicSettingsPage() {
               <Field label="Número de Registro Geral">
                 <Input value={form.professional_registry} onChange={(e) => set("professional_registry", e.target.value)} style={inputStyle} />
               </Field>
+            </div>
+
+            {/* ── Assinatura da Profissional ── */}
+            <div className="mt-6 border-t pt-5" style={{ borderColor: "#2B2B2B" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <PenLine className="h-4 w-4 text-[#C8A96A]" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}>Assinatura da Profissional</span>
+              </div>
+              <p style={{ fontSize: 12, color: "#666666", marginBottom: 16 }}>
+                Esta assinatura será aplicada automaticamente em todos os contratos e kit documental assinados pelas pacientes.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                <Field label="CPF da Profissional">
+                  <Input
+                    value={form.assinatura_profissional_cpf}
+                    onChange={(e) => set("assinatura_profissional_cpf", e.target.value)}
+                    placeholder="000.000.000-00"
+                    style={inputStyle}
+                  />
+                </Field>
+              </div>
+
+              <Field label="Imagem da Assinatura (PNG transparente recomendado)">
+                <div className="flex flex-wrap items-center gap-3">
+                  <label
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
+                      backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 6,
+                      padding: "8px 14px", color: "#C8A96A", fontSize: 13, fontWeight: 500,
+                    }}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadingSig ? "Enviando..." : "Enviar assinatura"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      style={{ display: "none" }}
+                      onChange={(e) => onUploadAssinatura(e.target.files?.[0])}
+                    />
+                  </label>
+                  {form.assinatura_profissional_url && (
+                    <button
+                      onClick={() => set("assinatura_profissional_url", "")}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer",
+                        background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6,
+                        padding: "8px 14px", color: "#EF4444", fontSize: 13, fontWeight: 500,
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" /> Remover
+                    </button>
+                  )}
+                </div>
+              </Field>
+
+              {form.assinatura_profissional_url && (
+                <div className="mt-4">
+                  <p style={{ fontSize: 11, color: "#666666", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                    Pré-visualização
+                  </p>
+                  <div style={{ backgroundColor: "#0A0A0A", border: "1px solid #2B2B2B", borderRadius: 6, padding: 16, display: "inline-block" }}>
+                    <img
+                      src={form.assinatura_profissional_url}
+                      alt="Assinatura da profissional"
+                      style={{ maxHeight: 70, maxWidth: 280, objectFit: "contain" }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>

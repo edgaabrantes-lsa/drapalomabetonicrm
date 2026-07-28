@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { jsPDF } from 'npm:jspdf@4.0.0';
+import { renderAssinaturaProfissional } from '../../shared/assinaturaProfissional.js';
 
 // ─── Utilitários ──────────────────────────────────────────────────────────────
 
@@ -424,6 +425,9 @@ async function buildPdf(kit, patient, clinica, financeiro, assinatura) {
     doc.text('Assinatura da Paciente — AGUARDANDO', 15, y + 7);
     y += 14;
   }
+
+  // ── ASSINATURA DA PROFISSIONAL ─────────────────────────────────────────────
+  y = await renderAssinaturaProfissional({ doc, clinica, y, colors: { GOLD, GRAY, BLACK } });
 
   // ── RODAPÉ ────────────────────────────────────────────────────────────────
   const totalPages = doc.internal.getNumberOfPages();

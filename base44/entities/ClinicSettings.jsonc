@@ -121,6 +121,14 @@
     },
     "observacoes_legais": {
       "type": "string"
+    },
+    "assinatura_profissional_url": {
+      "type": "string",
+      "description": "URL da imagem da assinatura manuscrita da profissional (Dra. Paloma Betoni), aplicada automaticamente em todos os contratos assinados"
+    },
+    "assinatura_profissional_cpf": {
+      "type": "string",
+      "description": "CPF da profissional para identifica\u00e7\u00e3o no bloco de assinatura dos contratos"
     }
   },
   "required": [

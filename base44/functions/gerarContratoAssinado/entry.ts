@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { jsPDF } from 'npm:jspdf@4.0.0';
+import { renderAssinaturaProfissional } from '../../shared/assinaturaProfissional.js';
 
 // Converte ArrayBuffer para base64 sem spread operator (evita stack overflow em imagens grandes)
 function arrayBufferToBase64(buffer) {
@@ -47,6 +48,13 @@ Deno.serve(async (req) => {
     // 2. Buscar paciente
     const patients = await base44.entities.Patient.filter({ id: patient_id }, '-created_date', 1);
     const patient = patients[0];
+
+    // 2b. Buscar configurações da clínica (para assinatura da profissional)
+    let clinica = null;
+    try {
+      const cArr = await base44.asServiceRole.entities.ClinicSettings.list('-created_date', 1);
+      clinica = cArr[0] || null;
+    } catch (e) { console.error('Erro ao buscar clínica:', e.message); }
 
     // 3. Buscar assinatura (mais recente com status assinado)
     let assinatura = null;
@@ -372,6 +380,9 @@ Deno.serve(async (req) => {
       doc.text('Assinatura da Paciente — Pendente', 15, y + 6);
       y += 14;
     }
+
+    // ── ASSINATURA DA PROFISSIONAL ──
+    y = await renderAssinaturaProfissional({ doc, clinica, y, colors: { GOLD: gold, GRAY: gray, BLACK: black } });
 
     // ── RODAPÉ ──
     const totalPages = doc.internal.getNumberOfPages();
