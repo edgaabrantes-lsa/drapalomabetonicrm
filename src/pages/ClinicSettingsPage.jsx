@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AssinaturaProfissionalCanvas from "@/components/settings/AssinaturaProfissionalCanvas";
 
 const Field = ({ label, children }) => (
   <div className="flex flex-col gap-1.5">
@@ -314,6 +315,11 @@ export default function ClinicSettingsPage() {
                   )}
                 </div>
               </Field>
+
+              <AssinaturaProfissionalCanvas
+                onSaved={onUploadAssinatura}
+                uploading={uploadingSig}
+              />
 
               {form.assinatura_profissional_url && (
                 <div className="mt-4">
