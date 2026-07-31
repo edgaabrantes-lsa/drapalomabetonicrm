@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CurrencyInput from "@/components/ui/CurrencyInput";
+import FinancialDREReport from "@/components/financial/FinancialDREReport";
 import {
   AreaChart,
   Area,
@@ -398,6 +399,7 @@ export default function Financial() {
           <TabsTrigger value="transactions" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Transações</TabsTrigger>
           <TabsTrigger value="receivables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Receber</TabsTrigger>
           <TabsTrigger value="payables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Pagar</TabsTrigger>
+          <TabsTrigger value="dre" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>DRE por Período</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6 space-y-6">
@@ -680,6 +682,10 @@ export default function Financial() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="dre" className="mt-6">
+          <FinancialDREReport transactions={transactions} />
         </TabsContent>
       </Tabs>
     </div>
