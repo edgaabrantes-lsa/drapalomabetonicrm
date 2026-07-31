@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { format, parseISO, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrendingUp, TrendingDown, Wallet, Percent, Calendar } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Percent, Calendar, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from "recharts";
 
 const categoryLabels = {
   procedure: "Procedimento",
@@ -91,6 +92,35 @@ export default function FinancialDREReport({ transactions }) {
 
   const years = [];
   for (let y = now.getFullYear(); y >= now.getFullYear() - 4; y--) years.push(y);
+
+  // Evolução mensal — últimos 12 meses
+  const monthlySeries = useMemo(() => {
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const ref = subMonths(now, i);
+      const ms = startOfMonth(ref);
+      const me = endOfMonth(ref);
+      const tx = transactions.filter((t) => {
+        if (!t.due_date) return false;
+        const d = parseISO(t.due_date);
+        if (d < ms || d > me) return false;
+        if (view === "realizado") return t.status === "paid";
+        return true;
+      });
+      const rec = tx.filter((t) => t.type === "income").reduce((s, t) => s + (t.amount || 0), 0);
+      const desp = tx.filter((t) => t.type === "expense").reduce((s, t) => s + (t.amount || 0), 0);
+      const lucro = rec - desp;
+      const margem = rec > 0 ? (lucro / rec) * 100 : 0;
+      months.push({
+        label: format(ref, "MMM/yy", { locale: ptBR }),
+        Receitas: Math.round(rec),
+        Despesas: Math.round(desp),
+        Lucro: Math.round(lucro),
+        Margem: Number(margem.toFixed(1)),
+      });
+    }
+    return months;
+  }, [transactions, view]);
 
   const Row = ({ label, value, bold, color, indent }) => (
     <div
@@ -332,6 +362,72 @@ export default function FinancialDREReport({ transactions }) {
         <Row label="(-) Despesa Total" value={totalExpense} bold color="#EF4444" />
         <Row label="(=) Lucro Líquido" value={lucroLiquido} bold color={lucroLiquido >= 0 ? "#C8A96A" : "#EF4444"} />
         <Row label="Margem Líquida" value={margemLiquida / 100} bold color={margemLiquida >= 0 ? "#4ADE80" : "#EF4444"} />
+      </div>
+
+      {/* Evolução mensal — 12 meses */}
+      <div style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", borderRadius: 8, overflow: "hidden" }}>
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid #2B2B2B", display: "flex", alignItems: "center", gap: 8 }}>
+          <BarChart3 style={{ width: 16, height: 16, color: "#C8A96A" }} />
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#FFFFFF", margin: 0 }}>Evolução Mensal — últimos 12 meses</p>
+        </div>
+        <div style={{ padding: 16 }}>
+          <div style={{ height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlySeries} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E1E1E" />
+                <XAxis dataKey="label" stroke="#666" fontSize={11} tickLine={false} axisLine={{ stroke: "#2B2B2B" }} />
+                <YAxis stroke="#666" fontSize={11} tickLine={false} axisLine={{ stroke: "#2B2B2B" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 8, color: "#FFF", fontSize: 12 }}
+                  formatter={(value, name) => [fmtBRL(value), name]}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Receitas" fill="#4ADE80" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Despesas" fill="#EF4444" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div style={{ height: 200, marginTop: 16 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlySeries} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E1E1E" />
+                <XAxis dataKey="label" stroke="#666" fontSize={11} tickLine={false} axisLine={{ stroke: "#2B2B2B" }} />
+                <YAxis stroke="#666" fontSize={11} tickLine={false} axisLine={{ stroke: "#2B2B2B" }} tickFormatter={(v) => `${v}%`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 8, color: "#FFF", fontSize: 12 }}
+                  formatter={(value, name) => [`${value}%`, name]}
+                />
+                <Line type="monotone" dataKey="Margem" stroke="#C8A96A" strokeWidth={2} dot={{ r: 3, fill: "#C8A96A" }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div style={{ overflowX: "auto", marginTop: 16 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #2B2B2B" }}>
+                  <th style={{ textAlign: "left", padding: "8px 12px", fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666" }}>Mês</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666" }}>Receitas</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666" }}>Despesas</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666" }}>Lucro</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666" }}>Margem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlySeries.map((m) => (
+                  <tr key={m.label} style={{ borderBottom: "1px solid #1E1E1E" }}>
+                    <td style={{ padding: "8px 12px", fontSize: 13, color: "#FFF" }}>{m.label}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, color: "#4ADE80", textAlign: "right" }}>{fmtBRL(m.Receitas)}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, color: "#EF4444", textAlign: "right" }}>{fmtBRL(m.Despesas)}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, color: m.Lucro >= 0 ? "#C8A96A" : "#EF4444", textAlign: "right", fontWeight: 600 }}>{fmtBRL(m.Lucro)}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, color: m.Margem >= 0 ? "#4ADE80" : "#EF4444", textAlign: "right" }}>{fmtPct(m.Margem)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
