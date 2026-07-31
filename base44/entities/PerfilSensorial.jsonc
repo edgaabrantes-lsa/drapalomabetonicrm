@@ -21,11 +21,39 @@
         "type": "string"
       }
     },
+    "music_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Estilos musicais preferidos pela paciente"
+    },
+    "music_other": {
+      "type": "string",
+      "description": "Outro estilo musical informado pela paciente"
+    },
+    "wants_music_choice": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a paciente deseja escolher m\u00fasica/cantor para o atendimento"
+    },
+    "music_choice_song": {
+      "type": "string",
+      "description": "M\u00fasica que a paciente gostaria de ouvir"
+    },
+    "music_choice_artist": {
+      "type": "string",
+      "description": "Cantor/cantora/banda preferida pela paciente"
+    },
     "beverage_preferences": {
       "type": "array",
       "items": {
         "type": "string"
       }
+    },
+    "beverage_other": {
+      "type": "string",
+      "description": "Outra bebida informada pela paciente"
     },
     "food_preferences": {
       "type": "array",
@@ -33,11 +61,19 @@
         "type": "string"
       }
     },
+    "food_other": {
+      "type": "string",
+      "description": "Outro alimento informado pela paciente"
+    },
     "dietary_restrictions": {
       "type": "array",
       "items": {
         "type": "string"
       }
+    },
+    "dietary_restrictions_detail": {
+      "type": "string",
+      "description": "Detalhamento de alergias, intoler\u00e2ncias ou restri\u00e7\u00f5es"
     },
     "environment_preferences": {
       "type": "array",
@@ -57,6 +93,10 @@
       "items": {
         "type": "string"
       }
+    },
+    "aroma_other": {
+      "type": "string",
+      "description": "Outro aroma informado pela paciente"
     },
     "service_style": {
       "type": "string"

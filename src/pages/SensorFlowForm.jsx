@@ -4,27 +4,35 @@ import { base44 } from "@/api/base44Client";
 /* ── Configuração do formulário Sensor Flow ── */
 const PASSOS = [
   {
-    titulo: "Horários & Ambiente",
+    titulo: "Horários & Experiência Musical",
     campos: [
-      { key: "appointment_periods", label: "Horários preferidos para atendimento", tipo: "multi", opcoes: ["Manhã", "Tarde", "Noite"] },
-      { key: "environment_preferences", label: "Preferências de ambiente", tipo: "multi", opcoes: ["Música ambiente", "Silêncio", "Aromaterapia", "Iluminação suave", "Conversa leve", "Privacidade total"] },
+      { key: "appointment_periods", label: "Qual é o seu horário preferido para atendimento?", tipo: "single", opcoes: ["Manhã", "Tarde", "Noite"] },
+      { key: "music_preferences", label: "Que estilo musical você gosta de ouvir?", tipo: "multi", opcoes: ["Jazz", "Música clássica", "Instrumental", "Lounge", "MPB", "Bossa nova", "Pop nacional", "Pop internacional", "Country", "Sertanejo", "Forró", "Forró brega", "Forró pé de serra", "Piseiro", "Música gospel cristã", "Rock", "R&B", "Soul", "Eletrônica leve", "Outro"] },
+      { key: "music_other", label: "Qual estilo musical você prefere?", tipo: "text", cond: (f) => (f.music_preferences || []).includes("Outro") },
+      { key: "wants_music_choice", label: "Você deseja escolher uma música e um cantor para ouvir durante o atendimento?", tipo: "bool" },
+      { key: "music_choice_song", label: "Qual música você gostaria de ouvir?", tipo: "text", cond: (f) => f.wants_music_choice === true },
+      { key: "music_choice_artist", label: "Qual cantor, cantora ou banda você prefere?", tipo: "text", cond: (f) => f.wants_music_choice === true },
     ],
   },
   {
     titulo: "Bebidas & Alimentação",
     campos: [
-      { key: "beverage_preferences", label: "Bebidas de preferência", tipo: "multi", opcoes: ["Café", "Chá", "Água com gás", "Suco natural", "Refrigerante", "Vinho", "Champagne"] },
-      { key: "food_preferences", label: "Preferências alimentares", tipo: "multi", opcoes: ["Frutas", "Salgados", "Chocolate", "Castanhas", "Vegetariano", "Vegano", "Sem glúten", "Sem lactose"] },
-      { key: "dietary_restrictions", label: "Restrições alimentares (informe se houver)", tipo: "multi", opcoes: ["Diabetes", "Hipertensão", "Alergias alimentares", "Intolerância à lactose", "Celíaco", "Nenhuma"] },
+      { key: "beverage_preferences", label: "Quais bebidas você prefere?", tipo: "multi", opcoes: ["Café", "Chá", "Água com gás", "Água sem gás", "Suco", "Refrigerante normal", "Refrigerante zero", "Vinho", "Champanhe", "Prosecco", "Nenhuma bebida", "Outra"] },
+      { key: "beverage_other", label: "Qual bebida você prefere?", tipo: "text", cond: (f) => (f.beverage_preferences || []).includes("Outra") },
+      { key: "food_preferences", label: "Quais alimentos você prefere?", tipo: "multi", opcoes: ["Frutas", "Chocolate", "Castanhas", "Croissant", "Pão de queijo", "Bolo de baunilha", "Bolo de chocolate", "Bolo de cenoura", "Bolo de laranja", "Nenhum alimento", "Outro"] },
+      { key: "food_other", label: "Qual alimento você prefere?", tipo: "text", cond: (f) => (f.food_preferences || []).includes("Outro") },
+      { key: "dietary_restrictions", label: "Você possui alguma restrição alimentar ou condição que exija cuidados especiais?", tipo: "multi", opcoes: ["Vegetariano", "Vegano", "Sem glúten", "Intolerância à lactose", "Diabetes", "Hipertensão", "Alergias alimentares", "Outras alergias ou intolerâncias", "Não possuo restrições"] },
+      { key: "dietary_restrictions_detail", label: "Informe quais alergias, intolerâncias ou restrições você possui.", tipo: "text", cond: (f) => { const a = f.dietary_restrictions || []; return a.includes("Alergias alimentares") || a.includes("Outras alergias ou intolerâncias"); } },
     ],
   },
   {
-    titulo: "Aromas, Temperatura & Atendimento",
+    titulo: "Ambiente, Aromas & Atendimento",
     campos: [
-      { key: "temperature_preference", label: "Temperatura de preferência", tipo: "single", opcoes: ["Agradável", "Fresco", "Aquecido"] },
+      { key: "temperature_preference", label: "Qual temperatura você prefere no ambiente?", tipo: "single", opcoes: ["Fresco", "Frio", "Aquecido"] },
       { key: "likes_aromas", label: "Você aprecia aromas durante o atendimento?", tipo: "bool" },
-      { key: "aroma_preferences", label: "Aromas de preferência", tipo: "multi", opcoes: ["Floral", "Cítrico", "Amadeirado", "Doce", "Herbal", "Refresh"], cond: (f) => f.likes_aromas === true },
-      { key: "service_style", label: "Estilo de atendimento preferido", tipo: "single", opcoes: ["Atendimento próximo", "Discrição total", "Conversa leve", "Foco no procedimento"] },
+      { key: "aroma_preferences", label: "Quais aromas você prefere?", tipo: "multi", opcoes: ["Lavanda", "Baunilha", "Capim-limão", "Bambu", "Chá branco", "Algodão", "Flor de cerejeira", "Alecrim", "Eucalipto", "Outro"], cond: (f) => f.likes_aromas === true },
+      { key: "aroma_other", label: "Qual aroma você prefere?", tipo: "text", cond: (f) => f.likes_aromas === true && (f.aroma_preferences || []).includes("Outro") },
+      { key: "service_style", label: "Qual estilo de atendimento você prefere?", tipo: "single", opcoes: ["Atendimento mais discreto e reservado", "Atendimento mais próximo e acolhedor", "Conversa leve durante o atendimento", "Silêncio e foco no procedimento"] },
     ],
   },
   {
@@ -54,14 +62,23 @@ export default function SensorFlowForm() {
   const [conviteId, setConviteId] = useState(null);
   const [passo, setPasso] = useState(0);
   const [form, setForm] = useState({
-    appointment_periods: [],
+    appointment_periods: "",
+    music_preferences: [],
+    music_other: "",
+    wants_music_choice: false,
+    music_choice_song: "",
+    music_choice_artist: "",
     beverage_preferences: [],
+    beverage_other: "",
     food_preferences: [],
+    food_other: "",
     dietary_restrictions: [],
+    dietary_restrictions_detail: "",
     environment_preferences: [],
     temperature_preference: "",
     likes_aromas: false,
     aroma_preferences: [],
+    aroma_other: "",
     service_style: "",
     lgpd_consent: false,
   });
@@ -110,6 +127,7 @@ export default function SensorFlowForm() {
 
   function campoPreenchido(campo) {
     if (campo.cond && !campo.cond(form)) return true;
+    if (campo.tipo === "text") return true; // campos de texto são opcionais
     const v = form[campo.key];
     if (campo.tipo === "multi") return Array.isArray(v) && v.length > 0;
     if (campo.tipo === "single") return !!v;
@@ -275,6 +293,20 @@ export default function SensorFlowForm() {
 
 function Campo({ campo, form, toggleMulti, setSingle, toggleBool }) {
   const v = form[campo.key];
+  if (campo.tipo === "text") {
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <p style={styles.label}>{campo.label}</p>
+        <input
+          type="text"
+          value={v || ""}
+          onChange={(e) => setSingle(campo.key, e.target.value)}
+          placeholder={campo.placeholder || ""}
+          style={styles.textInput}
+        />
+      </div>
+    );
+  }
   if (campo.tipo === "bool") {
     return (
       <div style={{ marginBottom: 20 }}>
@@ -338,6 +370,11 @@ const styles = {
   label: { fontFamily: T.font, fontSize: 12, fontWeight: 600, color: T.textMuted, marginBottom: 10, letterSpacing: "0.04em" },
   optionWrap: { display: "flex", flexWrap: "wrap", gap: 8 },
   optionRow: { display: "flex", gap: 8 },
+  textInput: {
+    fontFamily: T.font, fontSize: 14, color: T.text,
+    backgroundColor: T.bg2, border: `1px solid ${T.border}`, borderRadius: 8,
+    padding: "11px 14px", width: "100%", boxSizing: "border-box", outline: "none",
+  },
   option: {
     fontFamily: T.font, fontSize: 13, fontWeight: 500, color: T.textMuted,
     backgroundColor: T.bg2, border: `1px solid ${T.border}`, borderRadius: 999,
