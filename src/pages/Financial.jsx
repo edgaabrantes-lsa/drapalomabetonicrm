@@ -685,7 +685,7 @@ export default function Financial() {
         </TabsContent>
 
         <TabsContent value="dre" className="mt-6">
-          <FinancialDREReport transactions={transactions} />
+          <FinancialDREReport />
         </TabsContent>
       </Tabs>
     </div>
