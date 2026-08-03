@@ -4,37 +4,6 @@ import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { usePermissions } from "@/lib/PermissionsContext";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  FileText,
-  Package,
-  DollarSign,
-  Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  X,
-  UserCircle,
-  MessageSquare,
-  MessagesSquare,
-  ClipboardList,
-  Calculator,
-  Bell,
-  Search,
-  Eye,
-  ScanFace,
-  Layers,
-  Syringe,
-  ShieldCheck,
-  FolderOpen,
-  GitBranch,
-  BarChart3,
-  Copy,
-  CalendarClock
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -48,40 +17,38 @@ import { Input } from "@/components/ui/input";
 
 const navigation = [
   // Clínico
-  { name: "Dashboard",           href: "Dashboard",          icon: LayoutDashboard, group: "clinico" },
-  { name: "Pacientes",           href: "Patients",           icon: Users,            group: "clinico" },
-  { name: "Dossiê da Paciente",  href: "DossiePatient",      icon: FolderOpen,       group: "clinico" },
-  { name: "Agenda",              href: "Agenda",             icon: Calendar,         group: "clinico" },
-  { name: "Prontuários",         href: "MedicalRecords",     icon: FileText,         group: "clinico" },
-  { name: "Análise Facial",      href: "FacialAnalysis",     icon: Eye,              group: "clinico" },
-  { name: "Antes e Depois",      href: "BeforeAfterIA",      icon: ScanFace,         group: "clinico" },
-  { name: "Protocolos",          href: "Protocols",          icon: ClipboardList,    group: "clinico" },
-  { name: "Protocolos e Procedimentos",  href: "ProtocolosPremium",  icon: Syringe,          group: "clinico" },
-  { name: "Planos de Assinatura",href: "PlanosAssinatura",   icon: CalendarClock,    group: "clinico" },
-  { name: "Financeiro",          href: "Financial",          icon: DollarSign,       group: "clinico" },
-  { name: "DRE da Clínica",      href: "DREClinica",         icon: BarChart3,        group: "clinico" },
-  { name: "Estoque",             href: "Inventory",          icon: Package,          group: "clinico" },
+  { name: "Dashboard",           href: "Dashboard",          group: "clinico" },
+  { name: "Pacientes",           href: "Patients",            group: "clinico" },
+  { name: "Dossiê da Paciente",  href: "DossiePatient",      group: "clinico" },
+  { name: "Agenda",              href: "Agenda",             group: "clinico" },
+  { name: "Prontuários",         href: "MedicalRecords",     group: "clinico" },
+  { name: "Análise Facial",      href: "FacialAnalysis",     group: "clinico" },
+  { name: "Antes e Depois",      href: "BeforeAfterIA",      group: "clinico" },
+  { name: "Protocolos",          href: "Protocols",          group: "clinico" },
+  { name: "Protocolos e Procedimentos",  href: "ProtocolosPremium",  group: "clinico" },
+  { name: "Planos de Assinatura",href: "PlanosAssinatura",   group: "clinico" },
+  { name: "Financeiro",          href: "Financial",          group: "clinico" },
+  { name: "DRE da Clínica",      href: "DREClinica",         group: "clinico" },
+  { name: "Estoque",             href: "Inventory",          group: "clinico" },
   // Comercial
-  { name: "CRM",                 href: "CRM",                icon: MessageSquare,    group: "comercial" },
-  { name: "Bate-papo",           href: "Chat",               icon: MessagesSquare,   group: "comercial" },
-  { name: "Triagem IA",          href: "Intake",             icon: ClipboardList,    group: "comercial" },
+  { name: "CRM",                 href: "CRM",                group: "comercial" },
+  { name: "Bate-papo",           href: "Chat",               group: "comercial" },
+  { name: "Triagem IA",          href: "Intake",             group: "comercial" },
   // Administrativo
-  { name: "GitHub Monitor",      href: "GitHubMonitor",      icon: GitBranch,        group: "admin" },
-  { name: "Mesclar Pacientes",   href: "MesclarPacientes",   icon: Copy,             group: "admin" },
-  { name: "Auditoria Duplicid.", href: "AuditoriaDuplicidades", icon: ShieldCheck,    group: "admin" },
-  { name: "Governança Doc.",     href: "Governanca",         icon: ShieldCheck,      group: "admin" },
-  { name: "Vigilância Sanitária",href: "VigilanciaPage",     icon: ShieldCheck,      group: "admin" },
-  { name: "Config. da Clínica",  href: "ClinicSettingsPage", icon: Settings,         group: "admin" },
-  { name: "Configurações",       href: "Settings",           icon: Settings,         group: "admin" },
-  { name: "Usuários",            href: "UsuariosPermissoes",  icon: Users,            group: "admin" },
-  { name: "Portal da Paciente",  href: "PortalAdmin",        icon: Users,            group: "admin" },
+  { name: "GitHub Monitor",      href: "GitHubMonitor",      group: "admin" },
+  { name: "Mesclar Pacientes",   href: "MesclarPacientes",   group: "admin" },
+  { name: "Auditoria Duplicid.", href: "AuditoriaDuplicidades", group: "admin" },
+  { name: "Governança Doc.",     href: "Governanca",         group: "admin" },
+  { name: "Vigilância Sanitária",href: "VigilanciaPage",     group: "admin" },
+  { name: "Config. da Clínica",  href: "ClinicSettingsPage", group: "admin" },
+  { name: "Configurações",       href: "Settings",           group: "admin" },
+  { name: "Usuários",            href: "UsuariosPermissoes",  group: "admin" },
+  { name: "Portal da Paciente",  href: "PortalAdmin",        group: "admin" },
 ];
 
 const SIDEBAR_W_OPEN   = 240;
 const SIDEBAR_W_CLOSED = 60;
 const TOPBAR_H         = 56;
-
-// Contexto para que páginas filhas saibam a largura da sidebar (opcional, não obrigatório)
 
 
 export default function Layout({ children, currentPageName }) {
@@ -116,10 +83,10 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex items-center justify-between h-full px-4">
           <button
             onClick={() => setMobileOpen(true)}
-            className="flex items-center justify-center w-9 h-9 rounded-md transition-colors hover:bg-white/5"
-            style={{ color: "#B0B0B0" }}
+            className="flex items-center justify-center rounded-md transition-colors hover:bg-white/5"
+            style={{ color: "#B0B0B0", padding: "6px 10px", fontSize: 13, fontWeight: 500, border: "none", background: "transparent", cursor: "pointer" }}
           >
-            <Menu className="h-5 w-5" />
+            Menu
           </button>
 
           <img
@@ -184,21 +151,23 @@ export default function Layout({ children, currentPageName }) {
             style={{
               width: 28, height: 28,
               color: "#555555",
+              fontSize: 16, fontWeight: 300, lineHeight: 1,
               position: collapsed ? "static" : "absolute",
               right: collapsed ? undefined : 12,
+              border: "none", background: "transparent", cursor: "pointer",
             }}
             title={collapsed ? "Expandir menu" : "Recolher menu"}
           >
-            {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+            {collapsed ? "›" : "‹"}
           </button>
 
           {/* Botão fechar — mobile */}
           <button
             onClick={() => setMobileOpen(false)}
             className="lg:hidden flex items-center justify-center rounded-md transition-colors hover:bg-white/5 ml-auto"
-            style={{ width: 28, height: 28, color: "#555555" }}
+            style={{ width: 28, height: 28, color: "#555555", fontSize: 18, fontWeight: 300, border: "none", background: "transparent", cursor: "pointer" }}
           >
-            <X className="h-3.5 w-3.5" />
+            ×
           </button>
         </div>
 
@@ -259,10 +228,6 @@ export default function Layout({ children, currentPageName }) {
                           }
                         }}
                       >
-                        <item.icon
-                          className="flex-shrink-0"
-                          style={{ width: 15, height: 15, color: isActive ? "#C8A96A" : "currentColor" }}
-                        />
                         {!collapsed && (
                           <span style={{
                             fontSize: 13,
@@ -347,13 +312,13 @@ export default function Layout({ children, currentPageName }) {
                 className="cursor-pointer"
                 style={{ color: "#B0B0B0", fontSize: 13 }}
               >
-                <UserCircle className="mr-2 h-4 w-4" /> Meu Perfil
+                Meu Perfil
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
                 style={{ color: "#B0B0B0", fontSize: 13 }}
               >
-                <Settings className="mr-2 h-4 w-4" /> Configurações
+                Configurações
               </DropdownMenuItem>
               <DropdownMenuSeparator style={{ backgroundColor: "#2B2B2B" }} />
               <DropdownMenuItem
@@ -361,7 +326,7 @@ export default function Layout({ children, currentPageName }) {
                 className="cursor-pointer"
                 style={{ color: "#EF4444", fontSize: 13 }}
               >
-                <LogOut className="mr-2 h-4 w-4" /> Sair
+                Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -393,14 +358,9 @@ export default function Layout({ children, currentPageName }) {
         >
           {/* Search */}
           <div className="relative" style={{ width: 280 }}>
-            <Search
-              className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ left: 10, width: 14, height: 14, color: "#555555" }}
-            />
             <Input
               placeholder="Buscar pacientes..."
               style={{
-                paddingLeft: 32,
                 height: 34,
                 backgroundColor: "#121212",
                 borderColor: "#2B2B2B",
@@ -422,28 +382,6 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Right side */}
           <div className="flex items-center" style={{ gap: 16 }}>
-            <button
-              className="relative flex items-center justify-center rounded-md transition-colors hover:bg-white/5"
-              style={{
-                width: 34, height: 34,
-                color: "#555555",
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-              }}
-            >
-              <Bell style={{ width: 15, height: 15 }} />
-              <span
-                className="absolute"
-                style={{
-                  top: 8, right: 8,
-                  width: 5, height: 5,
-                  backgroundColor: "#C8A96A",
-                  borderRadius: "50%",
-                }}
-              />
-            </button>
-
             <div style={{ width: 1, height: 20, backgroundColor: "#1E1E1E" }} />
 
             <div className="text-right">

@@ -432,6 +432,12 @@ tbody td {
   outline-offset: 2px;
 }
 
+/* ── Remoção global de ícones (lucide) — toda a plataforma ── */
+svg.lucide,
+svg[class*="lucide"] {
+  display: none !important;
+}
+
 /* ── Scrollbar horizontal visível para categorias do portal ── */
 .portal-cat-scroll {
   -webkit-overflow-scrolling: touch;
