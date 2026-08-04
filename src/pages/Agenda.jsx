@@ -431,7 +431,8 @@ const ListView = ({ appointments, onClickAppointment }) => {
   }
 
   return (
-    <div>
+    <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 8 }}>
+      <div style={{ minWidth: 460 }}>
       {Object.entries(grouped).map(([dateKey, appts]) => (
         <div key={dateKey} style={{ marginBottom: 32 }}>
           {/* Date heading */}
@@ -530,6 +531,7 @@ const ListView = ({ appointments, onClickAppointment }) => {
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 };
@@ -761,7 +763,7 @@ export default function Agenda() {
       </div>
 
       {/* ── Calendar ──────────────────────────────────── */}
-      <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+      <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
         {viewMode === "day" && <DayView date={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
         {viewMode === "week" && <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
         {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
@@ -772,17 +774,17 @@ export default function Agenda() {
       <button
         onClick={() => { setEditingAppointment(null); setPrefilledTime(null); setIsFormOpen(true); }}
         style={{
-          position: "fixed", bottom: 32, right: 32,
-          width: 52, height: 52,
+          position: "fixed", bottom: 24, right: 24,
+          width: 26, height: 26,
           background: T.gold, color: "#000",
           border: "none", borderRadius: 4,
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.16)",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
           zIndex: 100,
         }}
         title="Novo Agendamento"
       >
-        <Plus size={20} strokeWidth={1.5} />
+        <span style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1, fontFamily: "Inter, sans-serif" }}>+</span>
       </button>
 
       {/* ── Form Dialog ──────────────────────────────── */}
