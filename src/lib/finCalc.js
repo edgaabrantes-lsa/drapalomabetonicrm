@@ -131,3 +131,30 @@ export function gerarCenarios(buraco, protocolos) {
     return { ...c, combinacao };
   });
 }
+
+// ── Normaliza recebíveis de múltiplas fontes (ParcelaRecebivel + Transaction) ──
+export function normalizarRecebiveis(parcelas = [], transactions = []) {
+  const fromTransactions = transactions
+    .filter(t => t.type === "income")
+    .map(t => ({
+      id: t.id,
+      _source: "transaction",
+      patient_name: t.patient_name || "",
+      protocolo_nome: t.description || (t.category === "procedure" ? "Procedimento" : t.category === "protocol" ? "Protocolo" : "Venda"),
+      data_venda: t.created_date ? t.created_date.slice(0, 10) : (t.due_date || ""),
+      numero_parcela: t.current_installment || 1,
+      tipo: (t.current_installment || 1) <= 1 ? "entrada" : "parcela",
+      valor_bruto: t.amount || 0,
+      taxa: 0,
+      valor_liquido: t.amount || 0,
+      vencimento: t.due_date,
+      data_recebimento: t.payment_date,
+      forma_pagamento: t.payment_method,
+      num_parcelas_total: t.installments || 1,
+      status: t.status === "paid" ? "recebido"
+        : t.status === "overdue" ? "vencido"
+        : t.status === "cancelled" ? "cancelado"
+        : "pendente",
+    }));
+  return [...parcelas, ...fromTransactions];
+}

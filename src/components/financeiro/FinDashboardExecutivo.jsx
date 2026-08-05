@@ -9,7 +9,7 @@ import { ptBR } from "date-fns/locale";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
-import { formatBRL, formatPct, classificarSaudeCaixa } from "@/lib/finCalc";
+import { formatBRL, formatPct, classificarSaudeCaixa, normalizarRecebiveis } from "@/lib/finCalc";
 
 const T = { card: "#1A1A1A", border: "#2B2B2B", text: "#FFFFFF", muted: "#B0B0B0", dim: "#666", gold: "#C8A96A" };
 
@@ -29,8 +29,10 @@ function KpiCard({ label, value, sub, gold, note }) {
 
 export default function FinDashboardExecutivo() {
   const { data: config } = useQuery({ queryKey: ["configFin"], queryFn: () => base44.entities.ConfiguracaoFinanceira.list().then(r => r[0]) });
-  const { data: parcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: rawParcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-due_date", 500) });
   const { data: lancamentos = [] } = useQuery({ queryKey: ["lancamentos"], queryFn: () => base44.entities.DRELancamento.list("-data_vencimento", 500) });
+  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions), [rawParcelas, transactions]);
 
   const c = useMemo(() => {
     const now = new Date();

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { parseISO, addDays, format, isWithinInterval, startOfDay } from "date-fns";
-import { formatBRL } from "@/lib/finCalc";
+import { formatBRL, normalizarRecebiveis } from "@/lib/finCalc";
 
 const T = { card: "#1A1A1A", border: "#2B2B2B", text: "#FFFFFF", muted: "#B0B0B0", dim: "#666", gold: "#C8A96A" };
 
@@ -15,8 +15,10 @@ const horizontes = [
 
 export default function FinFluxoCaixa() {
   const [dias, setDias] = useState(30);
-  const { data: parcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: rawParcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-due_date", 500) });
   const { data: lancamentos = [] } = useQuery({ queryKey: ["lancamentos"], queryFn: () => base44.entities.DRELancamento.list("-data_vencimento", 500) });
+  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions), [rawParcelas, transactions]);
 
   const projecao = useMemo(() => {
     const now = startOfDay(new Date());

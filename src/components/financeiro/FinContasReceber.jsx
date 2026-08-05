@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { parseISO, isToday, isWithinInterval, isAfter, isBefore, addDays, format } from "date-fns";
-import { formatBRL } from "@/lib/finCalc";
+import { formatBRL, normalizarRecebiveis } from "@/lib/finCalc";
 
 const T = { card: "#1A1A1A", border: "#2B2B2B", text: "#FFFFFF", muted: "#B0B0B0", dim: "#666", gold: "#C8A96A" };
 
@@ -24,15 +24,21 @@ const filtros = [
 export default function FinContasReceber() {
   const queryClient = useQueryClient();
   const [filtro, setFiltro] = useState("30d");
-  const { data: parcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: rawParcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-due_date", 500) });
+  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions), [rawParcelas, transactions]);
 
   const receberMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ParcelaRecebivel.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["parcelas"] }),
+    mutationFn: ({ id, data, source }) => source === "transaction" ? base44.entities.Transaction.update(id, data) : base44.entities.ParcelaRecebivel.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["parcelas"] }); queryClient.invalidateQueries({ queryKey: ["transactions"] }); },
   });
 
   const marcarRecebido = (p) => {
-    receberMutation.mutate({ id: p.id, data: { status: "recebido", data_recebimento: format(new Date(), "yyyy-MM-dd") } });
+    if (p._source === "transaction") {
+      receberMutation.mutate({ id: p.id, source: "transaction", data: { status: "paid", payment_date: format(new Date(), "yyyy-MM-dd") } });
+    } else {
+      receberMutation.mutate({ id: p.id, data: { status: "recebido", data_recebimento: format(new Date(), "yyyy-MM-dd") } });
+    }
   };
 
   const filtradas = useMemo(() => {

@@ -2,14 +2,16 @@ import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { parseISO, startOfMonth, endOfMonth, isWithinInterval, addDays } from "date-fns";
-import { formatBRL, formatPct, calcularBuracoCaixa, gerarCenarios } from "@/lib/finCalc";
+import { formatBRL, formatPct, calcularBuracoCaixa, gerarCenarios, normalizarRecebiveis } from "@/lib/finCalc";
 
 const T = { card: "#1A1A1A", border: "#2B2B2B", text: "#FFFFFF", muted: "#B0B0B0", dim: "#666", gold: "#C8A96A" };
 
 export default function FinCalculadoraMeta() {
   const { data: config } = useQuery({ queryKey: ["configFin"], queryFn: () => base44.entities.ConfiguracaoFinanceira.list().then(r => r[0]) });
-  const { data: parcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: rawParcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
+  const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-due_date", 500) });
   const { data: protocolos = [] } = useQuery({ queryKey: ["protocolos"], queryFn: () => base44.entities.ProtocoloPremium.list() });
+  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions), [rawParcelas, transactions]);
 
   const calc = useMemo(() => {
     const now = new Date();
