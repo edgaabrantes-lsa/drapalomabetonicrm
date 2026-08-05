@@ -23,6 +23,7 @@ import PortalPaciente from './pages/PortalPaciente.jsx';
 import PortalAdmin from './pages/PortalAdmin.jsx';
 import PlanosAssinatura from './pages/PlanosAssinatura.jsx';
 import SensorFlowForm from './pages/SensorFlowForm.jsx';
+import GestaoFinanceira from './pages/GestaoFinanceira.jsx';
 
 // Rotas do Portal da Paciente — fora do gate de autenticação (acesso por token)
 function PortalRoutes() {
@@ -183,6 +184,13 @@ const AuthenticatedApp = () => {
       <Route path="/PlanosAssinatura" element={
         <LayoutWrapper currentPageName="PlanosAssinatura">
           <PlanosAssinatura />
+        </LayoutWrapper>
+      } />
+
+      {/* Gestão Financeira */}
+      <Route path="/GestaoFinanceira" element={
+        <LayoutWrapper currentPageName="GestaoFinanceira">
+          <GestaoFinanceira />
         </LayoutWrapper>
       } />
     </Routes>

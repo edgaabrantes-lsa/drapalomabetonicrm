@@ -1,0 +1,140 @@
+{
+  "name": "ParcelaRecebivel",
+  "type": "object",
+  "properties": {
+    "venda_id": {
+      "type": "string",
+      "description": "ID interno da venda que originou a parcela"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "protocolo_nome": {
+      "type": "string",
+      "description": "Procedimento ou protocolo vendido"
+    },
+    "data_venda": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da venda (compet\u00eancia)"
+    },
+    "numero_parcela": {
+      "type": "number",
+      "description": "0 = entrada, 1..N = parcelas"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "entrada",
+        "parcela"
+      ],
+      "default": "parcela"
+    },
+    "valor_bruto": {
+      "type": "number"
+    },
+    "taxa": {
+      "type": "number",
+      "description": "Valor da taxa financeira da parcela"
+    },
+    "valor_liquido": {
+      "type": "number",
+      "description": "Valor l\u00edquido ap\u00f3s taxas"
+    },
+    "vencimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_recebimento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data efetiva de recebimento (caixa)"
+    },
+    "forma_pagamento": {
+      "type": "string",
+      "enum": [
+        "pix",
+        "cartao_credito",
+        "cartao_debito",
+        "transferencia",
+        "boleto",
+        "dinheiro",
+        "outro"
+      ]
+    },
+    "operadora": {
+      "type": "string",
+      "description": "Bandeira/adquirente do cart\u00e3o"
+    },
+    "num_parcelas_total": {
+      "type": "number",
+      "description": "Total de parcelas da venda"
+    },
+    "conta_destino": {
+      "type": "string",
+      "description": "Conta banc\u00e1ria de destino"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "previsto",
+        "pendente",
+        "recebido",
+        "parcialmente_recebido",
+        "vencido",
+        "antecipado",
+        "cancelado",
+        "estornado"
+      ],
+      "default": "previsto"
+    },
+    "antecipado": {
+      "type": "boolean",
+      "default": false
+    },
+    "data_antecipacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "custo_antecipacao": {
+      "type": "number"
+    },
+    "codigo_transacao": {
+      "type": "string"
+    },
+    "responsavel_venda": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_name",
+    "valor_bruto",
+    "vencimento",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

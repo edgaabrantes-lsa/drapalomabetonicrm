@@ -1,0 +1,165 @@
+{
+  "name": "ConfiguracaoFinanceira",
+  "type": "object",
+  "properties": {
+    "meta_faturamento_mensal": {
+      "type": "number",
+      "default": 70000,
+      "description": "Meta mensal de faturamento bruto"
+    },
+    "meta_recebimento_liquido": {
+      "type": "number",
+      "default": 70000,
+      "description": "Meta mensal de entrada l\u00edquida necess\u00e1ria"
+    },
+    "objetivo_caixa_livre": {
+      "type": "number",
+      "default": 50000,
+      "description": "Objetivo mensal de caixa livre"
+    },
+    "custo_mensal_previsto": {
+      "type": "number",
+      "default": 20000,
+      "description": "Custo mensal previsto da cl\u00ednica"
+    },
+    "saldo_minimo_seguranca": {
+      "type": "number",
+      "default": 10000,
+      "description": "Saldo m\u00ednimo de seguran\u00e7a no caixa"
+    },
+    "capital_giro_desejado": {
+      "type": "number",
+      "default": 30000,
+      "description": "Capital de giro desejado"
+    },
+    "pct_max_vendas_12x": {
+      "type": "number",
+      "default": 30,
+      "description": "Percentual m\u00e1ximo de vendas em 12 vezes sobre o faturamento"
+    },
+    "entrada_minima_alto_valor": {
+      "type": "number",
+      "default": 30,
+      "description": "Percentual de entrada m\u00ednima para protocolos de alto valor"
+    },
+    "desconto_max_pix": {
+      "type": "number",
+      "default": 5,
+      "description": "Desconto m\u00e1ximo autorizado no Pix"
+    },
+    "taxa_media_cartao": {
+      "type": "number",
+      "default": 3.5,
+      "description": "Taxa m\u00e9dia de cart\u00e3o (%)"
+    },
+    "taxa_parcelamento": {
+      "type": "number",
+      "default": 2.5,
+      "description": "Taxa m\u00e9dia de parcelamento (%)"
+    },
+    "taxa_media_antecipacao": {
+      "type": "number",
+      "default": 4,
+      "description": "Taxa m\u00e9dia de antecipa\u00e7\u00e3o (%)"
+    },
+    "margem_minima": {
+      "type": "number",
+      "default": 30,
+      "description": "Margem m\u00ednima aceit\u00e1vel (%)"
+    },
+    "dia_fechamento_financeiro": {
+      "type": "number",
+      "default": 1,
+      "description": "Dia do fechamento financeiro mensal"
+    },
+    "faixa1_max": {
+      "type": "number",
+      "default": 3000,
+      "description": "Limite superior da faixa 1 de parcelamento (at\u00e9 3x)"
+    },
+    "faixa2_max": {
+      "type": "number",
+      "default": 7999.99,
+      "description": "Limite superior da faixa 2 de parcelamento (at\u00e9 6x)"
+    },
+    "faixa1_parcelas": {
+      "type": "number",
+      "default": 3
+    },
+    "faixa2_parcelas": {
+      "type": "number",
+      "default": 6
+    },
+    "faixa3_parcelas": {
+      "type": "number",
+      "default": 12
+    },
+    "contas_bancarias": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "banco": {
+            "type": "string"
+          },
+          "agencia": {
+            "type": "string"
+          },
+          "conta": {
+            "type": "string"
+          },
+          "saldo_inicial": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "adquirentes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "taxa_debito": {
+            "type": "number"
+          },
+          "taxa_credito_vista": {
+            "type": "number"
+          },
+          "taxa_parcelamento": {
+            "type": "number"
+          },
+          "taxa_antecipacao": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "meta_recebimento_liquido"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
