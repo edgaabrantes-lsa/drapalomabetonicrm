@@ -34,6 +34,24 @@
         "outro"
       ]
     },
+    "taxa_juros_pct": {
+      "type": "number",
+      "default": 2.44,
+      "description": "Percentual de juros da maquininha (cart\u00e3o) aplicado ao valor total"
+    },
+    "absorver_juros": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se true, a cl\u00ednica absorve os juros (l\u00edquido = bruto \u2212 juros). Se false, os juros s\u00e3o repassados ao cliente (l\u00edquido = bruto integral)."
+    },
+    "valor_juros": {
+      "type": "number",
+      "description": "Valor monet\u00e1rio do juros calculado"
+    },
+    "valor_liquido": {
+      "type": "number",
+      "description": "Valor l\u00edquido que a cl\u00ednica recebe ap\u00f3s juros"
+    },
     "status_financeiro": {
       "type": "string",
       "enum": [

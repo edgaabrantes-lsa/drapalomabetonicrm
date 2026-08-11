@@ -51,13 +51,16 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
   const [form, setForm] = useState({
     procedimento: "", valor_total: "", entrada: "", num_parcelas: 1,
     forma_pagamento: "pix", status_financeiro: "pendente",
-    data_vencimento: "", data_pagamento: "", observacoes: ""
+    data_vencimento: "", data_pagamento: "", observacoes: "",
+    taxa_juros_pct: "2.44", absorver_juros: true
   });
 
   const { data: registros = [] } = useQuery({
     queryKey: ["dossie-financeiro", patient.id],
     queryFn: () => base44.entities.DossieFinanceiro.filter({ patient_id: patient.id }, "-created_date", 100)
   });
+
+  const { data: config } = useQuery({ queryKey: ["configFin"], queryFn: () => base44.entities.ConfiguracaoFinanceira.list().then(r => r[0]) });
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.DossieFinanceiro.create(data),
@@ -83,6 +86,10 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
 
   const canManage = canManageFinanceiro(currentUser);
 
+  const isCartaoForm = ["cartao_credito", "cartao_debito"].includes(form.forma_pagamento);
+  const jurosValorCalc = (parseFloat(form.valor_total) || 0) * (parseFloat(form.taxa_juros_pct) || 0) / 100;
+  const valorLiquidoCalc = isCartaoForm ? (form.absorver_juros ? (parseFloat(form.valor_total) || 0) - jurosValorCalc : (parseFloat(form.valor_total) || 0)) : (parseFloat(form.valor_total) || 0);
+
   const startEdit = (reg) => {
     setEditingId(reg.id);
     setForm({
@@ -94,7 +101,9 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
       status_financeiro: reg.status_financeiro || "pendente",
       data_vencimento: reg.data_vencimento || "",
       data_pagamento: reg.data_pagamento || "",
-      observacoes: reg.observacoes || ""
+      observacoes: reg.observacoes || "",
+      taxa_juros_pct: reg.taxa_juros_pct != null ? String(reg.taxa_juros_pct) : "2.44",
+      absorver_juros: reg.absorver_juros !== false
     });
     setShowForm(true);
   };
@@ -105,20 +114,33 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
     }
   };
 
-  const resetForm = () => setForm({ procedimento: "", valor_total: "", entrada: "", num_parcelas: 1, forma_pagamento: "pix", status_financeiro: "pendente", data_vencimento: "", data_pagamento: "", observacoes: "" });
+  const resetForm = () => setForm({ procedimento: "", valor_total: "", entrada: "", num_parcelas: 1, forma_pagamento: "pix", status_financeiro: "pendente", data_vencimento: "", data_pagamento: "", observacoes: "", taxa_juros_pct: String(config?.taxa_parcelamento ?? 2.44), absorver_juros: true });
 
   const handleSave = () => {
+    const valorTotal = parseFloat(form.valor_total) || 0;
+    const taxaPct = parseFloat(form.taxa_juros_pct) || 0;
+    const isCartao = ["cartao_credito", "cartao_debito"].includes(form.forma_pagamento);
+    const valorJuros = isCartao ? valorTotal * taxaPct / 100 : 0;
+    const valorLiquido = isCartao ? (form.absorver_juros ? valorTotal - valorJuros : valorTotal) : valorTotal;
     const payload = {
-      ...form,
-      patient_id: patient.id,
-      patient_name: patient.full_name,
-      valor_total: parseFloat(form.valor_total) || 0,
+      procedimento: form.procedimento,
+      valor_total: valorTotal,
       entrada: parseFloat(form.entrada) || 0,
       num_parcelas: parseInt(form.num_parcelas) || 1,
-      comprovantes: []
+      forma_pagamento: form.forma_pagamento,
+      taxa_juros_pct: isCartao ? taxaPct : 0,
+      absorver_juros: isCartao ? form.absorver_juros : true,
+      valor_juros: valorJuros,
+      valor_liquido: valorLiquido,
+      status_financeiro: form.status_financeiro,
+      data_vencimento: form.data_vencimento,
+      data_pagamento: form.data_pagamento,
+      observacoes: form.observacoes,
+      patient_id: patient.id,
+      patient_name: patient.full_name,
     };
-    if (editingId) updateMutation.mutate({ id: editingId, data: form });
-    else createMutation.mutate(payload);
+    if (editingId) updateMutation.mutate({ id: editingId, data: payload });
+    else createMutation.mutate({ ...payload, comprovantes: [] });
   };
 
   const handleAddComprovante = async (registro) => {
@@ -151,7 +173,7 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setShowForm(!showForm)} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black text-xs">
+        <Button onClick={() => { if (showForm) { setShowForm(false); } else { resetForm(); setEditingId(null); setShowForm(true); } }} size="sm" className="bg-[#C5A059] hover:bg-[#a17f3f] text-black text-xs">
           Novo Registro Financeiro
         </Button>
       </div>
@@ -185,6 +207,36 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
                 </SelectContent>
               </Select>
             </div>
+            {isCartaoForm && (
+              <div className="sm:col-span-2 border border-[#252D3E] rounded-md p-4 bg-[#1A2030] space-y-3">
+                <p className="text-xs font-medium text-white uppercase tracking-wider">Juros da Maquininha</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <Label className="text-[#8A95AA] text-xs">Taxa de Juros (%)</Label>
+                    <Input type="number" step="0.01" value={form.taxa_juros_pct} onChange={(e) => setForm(p => ({ ...p, taxa_juros_pct: e.target.value }))} className="mt-1 bg-[#0F1521] border-[#252D3E] text-white" />
+                  </div>
+                  <div>
+                    <Label className="text-[#8A95AA] text-xs">Quem paga o juros?</Label>
+                    <Select value={form.absorver_juros ? "absorver" : "repassar"} onValueChange={(v) => setForm(p => ({ ...p, absorver_juros: v === "absorver" }))}>
+                      <SelectTrigger className="mt-1 bg-[#0F1521] border-[#252D3E] text-white"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#171D29] border-[#252D3E]">
+                        <SelectItem value="absorver" className="text-white">Clínica absorve</SelectItem>
+                        <SelectItem value="repassar" className="text-white">Repassar ao cliente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col justify-center text-xs gap-1">
+                    <p className="text-[#8A95AA]">Juros: <span className="text-red-400 font-medium">{fmtMoney(jurosValorCalc)}</span></p>
+                    <p className="text-[#8A95AA]">Líquido a receber: <span className="text-[#C5A059] font-semibold">{fmtMoney(valorLiquidoCalc)}</span></p>
+                  </div>
+                </div>
+                <p className="text-xs text-[#8A95AA]">
+                  {form.absorver_juros
+                    ? "A clínica absorve a taxa — recebe o valor líquido (bruto − juros)."
+                    : "O juros é repassado ao cliente — a clínica recebe o valor integral."}
+                </p>
+              </div>
+            )}
             <div>
               <Label className="text-[#8A95AA] text-xs uppercase tracking-wider">Status Financeiro</Label>
               <Select value={form.status_financeiro} onValueChange={(v) => setForm(p => ({ ...p, status_financeiro: v }))}>
@@ -236,6 +288,15 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
                 <p className="text-[#C5A059] font-semibold">{fmtMoney(reg.valor_total)}</p>
                 {reg.entrada > 0 && <p className="text-xs text-[#8A95AA]">Entrada: {fmtMoney(reg.entrada)}</p>}
                 {reg.num_parcelas > 1 && <p className="text-xs text-[#8A95AA]">{reg.num_parcelas}x de {fmtMoney(reg.valor_total / reg.num_parcelas)}</p>}
+                {reg.valor_juros > 0 && (
+                  <div className="text-xs mt-1 space-y-0.5">
+                    <p className="text-[#8A95AA]">Juros ({reg.taxa_juros_pct}%): <span className="text-red-400">{fmtMoney(reg.valor_juros)}</span></p>
+                    <p className={reg.absorver_juros ? "text-orange-400" : "text-green-400"}>
+                      {reg.absorver_juros ? "Clínica absorveu" : "Repassado ao cliente"}
+                    </p>
+                    <p className="text-[#8A95AA]">Líquido: <span className="text-white font-medium">{fmtMoney(reg.valor_liquido)}</span></p>
+                  </div>
+                )}
               </div>
             </div>
 
