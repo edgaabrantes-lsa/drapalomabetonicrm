@@ -317,6 +317,11 @@ export default function DossiePatient() {
 
               <div className="w-full max-w-full min-w-0 flex-1 overflow-y-auto" style={{ padding: "max(12px, 1.5vw)", backgroundColor: T.bgPrimary }}>
                 <div className="w-full max-w-full min-w-0">
+                  <div className="lg:hidden" style={{ marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${T.border}` }}>
+                    <p style={{ ...S.value, fontSize: 16, margin: 0, wordBreak: "break-word", lineHeight: 1.3 }}>
+                      {selectedPatient.full_name}
+                    </p>
+                  </div>
                   {activeTab === "cadastro"      && <DossieCadastro patient={selectedPatient} onPatientUpdate={() => {}} />}
                   {activeTab === "prontuario"    && <DossieProntuario patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "fotos"         && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
