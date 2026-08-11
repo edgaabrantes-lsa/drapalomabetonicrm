@@ -51,7 +51,7 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
   const [form, setForm] = useState({
     procedimento: "", valor_total: "", entrada: "", num_parcelas: 1,
     forma_pagamento: "pix", status_financeiro: "pendente",
-    data_vencimento: "", data_pagamento: "", observacoes: "",
+    data_vencimento: format(new Date(), "yyyy-MM-dd"), data_pagamento: "", observacoes: "",
     taxa_juros_pct: "2.44", absorver_juros: true
   });
 
@@ -114,7 +114,7 @@ export default function DossieFinanceiroTab({ patient, currentUser }) {
     }
   };
 
-  const resetForm = () => setForm({ procedimento: "", valor_total: "", entrada: "", num_parcelas: 1, forma_pagamento: "pix", status_financeiro: "pendente", data_vencimento: "", data_pagamento: "", observacoes: "", taxa_juros_pct: String(config?.taxa_parcelamento ?? 2.44), absorver_juros: true });
+  const resetForm = () => setForm({ procedimento: "", valor_total: "", entrada: "", num_parcelas: 1, forma_pagamento: "pix", status_financeiro: "pendente", data_vencimento: format(new Date(), "yyyy-MM-dd"), data_pagamento: "", observacoes: "", taxa_juros_pct: String(config?.taxa_parcelamento ?? 2.44), absorver_juros: true });
 
   const handleSave = () => {
     const valorTotal = parseFloat(form.valor_total) || 0;
