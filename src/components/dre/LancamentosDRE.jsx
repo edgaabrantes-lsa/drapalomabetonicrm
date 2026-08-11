@@ -17,7 +17,7 @@ const statusConfig = {
   cancelado: { label: "Cancelado", color: "rgba(107,114,128,0.15)", textColor: "#6B7280" },
 };
 
-export default function LancamentosDRE() {
+export default function LancamentosDRE({ filters }) {
   const queryClient = useQueryClient();
   const { hasAction } = usePermissions();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -80,9 +80,17 @@ export default function LancamentosDRE() {
     } else createMut.mutate(data);
   };
 
+  const MESES_NOMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
   const filtered = lancamentos.filter((l) => {
     if (tipoFilter !== "all" && l.tipo !== tipoFilter) return false;
     if (statusFilter !== "all" && l.status !== statusFilter) return false;
+    if (filters?.mes != null && filters?.ano && l.data_vencimento) {
+      try {
+        const d = parseISO(l.data_vencimento);
+        if (d.getMonth() !== filters.mes || d.getFullYear() !== filters.ano) return false;
+      } catch { return false; }
+    }
     return true;
   });
 
@@ -93,7 +101,12 @@ export default function LancamentosDRE() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          {filters?.mes != null && filters?.ano && (
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#C8A96A", whiteSpace: "nowrap" }}>
+              {MESES_NOMES[filters.mes]} {filters.ano}
+            </span>
+          )}
           <Select value={tipoFilter} onValueChange={setTipoFilter}>
             <SelectTrigger className="w-40 bg-[#121212] border-[#2B2B2B] text-white" style={{ height: 34, fontSize: 13 }}>
               <SelectValue />

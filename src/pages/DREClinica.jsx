@@ -78,7 +78,7 @@ export default function DREClinica() {
           <RentabilidadeProcedimento filters={filters} />
         </TabsContent>
         <TabsContent value="lancamentos" className="mt-6">
-          <LancamentosDRE />
+          <LancamentosDRE filters={filters} />
         </TabsContent>
         <TabsContent value="categorias" className="mt-6">
           <CategoriasDRE />
