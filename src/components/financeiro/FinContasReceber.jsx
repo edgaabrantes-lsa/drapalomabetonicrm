@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { parseISO, isToday, isWithinInterval, isAfter, isBefore, addDays, format } from "date-fns";
 import { formatBRL, normalizarRecebiveis } from "@/lib/finCalc";
 import { usePermissions } from "@/lib/PermissionsContext";
+import BaixaRecebimentoModal from "./BaixaRecebimentoModal";
 
 const T = { card: "#1A1A1A", border: "#2B2B2B", text: "#FFFFFF", muted: "#B0B0B0", dim: "#666", gold: "#C8A96A" };
 
@@ -48,12 +49,18 @@ export default function FinContasReceber() {
     }
   };
 
-  const marcarRecebido = (p) => {
-    if (p._source === "transaction") {
-      receberMutation.mutate({ id: p.id, source: "transaction", data: { status: "paid", payment_date: format(new Date(), "yyyy-MM-dd") } });
+  const [baixaParcela, setBaixaParcela] = useState(null);
+  const { data: config } = useQuery({ queryKey: ["configFin"], queryFn: () => base44.entities.ConfiguracaoFinanceira.list().then(r => r[0]) });
+
+  const marcarRecebido = (p) => setBaixaParcela(p);
+
+  const confirmarBaixa = (dados) => {
+    if (baixaParcela._source === "transaction") {
+      receberMutation.mutate({ id: baixaParcela.id, source: "transaction", data: { status: "paid", payment_date: dados.data_recebimento, payment_method: dados.forma_pagamento, taxa: dados.taxa, valor_liquido: dados.valor_liquido } });
     } else {
-      receberMutation.mutate({ id: p.id, data: { status: "recebido", data_recebimento: format(new Date(), "yyyy-MM-dd") } });
+      receberMutation.mutate({ id: baixaParcela.id, data: { status: "recebido", data_recebimento: dados.data_recebimento, forma_pagamento: dados.forma_pagamento, taxa: dados.taxa, valor_liquido: dados.valor_liquido } });
     }
+    setBaixaParcela(null);
   };
 
   const filtradas = useMemo(() => {
@@ -137,6 +144,9 @@ export default function FinContasReceber() {
         </div>
       </div>
       <p style={{ fontSize: 12, color: T.dim, fontStyle: "italic" }}>Venda parcelada cria faturamento, mas o caixa pinga aos poucos.</p>
+      {baixaParcela && (
+        <BaixaRecebimentoModal parcela={baixaParcela} taxaParcelamento={config?.taxa_parcelamento} onConfirm={confirmarBaixa} onClose={() => setBaixaParcela(null)} />
+      )}
     </div>
   );
 }
