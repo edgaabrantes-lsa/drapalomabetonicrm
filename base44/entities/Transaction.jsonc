@@ -32,6 +32,14 @@
     "amount": {
       "type": "number"
     },
+    "taxa": {
+      "type": "number",
+      "description": "Valor da taxa financeira absorvida (juros de cart\u00e3o, taxa de antecipa\u00e7\u00e3o, etc.)"
+    },
+    "valor_liquido": {
+      "type": "number",
+      "description": "Valor l\u00edquido efetivamente recebido ap\u00f3s desconto de taxas"
+    },
     "payment_method": {
       "type": "string",
       "enum": [

@@ -18,7 +18,7 @@ const campos = [
   { key: "entrada_minima_alto_valor", label: "% Entrada Mínima (alto valor)" },
   { key: "desconto_max_pix", label: "Desconto Máximo no Pix (%)" },
   { key: "taxa_media_cartao", label: "Taxa Média de Cartão (%)" },
-  { key: "taxa_parcelamento", label: "Taxa de Parcelamento (%)" },
+  { key: "taxa_parcelamento", label: "Juros de Cartão Parcelado (%)" },
   { key: "taxa_media_antecipacao", label: "Taxa Média de Antecipação (%)" },
   { key: "margem_minima", label: "Margem Mínima (%)" },
   { key: "dia_fechamento_financeiro", label: "Dia do Fechamento Financeiro" },

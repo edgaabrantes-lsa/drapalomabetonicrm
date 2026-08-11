@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { parseISO, isToday, isWithinInterval, isBefore, addDays, format, differenceInCalendarDays } from "date-fns";
 import { formatBRL } from "@/lib/finCalc";
+import { usePermissions } from "@/lib/PermissionsContext";
+import EditarDespesaModal from "./EditarDespesaModal";
 
 const T = { card: "#1A1A1A", border: "#2B2B2B", text: "#FFFFFF", muted: "#B0B0B0", dim: "#666", gold: "#C8A96A" };
 
@@ -20,13 +22,33 @@ export default function FinContasPagar() {
   const [filtro, setFiltro] = useState("30d");
   const { data: lancamentos = [] } = useQuery({ queryKey: ["lancamentos"], queryFn: () => base44.entities.DRELancamento.list("-data_vencimento", 500) });
 
+  const { perfil } = usePermissions();
+  const isSuperAdmin = perfil === "super_admin";
+  const [editandoLanc, setEditandoLanc] = useState(null);
+
   const pagarMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.DRELancamento.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"] }),
   });
 
+  const excluirMutation = useMutation({
+    mutationFn: (id) => base44.entities.DRELancamento.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"] }),
+  });
+
   const marcarPago = (l) => {
     pagarMutation.mutate({ id: l.id, data: { status: "pago", data_pagamento: format(new Date(), "yyyy-MM-dd") } });
+  };
+
+  const excluirLanc = (l) => {
+    if (window.confirm(`Excluir "${l.descricao}"? Esta ação não pode ser desfeita.`)) {
+      excluirMutation.mutate(l.id);
+    }
+  };
+
+  const confirmarEdicao = (form) => {
+    pagarMutation.mutate({ id: form.id, data: form });
+    setEditandoLanc(null);
   };
 
   const despesas = useMemo(() => {
@@ -107,9 +129,17 @@ export default function FinContasPagar() {
                     <td style={{ padding: "12px 14px", fontSize: 12, color: T.muted }}>{l.forma_pagamento || "—"}</td>
                     <td style={{ padding: "12px 14px", fontSize: 11, color: l.status === "vencido" ? "#EF4444" : T.muted }}>{l.status}</td>
                     <td style={{ padding: "12px 14px", textAlign: "right" }}>
-                      {l.status !== "pago" && (
-                        <button onClick={() => marcarPago(l)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.gold, borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontFamily: "Inter" }}>Pagar</button>
-                      )}
+                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                        {l.status !== "pago" && (
+                          <button onClick={() => marcarPago(l)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.gold, borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontFamily: "Inter" }}>Pagar</button>
+                        )}
+                        {isSuperAdmin && (
+                          <>
+                            <button onClick={() => setEditandoLanc(l)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.muted, borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontFamily: "Inter" }}>Editar</button>
+                            <button onClick={() => excluirLanc(l)} style={{ background: "transparent", border: `1px solid #5B1A1A`, color: "#EF4444", borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontFamily: "Inter" }}>Excluir</button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -118,6 +148,9 @@ export default function FinContasPagar() {
           </table>
         </div>
       </div>
+      {editandoLanc && (
+        <EditarDespesaModal lancamento={editandoLanc} onConfirm={confirmarEdicao} onClose={() => setEditandoLanc(null)} />
+      )}
     </div>
   );
 }
