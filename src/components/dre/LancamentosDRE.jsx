@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addMonths } from "date-fns";
 import { Plus, Trash2, CheckCircle, Repeat } from "lucide-react";
 import LancamentoForm from "./LancamentoForm";
 import { fmtBRL, DRE_TIPOS } from "@/lib/dreUtils";
@@ -34,6 +34,10 @@ export default function LancamentosDRE() {
     mutationFn: (data) => base44.entities.DRELancamento.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["dreLancamentos"] }); setIsFormOpen(false); setEditing(null); },
   });
+  const bulkCreateMut = useMutation({
+    mutationFn: (records) => base44.entities.DRELancamento.bulkCreate(records),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["dreLancamentos"] }); setIsFormOpen(false); setEditing(null); },
+  });
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => base44.entities.DRELancamento.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["dreLancamentos"] }); setIsFormOpen(false); setEditing(null); },
@@ -43,9 +47,37 @@ export default function LancamentosDRE() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["dreLancamentos"] }),
   });
 
+  const expandRecurring = (data) => {
+    const records = [];
+    const vencDate = parseISO(data.data_vencimento);
+    const vencDay = vencDate.getDate();
+    const start = data.data_inicio ? parseISO(data.data_inicio) : vencDate;
+    const end = data.data_fim ? parseISO(data.data_fim) : addMonths(start, data.recorrencia === "anual" ? 36 : 11);
+    const now = new Date();
+    let current = new Date(start.getFullYear(), start.getMonth(), vencDay);
+    while (current <= end) {
+      const venc = format(current, "yyyy-MM-dd");
+      const isPast = current < new Date(now.getFullYear(), now.getMonth(), 1);
+      const { recorrencia, data_inicio, data_fim, ...rest } = data;
+      records.push({
+        ...rest,
+        recorrencia: "unica",
+        data_vencimento: venc,
+        data_inicio: venc,
+        data_fim: "",
+        data_pagamento: isPast && data.status === "pago" ? venc : "",
+        status: isPast && data.status === "pago" ? "pago" : "pendente",
+      });
+      current = addMonths(current, data.recorrencia === "anual" ? 12 : 1);
+    }
+    return records;
+  };
+
   const handleSave = (data) => {
     if (editing) updateMut.mutate({ id: editing.id, data });
-    else createMut.mutate(data);
+    else if (data.recorrencia === "mensal" || data.recorrencia === "anual") {
+      bulkCreateMut.mutate(expandRecurring(data));
+    } else createMut.mutate(data);
   };
 
   const filtered = lancamentos.filter((l) => {
