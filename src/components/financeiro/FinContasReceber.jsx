@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { parseISO, isToday, isWithinInterval, isAfter, isBefore, addDays, format } from "date-fns";
 import { formatBRL, normalizarRecebiveis } from "@/lib/finCalc";
+import { usePermissions } from "@/lib/PermissionsContext";
 
 const T = { card: "#1A1A1A", border: "#2B2B2B", text: "#FFFFFF", muted: "#B0B0B0", dim: "#666", gold: "#C8A96A" };
 
@@ -28,10 +29,24 @@ export default function FinContasReceber() {
   const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-due_date", 500) });
   const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions), [rawParcelas, transactions]);
 
+  const { perfil } = usePermissions();
+  const isSuperAdmin = perfil === "super_admin";
+
   const receberMutation = useMutation({
     mutationFn: ({ id, data, source }) => source === "transaction" ? base44.entities.Transaction.update(id, data) : base44.entities.ParcelaRecebivel.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["parcelas"] }); queryClient.invalidateQueries({ queryKey: ["transactions"] }); },
   });
+
+  const excluirMutation = useMutation({
+    mutationFn: ({ id, source }) => source === "transaction" ? base44.entities.Transaction.delete(id) : base44.entities.ParcelaRecebivel.delete(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["parcelas"] }); queryClient.invalidateQueries({ queryKey: ["transactions"] }); },
+  });
+
+  const excluirParcela = (p) => {
+    if (window.confirm(`Excluir a parcela de ${p.patient_name}? Esta ação não pode ser desfeita.`)) {
+      excluirMutation.mutate({ id: p.id, source: p._source });
+    }
+  };
 
   const marcarRecebido = (p) => {
     if (p._source === "transaction") {
@@ -106,9 +121,14 @@ export default function FinContasReceber() {
                     </span>
                   </td>
                   <td style={{ padding: "12px 14px", textAlign: "right" }}>
-                    {p.status !== "recebido" && (
-                      <button onClick={() => marcarRecebido(p)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.gold, borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontFamily: "Inter" }}>Receber</button>
-                    )}
+                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                      {p.status !== "recebido" && (
+                        <button onClick={() => marcarRecebido(p)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.gold, borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontFamily: "Inter" }}>Receber</button>
+                      )}
+                      {isSuperAdmin && (
+                        <button onClick={() => excluirParcela(p)} style={{ background: "transparent", border: `1px solid #5B1A1A`, color: "#EF4444", borderRadius: 4, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontFamily: "Inter" }}>Excluir</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
