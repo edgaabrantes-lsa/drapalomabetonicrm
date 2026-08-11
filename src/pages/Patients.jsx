@@ -315,12 +315,18 @@ const PatientCard = ({ patient, onStartTreatment, onViewTreatments }) => {
   return (
     <div style={{
       backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", borderRadius: 8,
-      padding: "16px 20px", display: "flex", alignItems: "center", gap: 16,
+      padding: "16px 20px",
       fontFamily: "'Inter', system-ui, sans-serif", transition: "border-color 0.15s",
     }}
       onMouseEnter={e => e.currentTarget.style.borderColor = "#3A3A3A"}
       onMouseLeave={e => e.currentTarget.style.borderColor = "#2B2B2B"}
     >
+      <div className="lg:hidden" style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #2B2B2B" }}>
+        <p style={{ fontSize: 15, fontWeight: 600, color: "#FFFFFF", margin: 0, wordBreak: "break-word", lineHeight: 1.3 }}>
+          {patient.full_name}
+        </p>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
       <div style={{
         width: 36, height: 36, borderRadius: 6, flexShrink: 0,
         backgroundColor: "rgba(200,169,106,0.08)", border: "1px solid rgba(200,169,106,0.2)",
@@ -332,7 +338,7 @@ const PatientCard = ({ patient, onStartTreatment, onViewTreatments }) => {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <p style={{ fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <p className="hidden lg:block" style={{ fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {patient.full_name}
           </p>
           <span style={{
@@ -361,6 +367,7 @@ const PatientCard = ({ patient, onStartTreatment, onViewTreatments }) => {
           style={{ background: "transparent", color: "#666666", border: "1px solid #2B2B2B", borderRadius: 5, fontSize: 12, padding: "5px 12px", cursor: "pointer" }}>
           Histórico
         </button>
+      </div>
       </div>
     </div>
   );
