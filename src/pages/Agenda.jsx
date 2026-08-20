@@ -300,10 +300,10 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
     <div style={{ position: "relative" }}>
       {/* Side navigation buttons — fora do scroll para permanecerem fixos no mobile */}
       <button onClick={onPrevWeek} style={{ ...sideBtnStyle, left: 4 }} title="Semana anterior">
-        <ChevronLeft size={16} />
+        <span style={{ fontSize: 18, fontWeight: 300, lineHeight: 1 }}>‹</span>
       </button>
       <button onClick={onNextWeek} style={{ ...sideBtnStyle, right: 4 }} title="Próxima semana">
-        <ChevronRight size={16} />
+        <span style={{ fontSize: 18, fontWeight: 300, lineHeight: 1 }}>›</span>
       </button>
       <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
       <div style={{ minWidth: 700 }}>
