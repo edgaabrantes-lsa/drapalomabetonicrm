@@ -102,14 +102,31 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
         </div>
         <div className="col-span-2">
           <label style={labelStyle}>Procedimento *</label>
-          <Select value={formData.procedure_id} onValueChange={v => {
+          <Select value={
+            formData.procedure_name === "Consulta Online" ? "consulta_online"
+            : formData.procedure_name === "Consulta Presencial" ? "consulta_presencial"
+            : formData.procedure_id
+          } onValueChange={v => {
             const proc = procedures.find(x => x.id === v);
-            setFormData(prev => ({ ...prev, procedure_id: v, procedure_name: proc?.name || "", duration_minutes: proc?.duration_minutes || 60, price: proc?.price || 0 }));
+            const isConsulta = v === "consulta_online" || v === "consulta_presencial";
+            const consultaName = v === "consulta_online" ? "Consulta Online" : "Consulta Presencial";
+            setFormData(prev => ({
+              ...prev,
+              procedure_id: isConsulta ? "" : v,
+              procedure_name: isConsulta ? consultaName : (proc?.name || ""),
+              duration_minutes: isConsulta ? 60 : (proc?.duration_minutes || 60),
+              price: isConsulta ? 0 : (proc?.price || 0),
+            }));
           }}>
             <SelectTrigger style={{ ...inputStyle, height: 38 }}>
               <SelectValue placeholder="Selecione o procedimento" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="consulta_online">Consulta Online (60min)</SelectItem>
+              <SelectItem value="consulta_presencial">Consulta Presencial (60min)</SelectItem>
+              {procedures.length > 0 && (
+                <div style={{ height: 1, background: T.subtle, margin: "4px 0" }} />
+              )}
               {procedures.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.duration_minutes}min)</SelectItem>)}
             </SelectContent>
           </Select>
