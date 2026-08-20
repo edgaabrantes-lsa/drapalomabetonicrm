@@ -274,11 +274,38 @@ const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
 };
 
 // ── Week View ─────────────────────────────────────────────────
-const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot }) => {
+const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onPrevWeek, onNextWeek }) => {
   const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
 
+  const sideBtnStyle = {
+    position: "absolute",
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 20,
+    width: 32,
+    height: 32,
+    borderRadius: "50%",
+    background: T.white,
+    border: `1px solid ${T.subtle}`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+    color: T.onyx,
+    padding: 0,
+  };
+
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div style={{ position: "relative" }}>
+      {/* Side navigation buttons — fora do scroll para permanecerem fixos no mobile */}
+      <button onClick={onPrevWeek} style={{ ...sideBtnStyle, left: 4 }} title="Semana anterior">
+        <ChevronLeft size={16} />
+      </button>
+      <button onClick={onNextWeek} style={{ ...sideBtnStyle, right: 4 }} title="Próxima semana">
+        <ChevronRight size={16} />
+      </button>
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
       <div style={{ minWidth: 700 }}>
         {/* Header */}
         <div style={{ display: "grid", gridTemplateColumns: "56px repeat(7, 1fr)", borderBottom: `1px solid ${T.subtle}` }}>
@@ -357,6 +384,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot }) =
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
@@ -782,7 +810,7 @@ export default function Agenda() {
       {/* ── Calendar ──────────────────────────────────── */}
       <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
         {viewMode === "day" && <DayView date={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
-        {viewMode === "week" && <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
+        {viewMode === "week" && <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />}
         {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
         {viewMode === "list" && <div style={{ padding: "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} /></div>}
       </div>
