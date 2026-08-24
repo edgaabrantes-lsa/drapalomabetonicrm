@@ -248,9 +248,20 @@ export default function LancamentosDRE({ filters }) {
                           <button
                             onClick={() => { if (confirm("Excluir este lançamento?")) deleteMut.mutate(l.id); }}
                             title="Excluir"
-                            style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4 }}
+                            style={{
+                              background: "transparent",
+                              border: "1px solid rgba(239,68,68,0.3)",
+                              borderRadius: 4,
+                              cursor: "pointer",
+                              padding: "3px 8px",
+                              fontSize: 10,
+                              fontWeight: 600,
+                              letterSpacing: "0.05em",
+                              textTransform: "uppercase",
+                              color: "#EF4444",
+                            }}
                           >
-                            <Trash2 style={{ width: 15, height: 15, color: "#EF4444" }} />
+                            Excluir
                           </button>
                         )}
                       </div>
