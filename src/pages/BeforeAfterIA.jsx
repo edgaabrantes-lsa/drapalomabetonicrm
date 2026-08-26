@@ -449,9 +449,16 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
   const [fullscreen, setFullscreen] = useState(false);
   const fileInputRef = useRef(null);
 
+  const isHeicFile = (file) => {
+    const name = (file.name || "").toLowerCase();
+    const type = (file.type || "").toLowerCase();
+    return name.endsWith(".heic") || name.endsWith(".heif") ||
+           type === "image/heic" || type === "image/heif" || type === "image/heic-sequence";
+  };
+
   const processFile = async (file, src = "upload") => {
     setError("");
-    if (!VALID_FORMATS.includes(file.type) && !file.name?.endsWith(".heic")) {
+    if (!VALID_FORMATS.includes(file.type) && !isHeicFile(file)) {
       setError("Formato não suportado. Use JPG, PNG ou WEBP.");
       return;
     }
@@ -467,7 +474,12 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
       setSourceType(src);
       setStep("options");
     } catch (e) {
-      setError(e?.message || "Imagem inválida ou corrompida.");
+      const msg = e?.message || "Imagem inválida ou corrompida.";
+      if (isHeicFile(file) && /inv[aá]lida|corrompida|erro ao ler/i.test(msg)) {
+        setError("Não foi possível ler este arquivo HEIC neste navegador. Converta para JPG ou use a câmera do app.");
+      } else {
+        setError(msg);
+      }
     }
   };
 
