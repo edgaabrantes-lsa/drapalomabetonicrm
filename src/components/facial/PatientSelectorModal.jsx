@@ -8,20 +8,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, User, CheckCircle, Loader2 } from "lucide-react";
+import { Search, User, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [allPatients, setAllPatients] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   // Carrega todos os pacientes automaticamente quando o modal abre
   useEffect(() => {
     if (!open) return;
-    setSelectedPatient(null);
     setSearchTerm("");
     if (loaded) return;
     setLoading(true);
@@ -46,11 +44,10 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
       })
     : allPatients;
 
-  const handleSelect = () => {
-    if (selectedPatient) {
-      onSelect(selectedPatient);
-      onOpenChange(false);
-    }
+  // Clique direto no paciente seleciona e avança imediatamente
+  const handlePickPatient = (patient) => {
+    onSelect(patient);
+    onOpenChange(false);
   };
 
   return (
@@ -75,7 +72,7 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
             />
           </div>
 
-          {/* Resultados */}
+          {/* Resultados — clique direto seleciona e avança */}
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {loading && (
               <div className="flex items-center justify-center py-8">
@@ -90,32 +87,23 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
             {!loading && filtered.map((patient) => (
               <Card
                 key={patient.id}
-                onClick={() => setSelectedPatient(patient)}
-                className={`cursor-pointer transition-all ${
-                  selectedPatient?.id === patient.id
-                    ? "bg-[#c9a55c]/10 border-[#c9a55c]/50"
-                    : "bg-[#1a1a25] border-[#1e1e2a] hover:border-[#c9a55c]/30"
-                }`}
+                onClick={() => handlePickPatient(patient)}
+                className="cursor-pointer transition-all bg-[#1a1a25] border-[#1e1e2a] hover:border-[#c9a55c]/50 hover:bg-[#c9a55c]/5"
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#c9a55c]/20 flex items-center justify-center">
-                        <User className="h-5 w-5 text-[#c9a55c]" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-white">{patient.full_name}</h4>
-                        {patient.phone && (
-                          <p className="text-sm text-gray-400">{patient.phone}</p>
-                        )}
-                        {patient.email && (
-                          <p className="text-xs text-gray-500">{patient.email}</p>
-                        )}
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#c9a55c]/20 flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-[#c9a55c]" />
                     </div>
-                    {selectedPatient?.id === patient.id && (
-                      <CheckCircle className="h-5 w-5 text-[#c9a55c]" />
-                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-white truncate">{patient.full_name}</h4>
+                      {patient.phone && (
+                        <p className="text-sm text-gray-400 truncate">{patient.phone}</p>
+                      )}
+                      {patient.email && (
+                        <p className="text-xs text-gray-500 truncate">{patient.email}</p>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -123,7 +111,7 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
           </div>
 
           {/* Ações */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#1e1e2a]">
+          <div className="flex justify-end pt-4 border-t border-[#1e1e2a]">
             <Button
               type="button"
               variant="outline"
@@ -131,13 +119,6 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
               className="border-[#1e1e2a] text-white"
             >
               Cancelar
-            </Button>
-            <Button
-              onClick={handleSelect}
-              disabled={!selectedPatient}
-              className="bg-[#C5A059] text-[#111620]"
-            >
-              Selecionar Paciente
             </Button>
           </div>
         </div>
