@@ -282,17 +282,17 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
     top: "50%",
     transform: "translateY(-50%)",
     zIndex: 20,
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: "50%",
-    background: T.white,
+    background: "#FFFFFF",
     border: `1px solid ${T.subtle}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-    color: T.onyx,
+    boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+    color: "#000000",
     padding: 0,
   };
 
@@ -391,15 +391,41 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
 };
 
 // ── Month View ────────────────────────────────────────────────
-const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot }) => {
+const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot, onPrevMonth, onNextMonth }) => {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calDays = eachDayOfInterval({ start: calStart, end: calEnd });
 
+  const sideBtnStyle = {
+    position: "absolute",
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 20,
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    background: "#FFFFFF",
+    border: `1px solid ${T.subtle}`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+    color: "#000000",
+    padding: 0,
+  };
+
   return (
-    <div>
+    <div style={{ position: "relative" }}>
+      {/* Side navigation buttons — mês anterior / próximo mês */}
+      <button onClick={onPrevMonth} style={{ ...sideBtnStyle, left: 4 }} title="Mês anterior">
+        <span style={{ fontSize: 18, fontWeight: 300, lineHeight: 1 }}>‹</span>
+      </button>
+      <button onClick={onNextMonth} style={{ ...sideBtnStyle, right: 4 }} title="Próximo mês">
+        <span style={{ fontSize: 18, fontWeight: 300, lineHeight: 1 }}>›</span>
+      </button>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${T.subtle}` }}>
         {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(d => (
           <div key={d} style={{ padding: "10px 0", textAlign: "center", fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: T.charcoal }}>
@@ -582,7 +608,7 @@ const ListView = ({ appointments, onClickAppointment }) => {
 };
 
 // ── Appointment Detail ────────────────────────────────────────
-const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit }) => {
+const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDelete }) => {
   if (!appointment) return null;
   const cfg = statusDot[appointment.status] || statusDot.scheduled;
 
@@ -606,11 +632,18 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit }) => 
             </span>
           </div>
         </div>
-        <button onClick={onEdit} style={{
-          background: "none", border: `1px solid ${T.subtle}`, borderRadius: 2,
-          fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
-          color: T.charcoal, padding: "6px 14px", cursor: "pointer",
-        }}>Editar</button>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button onClick={onEdit} style={{
+            background: "none", border: `1px solid ${T.subtle}`, borderRadius: 2,
+            fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
+            color: T.charcoal, padding: "6px 14px", cursor: "pointer",
+          }}>Editar</button>
+          <button onClick={() => { if (window.confirm("Tem certeza que deseja excluir este agendamento?")) onDelete(appointment.id); }} style={{
+            background: "none", border: `1px solid #E53935`, borderRadius: 2,
+            fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
+            color: "#E53935", padding: "6px 14px", cursor: "pointer",
+          }}>Excluir</button>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
@@ -698,6 +731,10 @@ export default function Agenda() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Appointment.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["appointments"] }); setIsFormOpen(false); setEditingAppointment(null); setSelectedAppointment(null); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Appointment.delete(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["appointments"] }); setSelectedAppointment(null); },
   });
 
   const handleSave = (data) => {
@@ -811,7 +848,7 @@ export default function Agenda() {
       <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
         {viewMode === "day" && <DayView date={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
         {viewMode === "week" && <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />}
-        {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
+        {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevMonth={() => handleNav(-1)} onNextMonth={() => handleNav(1)} />}
         {viewMode === "list" && <div style={{ padding: "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} /></div>}
       </div>
 
@@ -870,6 +907,7 @@ export default function Agenda() {
               setSelectedAppointment(null);
               setIsFormOpen(true);
             }}
+            onDelete={(id) => deleteMutation.mutate(id)}
           />
         </DialogContent>
       </Dialog>
