@@ -480,7 +480,7 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
 };
 
 // ── List View — "The Exclusive Timeline" ─────────────────────
-const ListView = ({ appointments, onClickAppointment }) => {
+const ListView = ({ appointments, onClickAppointment, onDelete }) => {
   const sorted = [...appointments].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
   const grouped = sorted.reduce((acc, apt) => {
     if (!apt.start_time) return acc;
@@ -593,6 +593,29 @@ const ListView = ({ appointments, onClickAppointment }) => {
                           width: 8, height: 8, borderRadius: "50%",
                           background: cfg.dot, flexShrink: 0,
                         }} title={cfg.label} />
+                        {onDelete && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Tem certeza que deseja excluir este agendamento?")) onDelete(appt.id);
+                            }}
+                            title="Excluir agendamento"
+                            style={{
+                              background: "none",
+                              border: `1px solid #E53935`,
+                              borderRadius: 2,
+                              color: "#E53935",
+                              cursor: "pointer",
+                              fontFamily: "Inter",
+                              fontSize: 9,
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                              padding: "5px 10px",
+                            }}
+                          >
+                            Excluir
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -849,7 +872,7 @@ export default function Agenda() {
         {viewMode === "day" && <DayView date={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
         {viewMode === "week" && <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />}
         {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevMonth={() => handleNav(-1)} onNextMonth={() => handleNav(1)} />}
-        {viewMode === "list" && <div style={{ padding: "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} /></div>}
+        {viewMode === "list" && <div style={{ padding: "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} onDelete={(id) => deleteMutation.mutate(id)} /></div>}
       </div>
 
       {/* ── FAB: Novo Agendamento ─────────────────────── */}
