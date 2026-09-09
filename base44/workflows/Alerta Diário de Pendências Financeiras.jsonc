@@ -1,0 +1,44 @@
+{
+  "name": "Alerta Di\u00e1rio de Pend\u00eancias Financeiras",
+  "description": "Envia email di\u00e1rio aos super admins com contas a pagar vencidas e vencimentos pr\u00f3ximos (7 dias).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 9 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "alerta_di_rio_de_pend_ncias_financeiras",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "alertaPendenciasFinanceiras",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "alertaPendenciasFinanceiras"
+  }
+}

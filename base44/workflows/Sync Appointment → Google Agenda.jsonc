@@ -1,0 +1,38 @@
+{
+  "name": "Sync Appointment \u2192 Google Agenda",
+  "description": "Sincroniza agendamentos criados/atualizados no CRM com o Google Agenda da cl\u00ednica.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create",
+        "update"
+      ],
+      "entity_name": "Appointment"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sync_appointment_google_agenda",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "syncGoogleAgenda",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "syncGoogleAgenda"
+  }
+}
