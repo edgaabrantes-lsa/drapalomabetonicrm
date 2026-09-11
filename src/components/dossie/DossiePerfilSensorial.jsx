@@ -5,8 +5,127 @@ import { T, S } from "@/lib/designTokens";
 import {
   Coffee, Leaf, Wind, Thermometer, Sparkles, MessageCircle,
   Clock, AlertTriangle, FileText, Globe, CheckCircle2, UserPen,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Download
 } from "lucide-react";
+import { jsPDF } from "jspdf";
+
+function baixarPDFPerfilSensorial(patient, perfil) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+
+  // Cabeçalho
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Perfil Sensorial — Sensor Flow", margin, y);
+  y += 8;
+  doc.setDrawColor(200, 169, 106);
+  doc.setLineWidth(1.5);
+  doc.line(margin, y, pageW - margin, y);
+  y += 20;
+
+  // Dados da paciente
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Dados da Paciente", margin, y);
+  y += 14;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  const dadosPaciente = [
+    ["Nome", patient?.full_name || "—"],
+    ["Telefone", patient?.phone || "—"],
+    ["E-mail", patient?.email || "—"],
+    ["CPF", patient?.document_number || "—"],
+    ["Nascimento", patient?.birth_date || "—"],
+  ];
+  dadosPaciente.forEach(([label, value]) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(`${label}:`, margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(value), margin + 100, y);
+    y += 14;
+  });
+  y += 10;
+
+  // Função auxiliar para seções
+  const fmtArr = (arr) => Array.isArray(arr) && arr.length > 0 ? arr.join(", ") : "—";
+  const fmtBool = (v) => v ? "Sim" : "Não";
+
+  const secoes = [
+    { titulo: "Horários Preferidos", items: [["Períodos", fmtArr(perfil.appointment_periods)]] },
+    { titulo: "Preferências Musicais", items: [
+      ["Estilos", fmtArr(perfil.music_preferences) + (perfil.music_other ? ` (${perfil.music_other})` : "")],
+      ["Quer escolher música", fmtBool(perfil.wants_music_choice)],
+      ["Música escolhida", perfil.music_choice_song || "—"],
+      ["Cantor/Artista", perfil.music_choice_artist || "—"],
+    ]},
+    { titulo: "Preferências de Bebidas", items: [["Bebidas", fmtArr(perfil.beverage_preferences) + (perfil.beverage_other ? ` (${perfil.beverage_other})` : "")]] },
+    { titulo: "Preferências Alimentares", items: [
+      ["Alimentos", fmtArr(perfil.food_preferences) + (perfil.food_other ? ` (${perfil.food_other})` : "")],
+      ["Restrições", fmtArr(perfil.dietary_restrictions) + (perfil.dietary_restrictions_detail ? ` (${perfil.dietary_restrictions_detail})` : "")],
+    ]},
+    { titulo: "Ambiente & Aromas", items: [
+      ["Ambiente", fmtArr(perfil.environment_preferences)],
+      ["Temperatura", perfil.temperature_preference || "—"],
+      ["Aprecia aromas", fmtBool(perfil.likes_aromas)],
+      ["Aromas preferidos", fmtArr(perfil.aroma_preferences) + (perfil.aroma_other ? ` (${perfil.aroma_other})` : "")],
+    ]},
+    { titulo: "Estilo de Atendimento", items: [["Preferência", perfil.service_style || "—"]] },
+    { titulo: "Resumo de Hospitalidade (IA)", items: [["Resumo", perfil.hospitality_summary || "—"]] },
+    { titulo: "LGPD & Origem", items: [
+      ["Consentimento LGPD", fmtBool(perfil.lgpd_consent)],
+      ["Data do consentimento", perfil.lgpd_consent_date ? new Date(perfil.lgpd_consent_date).toLocaleString("pt-BR") : "—"],
+      ["Versão LGPD", perfil.lgpd_consent_version || "—"],
+      ["Fonte do formulário", perfil.form_source || "—"],
+      ["Dispositivo", perfil.dispositivo || "—"],
+      ["Navegador", (perfil.navegador || "—").substring(0, 80)],
+      ["URL de origem", perfil.url_origem || "—"],
+    ]},
+  ];
+
+  secoes.forEach((secao) => {
+    if (y > pageH - 80) { doc.addPage(); y = margin; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(200, 169, 106);
+    doc.text(secao.titulo, margin, y);
+    doc.setTextColor(0, 0, 0);
+    y += 14;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    secao.items.forEach(([label, value]) => {
+      const valStr = String(value);
+      const wrapped = doc.splitTextToSize(valStr, contentW - 100);
+      const blockH = wrapped.length * 12;
+      if (y + blockH > pageH - margin) { doc.addPage(); y = margin; }
+      doc.setFont("helvetica", "bold");
+      doc.text(`${label}:`, margin, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(wrapped, margin + 100, y);
+      y += blockH + 4;
+    });
+    y += 8;
+  });
+
+  // Rodapé
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(
+      `Gerado em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · CRM Clínica Dra. Paloma Betoni · Página ${i}/${totalPages}`,
+      margin, pageH - 20
+    );
+  }
+
+  const nomeArquivo = `Perfil_Sensorial_${(patient?.full_name || "Paciente").replace(/\s+/g, "_")}.pdf`;
+  doc.save(nomeArquivo);
+}
 
 function Tag({ label }) {
   return (
@@ -294,6 +413,22 @@ export default function DossiePerfilSensorial({ patient }) {
       {isIncomplete && !saved && (
         <FinalizarCadastroPanel patient={patient} onSaved={() => setSaved(true)} />
       )}
+
+      {/* Botão de download PDF */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          onClick={() => baixarPDFPerfilSensorial(patient, perfil)}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "8px 18px", borderRadius: 6, cursor: "pointer",
+            backgroundColor: T.gold, color: "#000", border: "none",
+            fontSize: 13, fontWeight: 600, fontFamily: T.font,
+          }}
+        >
+          <Download style={{ width: 15, height: 15 }} />
+          Baixar PDF
+        </button>
+      </div>
 
       {/* Resumo de hospitalidade */}
       {perfil.hospitality_summary && (
