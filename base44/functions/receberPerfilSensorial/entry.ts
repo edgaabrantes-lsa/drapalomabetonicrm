@@ -230,6 +230,76 @@ Deno.serve(async (req) => {
       log.steps.push(`PERFIL_SENSORIAL: criado ID=${criado.id}`);
     }
 
+    // ── ENVIO DE E-MAIL AUTOMÁTICO ──
+    try {
+      const DESTINATARIO = 'drapalomabetonipasta@gmail.com';
+
+      const fmtArr = (arr) => Array.isArray(arr) && arr.length > 0 ? arr.join(', ') : (arr || '—');
+      const fmtBool = (v) => v ? 'Sim' : 'Não';
+
+      const linhas = [
+        { label: 'Nome', value: nome || '—' },
+        { label: 'CPF', value: cpf || '—' },
+        { label: 'Telefone/WhatsApp', value: telefone || '—' },
+        { label: 'E-mail', value: email || '—' },
+        { label: 'Data de Nascimento', value: nascimento || '—' },
+        { label: 'Cidade', value: cidade || '—' },
+        { label: 'Interesse', value: interesse || '—' },
+        { label: 'Períodos de Atendimento', value: fmtArr(perfilData.appointment_periods) },
+        { label: 'Preferência de Bebidas', value: fmtArr(perfilData.beverage_preferences) },
+        { label: 'Preferência de Alimentos', value: fmtArr(perfilData.food_preferences) },
+        { label: 'Restrições Alimentares', value: fmtArr(perfilData.dietary_restrictions) },
+        { label: 'Preferência de Ambiente', value: fmtArr(perfilData.environment_preferences) },
+        { label: 'Temperatura', value: perfilData.temperature_preference || '—' },
+        { label: 'Gosta de Aromas', value: fmtBool(perfilData.likes_aromas) },
+        { label: 'Preferência de Aromas', value: fmtArr(perfilData.aroma_preferences) },
+        { label: 'Estilo de Atendimento', value: perfilData.service_style || '—' },
+        { label: 'Resumo de Hospitalidade', value: perfilData.hospitality_summary || '—' },
+        { label: 'Consentimento LGPD', value: fmtBool(perfilData.lgpd_consent) },
+        { label: 'Dispositivo', value: perfilData.dispositivo || '—' },
+        { label: 'Navegador', value: perfilData.navegador || '—' },
+        { label: 'Origem', value: perfilData.url_origem || '—' },
+      ];
+
+      const htmlBody = `
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; background: #f9f9f7; padding: 24px;">
+          <div style="background: #ffffff; border: 1px solid #eeeeee; border-radius: 8px; padding: 32px;">
+            <h1 style="font-size: 22px; color: #121212; margin: 0 0 8px;">Novo Preenchimento do Sensor Flow</h1>
+            <p style="font-size: 13px; color: #757575; margin: 0 0 24px;">
+              Recebido em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
+            </p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              ${linhas.map(l => `
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                  <td style="padding: 10px 0; width: 40%; color: #757575; font-weight: 500; vertical-align: top;">${l.label}</td>
+                  <td style="padding: 10px 0; color: #121212; vertical-align: top;">${l.value}</td>
+                </tr>
+              `).join('')}
+            </table>
+            <p style="font-size: 11px; color: #999; margin-top: 24px;">
+              Este e-mail foi enviado automaticamente pelo CRM Clínico Dra. Paloma Betoni.
+            </p>
+          </div>
+        </div>
+      `;
+
+      const textBody = `Novo Preenchimento do Sensor Flow\n` +
+        `Recebido em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
+        linhas.map(l => `${l.label}: ${l.value}`).join('\n');
+
+      await svc.integrations.Core.SendEmail({
+        to: DESTINATARIO,
+        subject: `[Sensor Flow] Novo preenchimento — ${nome || 'Paciente'}`,
+        html: htmlBody,
+        text: textBody,
+      });
+
+      log.steps.push(`E-MAIL: enviado para ${DESTINATARIO}`);
+    } catch (emailError) {
+      log.steps.push(`E-MAIL: falha ao enviar — ${emailError.message}`);
+      console.warn('[SENSORFLOW] Falha no envio de e-mail:', emailError.message);
+    }
+
     log.steps.push('SUCESSO');
     const responseBody = {
       success: true,
