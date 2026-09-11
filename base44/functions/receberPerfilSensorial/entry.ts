@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
       log.steps.push(`PERFIL_SENSORIAL: criado ID=${criado.id}`);
     }
 
-    // ── ENVIO DE E-MAIL AUTOMÁTICO ──
+    // ── ENVIO DE E-MAIL AUTOMÁTICO VIA GMAIL ──
     try {
       const DESTINATARIO = 'drapalomabetonipasta@gmail.com';
 
@@ -261,42 +261,72 @@ Deno.serve(async (req) => {
         { label: 'Origem', value: perfilData.url_origem || '—' },
       ];
 
-      const htmlBody = `
-        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; background: #f9f9f7; padding: 24px;">
-          <div style="background: #ffffff; border: 1px solid #eeeeee; border-radius: 8px; padding: 32px;">
-            <h1 style="font-size: 22px; color: #121212; margin: 0 0 8px;">Novo Preenchimento do Sensor Flow</h1>
-            <p style="font-size: 13px; color: #757575; margin: 0 0 24px;">
-              Recebido em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
-            </p>
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              ${linhas.map(l => `
-                <tr style="border-bottom: 1px solid #f0f0f0;">
-                  <td style="padding: 10px 0; width: 40%; color: #757575; font-weight: 500; vertical-align: top;">${l.label}</td>
-                  <td style="padding: 10px 0; color: #121212; vertical-align: top;">${l.value}</td>
-                </tr>
-              `).join('')}
-            </table>
-            <p style="font-size: 11px; color: #999; margin-top: 24px;">
-              Este e-mail foi enviado automaticamente pelo CRM Clínico Dra. Paloma Betoni.
-            </p>
-          </div>
-        </div>
-      `;
+      const dataHora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const subject = `[Sensor Flow] Novo preenchimento — ${nome || 'Paciente'}`;
 
-      const textBody = `Novo Preenchimento do Sensor Flow\n` +
-        `Recebido em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
+      const htmlBody = [
+        '<div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; background: #f9f9f7; padding: 24px;">',
+        '  <div style="background: #ffffff; border: 1px solid #eeeeee; border-radius: 8px; padding: 32px;">',
+        '    <h1 style="font-size: 22px; color: #121212; margin: 0 0 8px;">Novo Preenchimento do Sensor Flow</h1>',
+        `    <p style="font-size: 13px; color: #757575; margin: 0 0 24px;">Recebido em ${dataHora}</p>`,
+        '    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">',
+        ...linhas.map(l => `      <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 10px 0; width: 40%; color: #757575; font-weight: 500; vertical-align: top;">${l.label}</td><td style="padding: 10px 0; color: #121212; vertical-align: top;">${l.value}</td></tr>`),
+        '    </table>',
+        '    <p style="font-size: 11px; color: #999; margin-top: 24px;">Este e-mail foi enviado automaticamente pelo CRM Clínico Dra. Paloma Betoni.</p>',
+        '  </div>',
+        '</div>',
+      ].join('\r\n');
+
+      const textBody = `Novo Preenchimento do Sensor Flow\nRecebido em ${dataHora}\n\n` +
         linhas.map(l => `${l.label}: ${l.value}`).join('\n');
 
-      await svc.integrations.Core.SendEmail({
-        to: DESTINATARIO,
-        subject: `[Sensor Flow] Novo preenchimento — ${nome || 'Paciente'}`,
-        html: htmlBody,
-        text: textBody,
+      // Obter token do Gmail (conector compartilhado)
+      const { accessToken } = await svc.connectors.getConnection('gmail');
+
+      // Construir mensagem MIME (RFC 2822)
+      const boundary = 'sensorflow_' + crypto.randomUUID().replace(/-/g, '');
+      const mimeMessage = [
+        `To: ${DESTINATARIO}`,
+        `Subject: =?utf-8?B?${utf8ToBase64(subject)}?=`,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/alternative; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/plain; charset=utf-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        utf8ToBase64(textBody),
+        `--${boundary}`,
+        'Content-Type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        utf8ToBase64(htmlBody),
+        `--${boundary}--`,
+      ].join('\r\n');
+
+      // Codificar para base64url (exigido pela Gmail API)
+      const rawMessage = b64urlEncode(mimeMessage);
+
+      // Enviar via Gmail API
+      const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ raw: rawMessage }),
       });
 
-      log.steps.push(`E-MAIL: enviado para ${DESTINATARIO}`);
+      if (!sendRes.ok) {
+        const errText = await sendRes.text();
+        log.steps.push(`E-MAIL GMAIL: erro ${sendRes.status} — ${errText.substring(0, 200)}`);
+        console.warn('[SENSORFLOW] Gmail send error:', sendRes.status, errText);
+      } else {
+        const sendResult = await sendRes.json();
+        log.steps.push(`E-MAIL GMAIL: enviado (id=${sendResult.id})`);
+      }
     } catch (emailError) {
-      log.steps.push(`E-MAIL: falha ao enviar — ${emailError.message}`);
+      log.steps.push(`E-MAIL: falha — ${emailError.message}`);
       console.warn('[SENSORFLOW] Falha no envio de e-mail:', emailError.message);
     }
 
@@ -326,4 +356,19 @@ function toArray(val) {
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
   return [String(val)];
+}
+
+// ── Helpers para codificação MIME/Gmail ──
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function b64urlEncode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
