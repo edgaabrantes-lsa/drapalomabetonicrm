@@ -215,6 +215,96 @@ export default async function(req) {
         historico: addHistorico(c, 'respondido', ''),
       });
 
+      // ── ENVIO DE E-MAIL AUTOMÁTICO VIA GMAIL ──
+      try {
+        const DESTINATARIO = 'drapalomabetonipasta@gmail.com';
+        const nomePaciente = paciente?.full_name || c.patient_name || 'Paciente';
+
+        const fmtArr = (arr) => Array.isArray(arr) && arr.length > 0 ? arr.join(', ') : '—';
+        const fmtBool = (v) => v ? 'Sim' : 'Não';
+
+        const linhas = [
+          { label: 'Nome', value: nomePaciente },
+          { label: 'Telefone/WhatsApp', value: paciente?.phone || '—' },
+          { label: 'E-mail', value: paciente?.email || '—' },
+          { label: 'Períodos de Atendimento', value: fmtArr(perfil.appointment_periods) },
+          { label: 'Preferência Musical', value: fmtArr(perfil.music_preferences) + (perfil.music_other ? ` (${perfil.music_other})` : '') },
+          { label: 'Quer escolher música', value: fmtBool(perfil.wants_music_choice) },
+          { label: 'Música escolhida', value: perfil.music_choice_song || '—' },
+          { label: 'Cantor/Artista', value: perfil.music_choice_artist || '—' },
+          { label: 'Preferência de Bebidas', value: fmtArr(perfil.beverage_preferences) + (perfil.beverage_other ? ` (${perfil.beverage_other})` : '') },
+          { label: 'Preferência de Alimentos', value: fmtArr(perfil.food_preferences) + (perfil.food_other ? ` (${perfil.food_other})` : '') },
+          { label: 'Restrições Alimentares', value: fmtArr(perfil.dietary_restrictions) + (perfil.dietary_restrictions_detail ? ` (${perfil.dietary_restrictions_detail})` : '') },
+          { label: 'Temperatura', value: perfil.temperature_preference || '—' },
+          { label: 'Gosta de Aromas', value: fmtBool(perfil.likes_aromas) },
+          { label: 'Preferência de Aromas', value: fmtArr(perfil.aroma_preferences) + (perfil.aroma_other ? ` (${perfil.aroma_other})` : '') },
+          { label: 'Estilo de Atendimento', value: perfil.service_style || '—' },
+          { label: 'Consentimento LGPD', value: fmtBool(perfil.lgpd_consent) },
+          { label: 'Dispositivo', value: perfil.dispositivo || '—' },
+          { label: 'Navegador', value: (perfil.navegador || '—').substring(0, 80) },
+          { label: 'Origem', value: perfil.url_origem || '—' },
+        ];
+
+        const dataHora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        const subject = `[Sensor Flow] Novo preenchimento — ${nomePaciente}`;
+
+        const htmlBody = [
+          '<div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; background: #f9f9f7; padding: 24px;">',
+          '  <div style="background: #ffffff; border: 1px solid #eeeeee; border-radius: 8px; padding: 32px;">',
+          '    <h1 style="font-size: 22px; color: #121212; margin: 0 0 8px;">Novo Preenchimento do Sensor Flow</h1>',
+          `    <p style="font-size: 13px; color: #757575; margin: 0 0 24px;">Recebido em ${dataHora}</p>`,
+          '    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">',
+          ...linhas.map(l => `      <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 10px 0; width: 40%; color: #757575; font-weight: 500; vertical-align: top;">${l.label}</td><td style="padding: 10px 0; color: #121212; vertical-align: top;">${l.value}</td></tr>`),
+          '    </table>',
+          '    <p style="font-size: 11px; color: #999; margin-top: 24px;">Este e-mail foi enviado automaticamente pelo CRM Clínico Dra. Paloma Betoni.</p>',
+          '  </div>',
+          '</div>',
+        ].join('\r\n');
+
+        const textBody = `Novo Preenchimento do Sensor Flow\nRecebido em ${dataHora}\n\n` +
+          linhas.map(l => `${l.label}: ${l.value}`).join('\n');
+
+        const { accessToken } = await svc.connectors.getConnection('gmail');
+
+        const boundary = 'sensorflow_' + crypto.randomUUID().replace(/-/g, '');
+        const mimeMessage = [
+          `To: ${DESTINATARIO}`,
+          `Subject: =?utf-8?B?${utf8ToBase64(subject)}?=`,
+          'MIME-Version: 1.0',
+          `Content-Type: multipart/alternative; boundary="${boundary}"`,
+          '',
+          `--${boundary}`,
+          'Content-Type: text/plain; charset=utf-8',
+          'Content-Transfer-Encoding: base64',
+          '',
+          utf8ToBase64(textBody),
+          `--${boundary}`,
+          'Content-Type: text/html; charset=utf-8',
+          'Content-Transfer-Encoding: base64',
+          '',
+          utf8ToBase64(htmlBody),
+          `--${boundary}--`,
+        ].join('\r\n');
+
+        const rawMessage = b64urlEncode(mimeMessage);
+
+        const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ raw: rawMessage }),
+        });
+
+        if (!sendRes.ok) {
+          const errText = await sendRes.text();
+          console.warn('[SENSORFLOW] Gmail send error:', sendRes.status, errText);
+        }
+      } catch (emailError) {
+        console.warn('[SENSORFLOW] Falha no envio de e-mail:', emailError.message);
+      }
+
       return Response.json({ success: true, perfil_id: perfil.id }, { headers: CORS });
     }
 
@@ -234,4 +324,19 @@ export default async function(req) {
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500, headers: CORS });
   }
+}
+
+// ── Helpers para codificação MIME/Gmail ──
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function b64urlEncode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
