@@ -96,6 +96,10 @@
         "inactive"
       ],
       "default": "active"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL do PDF de proposta/comercial do procedimento para envio ao paciente"
     }
   },
   "required": [

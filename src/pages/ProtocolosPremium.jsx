@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Syringe, Sparkles, Search, Plus, Edit, Trash2, Check } from "lucide-react";
+import { Syringe, Sparkles, Search, Plus, Edit, Trash2, Check, Download } from "lucide-react";
 
 const fmtBRL = (v) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -169,6 +169,19 @@ function ProcedimentosTab() {
                     ))}
                   </div>
                 )}
+                {proc.pdf_url && (
+                  <a
+                    href={proc.pdf_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-md text-xs font-semibold transition-colors"
+                    style={{ backgroundColor: "rgba(200,169,106,0.1)", border: "1px solid rgba(200,169,106,0.3)", color: "#C8A96A" }}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Baixar PDF
+                  </a>
+                )}
               </div>
             );
           })}
@@ -264,6 +277,10 @@ function ProcedimentoForm({ procedimento, onSubmit, onCancel }) {
         <input type="checkbox" checked={!!form.valor_por_ml} onChange={(e) => setForm({ ...form, valor_por_ml: e.target.checked })} />
         Cobrado por ml
       </label>
+      <div>
+        <Label>URL do PDF de proposta</Label>
+        <Input value={form.pdf_url || ""} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} className="mt-1" placeholder="https://...pdf" />
+      </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" style={{ backgroundColor: "#C8A96A", color: "#0A0A0A" }}>Salvar</Button>
@@ -401,6 +418,19 @@ function ProtocolosTab() {
                     </span>
                   </div>
                 </div>
+                {proto.pdf_url && (
+                  <a
+                    href={proto.pdf_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-md text-xs font-semibold transition-colors"
+                    style={{ backgroundColor: "rgba(200,169,106,0.1)", border: "1px solid rgba(200,169,106,0.3)", color: "#C8A96A" }}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Baixar PDF
+                  </a>
+                )}
               </div>
             );
           })}
@@ -495,6 +525,10 @@ function ProtocoloForm({ protocolo, onSubmit, onCancel }) {
           <input type="checkbox" checked={!!form.destaque} onChange={(e) => setForm({ ...form, destaque: e.target.checked })} />
           Destaque
         </label>
+      </div>
+      <div>
+        <Label>URL do PDF de proposta</Label>
+        <Input value={form.pdf_url || ""} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} className="mt-1" placeholder="https://...pdf" />
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>

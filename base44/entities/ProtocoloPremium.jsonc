@@ -95,6 +95,10 @@
         "inativo"
       ],
       "default": "ativo"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL do PDF de proposta/comercial do protocolo para envio ao paciente"
     }
   },
   "required": [
