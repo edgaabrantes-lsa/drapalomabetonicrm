@@ -329,7 +329,7 @@ export default function PlanosAssinatura() {
         <div>
           <h1 className="text-2xl font-semibold" style={{ color: "#FFFFFF" }}>Planos de Assinatura</h1>
           <p className="text-sm mt-1" style={{ color: "#666" }}>
-            Programa de acompanhamento contínuo — recorrência e fidelização de longo prazo.
+            Programas de cuidado contínuo e acompanhamento personalizado.
           </p>
         </div>
         {tab === "planos" && (
