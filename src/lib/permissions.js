@@ -50,6 +50,7 @@ export const MENU_PERMISSIONS = {
   super_admin: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
+    "PlanosAssinatura",
     "Financial", "Inventory", "CRM", "Chat", "Intake",
     "Governanca", "VigilanciaPage", "ClinicSettingsPage", "Settings",
     "UsuariosPermissoes", "GitHubMonitor", "DREClinica", "MesclarPacientes",
@@ -57,7 +58,8 @@ export const MENU_PERMISSIONS = {
   ],
   gestor: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
-    "Financial", "Protocols", "Governanca", "CRM", "Chat", "Intake",
+    "Financial", "Protocols", "ProtocolosPremium", "PlanosAssinatura",
+    "Governanca", "CRM", "Chat", "Intake",
     "UsuariosPermissoes",
   ],
   recepcao: [
@@ -66,11 +68,13 @@ export const MENU_PERMISSIONS = {
   profissional_clinico_premium: [
     "Patients", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
+    "PlanosAssinatura",
     "CRM", "Chat",
   ],
   profissional: [
     "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
+    "PlanosAssinatura",
   ],
   financeiro: [
     "Dashboard", "Financial", "DREClinica", "DossiePatient", "Governanca",
