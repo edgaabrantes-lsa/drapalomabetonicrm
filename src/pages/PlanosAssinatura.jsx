@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { CalendarClock, Plus, Edit, Copy, Archive, Eye, Check, TrendingUp, Users, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
+import { CalendarClock, Plus, Edit, Copy, Archive, Eye, Check, TrendingUp, Users, RefreshCw, AlertCircle, Sparkles, Download } from "lucide-react";
 import PlanoForm from "@/components/assinatura/PlanoForm";
 
 const fmtBRL = (v) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -104,6 +104,18 @@ function PlanoCard({ plano, onEdit, onDuplicate, onArchive, onView }) {
           </Button>
         )}
       </div>
+
+      {plano.pdf_url && (
+        <a
+          href={plano.pdf_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-md text-sm font-medium transition-colors"
+          style={{ backgroundColor: "rgba(200,169,106,0.10)", color: "#C8A96A", border: "1px solid rgba(200,169,106,0.25)" }}
+        >
+          <Download className="w-4 h-4" /> Baixar PDF
+        </a>
+      )}
     </div>
   );
 }
@@ -414,6 +426,17 @@ export default function PlanosAssinatura() {
               <SecaoInclui titulo="Semestralmente" items={viewing.inclui_semestral} />
               <SecaoInclui titulo="Anualmente" items={viewing.inclui_anual} />
               <SecaoInclui titulo="Benefícios" items={viewing.beneficios} />
+              {viewing.pdf_url && (
+                <a
+                  href={viewing.pdf_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-md text-sm font-medium mt-2"
+                  style={{ backgroundColor: "rgba(200,169,106,0.10)", color: "#C8A96A", border: "1px solid rgba(200,169,106,0.25)" }}
+                >
+                  <Download className="w-4 h-4" /> Baixar PDF
+                </a>
+              )}
             </div>
           )}
         </DialogContent>
