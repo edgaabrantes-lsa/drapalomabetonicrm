@@ -410,12 +410,21 @@ function ProtocolosTab() {
                     )}
                   </div>
                   <div className="text-right">
-                    {proto.valor_a_partir && (
-                      <span className="text-xs mr-1" style={{ color: "#666" }}>a partir de</span>
+                    {proto.sob_avaliacao ? (
+                      <span className="text-lg font-semibold" style={{ color: "#C8A96A" }}>Sob avaliação</span>
+                    ) : (
+                      <>
+                        {proto.valor_a_partir && (
+                          <span className="text-xs mr-1" style={{ color: "#666" }}>a partir de</span>
+                        )}
+                        <span className="text-2xl font-semibold" style={{ color: "#C8A96A" }}>
+                          {fmtBRL(proto.valor_min)}
+                        </span>
+                        {proto.valor_por_ml && (
+                          <span className="text-xs ml-1" style={{ color: "#666" }}>/ml</span>
+                        )}
+                      </>
                     )}
-                    <span className="text-2xl font-semibold" style={{ color: "#C8A96A" }}>
-                      {fmtBRL(proto.valor_min)}
-                    </span>
                   </div>
                 </div>
                 {proto.pdf_url && (
@@ -464,6 +473,8 @@ function ProtocoloForm({ protocolo, onSubmit, onCancel }) {
       valor_procedimentos: 0,
       valor_min: 0,
       valor_a_partir: false,
+      valor_por_ml: false,
+      sob_avaliacao: false,
       personalizado: false,
       destaque: false,
       nivel_complexidade: "medio",
@@ -516,6 +527,14 @@ function ProtocoloForm({ protocolo, onSubmit, onCancel }) {
         <label className="flex items-center gap-2 text-sm" style={{ color: "#B0B0B0" }}>
           <input type="checkbox" checked={!!form.valor_a_partir} onChange={(e) => setForm({ ...form, valor_a_partir: e.target.checked })} />
           Valor "a partir de"
+        </label>
+        <label className="flex items-center gap-2 text-sm" style={{ color: "#B0B0B0" }}>
+          <input type="checkbox" checked={!!form.valor_por_ml} onChange={(e) => setForm({ ...form, valor_por_ml: e.target.checked })} />
+          Cobrado por ml
+        </label>
+        <label className="flex items-center gap-2 text-sm" style={{ color: "#B0B0B0" }}>
+          <input type="checkbox" checked={!!form.sob_avaliacao} onChange={(e) => setForm({ ...form, sob_avaliacao: e.target.checked })} />
+          Sob avaliação
         </label>
         <label className="flex items-center gap-2 text-sm" style={{ color: "#B0B0B0" }}>
           <input type="checkbox" checked={!!form.personalizado} onChange={(e) => setForm({ ...form, personalizado: e.target.checked })} />
