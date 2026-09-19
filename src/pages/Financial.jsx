@@ -266,6 +266,11 @@ export default function Financial() {
     queryFn: () => base44.entities.DossieFinanceiro.list("-created_date", 1000),
   });
 
+  const { data: dreLancamentos = [] } = useQuery({
+    queryKey: ["dre-lancamentos-financial"],
+    queryFn: () => base44.entities.DRELancamento.list("-created_date", 2000),
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Transaction.create(data),
     onSuccess: () => {
@@ -329,9 +334,19 @@ export default function Financial() {
     .filter(t => t.type === "income" && t.status === "paid")
     .reduce((sum, t) => sum + (t.amount || 0), 0) + dossieMonthlyIncome;
 
+  // Despesas do mês = Transaction (despesas pagas) + DRE Lançamentos (despesas/custos pagos no mês)
+  const dreExpensesThisMonth = dreLancamentos.filter(l => {
+    if (!["despesa_fixa", "despesa_variavel", "custo_direto", "outra_despesa"].includes(l.tipo)) return false;
+    if (l.status !== "pago") return false;
+    if (!l.data_pagamento) return false;
+    const dt = parseISO(l.data_pagamento);
+    return dt >= monthStart && dt <= monthEnd;
+  });
+  const dreExpensesTotal = dreExpensesThisMonth.reduce((sum, l) => sum + (l.valor || 0), 0);
+
   const monthlyExpenses = monthlyTransactions
     .filter(t => t.type === "expense" && t.status === "paid")
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
+    .reduce((sum, t) => sum + (t.amount || 0), 0) + dreExpensesTotal;
 
   const pendingDossieReceivables = dossieFinanceiro
     .filter(d => d.status_financeiro === "pendente" || d.status_financeiro === "em_atraso")
@@ -428,13 +443,14 @@ export default function Financial() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Receita (Mês)", value: fmtBRL(monthlyIncome),  accent: "#4ADE80" },
-          { label: "Despesas (Mês)", value: fmtBRL(monthlyExpenses), accent: "#EF4444" },
-          { label: "Lucro (Mês)", value: fmtBRL(monthlyIncome - monthlyExpenses), accent: monthlyIncome - monthlyExpenses >= 0 ? "#C8A96A" : "#EF4444" },
-          { label: "Vencidos", value: overdueCount, accent: overdueCount > 0 ? "#EF4444" : "#FFFFFF" },
+          { label: "Receita do Mês", subtitle: "Pagamentos recebidos", value: fmtBRL(monthlyIncome), accent: "#4ADE80" },
+          { label: "Despesas do Mês", subtitle: "Contas pagas no mês", value: fmtBRL(monthlyExpenses), accent: "#EF4444" },
+          { label: "Lucro do Mês", subtitle: "Receita menos despesas", value: fmtBRL(monthlyIncome - monthlyExpenses), accent: monthlyIncome - monthlyExpenses >= 0 ? "#C8A96A" : "#EF4444" },
+          { label: "A Receber de Pacientes", subtitle: "Pacientes que te devem", value: fmtBRL(pendingReceivables), accent: "#4ADE80" },
         ].map(s => (
           <div key={s.label} style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", borderRadius: 8, padding: "16px 20px" }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666666", marginBottom: 8 }}>{s.label}</p>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#666666", marginBottom: 2 }}>{s.label}</p>
+            <p style={{ fontSize: 10, color: "#444444", marginBottom: 8 }}>{s.subtitle}</p>
             <p style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em", color: s.accent }}>{s.value}</p>
           </div>
         ))}
@@ -445,8 +461,8 @@ export default function Financial() {
         <TabsList style={{ backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 6 }}>
           <TabsTrigger value="overview" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Visão Geral</TabsTrigger>
           <TabsTrigger value="transactions" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>Transações</TabsTrigger>
-          <TabsTrigger value="receivables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Receber</TabsTrigger>
-          <TabsTrigger value="payables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Pagar</TabsTrigger>
+          <TabsTrigger value="receivables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Receber (Pacientes)</TabsTrigger>
+          <TabsTrigger value="payables" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>A Pagar (Fornecedores)</TabsTrigger>
           <TabsTrigger value="dre" className="data-[state=active]:bg-[#C8A96A]/15 data-[state=active]:text-[#C8A96A]" style={{ fontSize: 13 }}>DRE por Período</TabsTrigger>
         </TabsList>
 
@@ -510,27 +526,29 @@ export default function Financial() {
             <div className="space-y-4">
               <Card className="bg-[#12121a] border-[#1e1e2a]">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">A Receber</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-400">A Receber de Pacientes</CardTitle>
+                  <p className="text-xs text-gray-600 mt-1">Pacientes que ainda precisam te pagar</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-light text-emerald-400">
                     R$ {pendingReceivables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {transactions.filter(t => t.type === "income" && t.status === "pending").length + dossieFinanceiro.filter(d => d.status_financeiro === "pendente" || d.status_financeiro === "em_atraso").length} transações pendentes
+                    {transactions.filter(t => t.type === "income" && t.status === "pending").length + dossieFinanceiro.filter(d => d.status_financeiro === "pendente" || d.status_financeiro === "em_atraso").length} cobranças pendentes
                   </p>
                 </CardContent>
               </Card>
               <Card className="bg-[#12121a] border-[#1e1e2a]">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">A Pagar</CardTitle>
+                  <CardTitle className="text-sm font-medium text-gray-400">A Pagar a Fornecedores</CardTitle>
+                  <p className="text-xs text-gray-600 mt-1">Contas que você ainda precisa pagar</p>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-light text-red-400">
                     R$ {pendingPayables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {transactions.filter(t => t.type === "expense" && t.status === "pending").length} transações pendentes
+                    {transactions.filter(t => t.type === "expense" && t.status === "pending").length} contas pendentes
                   </p>
                 </CardContent>
               </Card>
@@ -543,7 +561,7 @@ export default function Financial() {
                     R$ {(pendingReceivables - pendingPayables).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Receitas - Despesas pendentes
+                    A receber de pacientes menos a pagar a fornecedores
                   </p>
                 </CardContent>
               </Card>
