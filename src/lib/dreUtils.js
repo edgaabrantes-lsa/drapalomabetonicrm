@@ -263,9 +263,14 @@ export function calcularDRE({ transactions = [], lancamentos = [], treatments = 
   const lucroLiquido = resultadoOperacional - totalOutrasDespesas;
   const margemLiquida = receitaLiquida > 0 ? (lucroLiquido / receitaLiquida) * 100 : 0;
 
-  const margemContribuicao = receitaLiquida > 0 ? lucroBruto / receitaLiquida : 0;
-  const pontoEquilibrio = margemContribuicao > 0
-    ? totalDespesasFixas / margemContribuicao
+  // Margem de Contribuição = Receita Líquida - Custos Variáveis (custos diretos + despesas variáveis)
+  // É o valor que sobra para cobrir despesas fixas e gerar lucro (caixa mínimo para a operação)
+  const custosVariaveis = totalCustosDiretos + totalDespesasVariaveis;
+  const margemContribuicao = receitaLiquida - custosVariaveis;
+  const margemContribuicaoPct = receitaLiquida > 0 ? (margemContribuicao / receitaLiquida) * 100 : 0;
+  const margemContribuicaoRatio = receitaLiquida > 0 ? margemContribuicao / receitaLiquida : 0;
+  const pontoEquilibrio = margemContribuicaoRatio > 0
+    ? totalDespesasFixas / margemContribuicaoRatio
     : totalDespesasFixas + totalDespesasVariaveis;
 
   const periodTreatments = treatments.filter(t => {
@@ -299,7 +304,7 @@ export function calcularDRE({ transactions = [], lancamentos = [], treatments = 
     totalDespesasFixas, totalDespesasVariaveis,
     resultadoOperacional, totalOutrasDespesas,
     lucroLiquido, margemLiquida,
-    pontoEquilibrio, margemContribuicao,
+    pontoEquilibrio, margemContribuicao, margemContribuicaoPct,
     vendasAteAgora, faltaparaEquilibrio, acimaEquilibrio,
     indicadores: {
       receitaBruta, receitaLiquida, lucroBruto, lucroLiquido,

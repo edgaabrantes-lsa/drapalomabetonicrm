@@ -63,6 +63,7 @@ export default function DREDashboard({ filters }) {
     { label: "Receita Líquida", value: fmtBRL(dre.receitaLiquida), accent: "#C8A96A", icon: Wallet },
     { label: "Custos/Insumos", value: fmtBRL(dre.totalCustosDiretos), accent: "#EF4444", icon: Package },
     { label: "Margem Bruta", value: fmtPercent(dre.margemBruta), accent: dre.margemBruta >= 0 ? "#4ADE80" : "#EF4444", icon: Percent, sublabel: `Lucro: ${fmtBRL(dre.lucroBruto)}` },
+    { label: "Margem Contribuição", value: fmtBRL(dre.margemContribuicao), accent: dre.margemContribuicao >= 0 ? "#4ADE80" : "#EF4444", icon: Wallet, sublabel: `${fmtPercent(dre.margemContribuicaoPct)} da receita líquida` },
     { label: "Despesas Fixas", value: fmtBRL(dre.totalDespesasFixas), accent: "#F59E0B", icon: Calculator },
     { label: "Despesas Variáveis", value: fmtBRL(dre.totalDespesasVariaveis), accent: "#A78BFA", icon: TrendingDown },
     { label: "Lucro Operacional", value: fmtBRL(dre.resultadoOperacional), accent: dre.resultadoOperacional >= 0 ? "#4ADE80" : "#EF4444", icon: BarChart3 },
@@ -135,7 +136,7 @@ export default function DREDashboard({ filters }) {
 
       {/* KPI Cards */}
       {!ldTx && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {kpis.map((kpi) => (
             <DREKpiCard key={kpi.label} {...kpi} />
           ))}
