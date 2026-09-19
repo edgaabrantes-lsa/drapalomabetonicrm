@@ -132,8 +132,8 @@ export function gerarCenarios(buraco, protocolos) {
   });
 }
 
-// ── Normaliza recebíveis de múltiplas fontes (ParcelaRecebivel + Transaction) ──
-export function normalizarRecebiveis(parcelas = [], transactions = []) {
+// ── Normaliza recebíveis de múltiplas fontes (ParcelaRecebivel + Transaction + DossieFinanceiro) ──
+export function normalizarRecebiveis(parcelas = [], transactions = [], dossieFinanceiro = []) {
   const fromTransactions = transactions
     .filter(t => t.type === "income")
     .map(t => ({
@@ -156,5 +156,30 @@ export function normalizarRecebiveis(parcelas = [], transactions = []) {
         : t.status === "cancelled" ? "cancelado"
         : "pendente",
     }));
-  return [...parcelas, ...fromTransactions];
+
+  const fromDossie = (dossieFinanceiro || [])
+    .filter(d => d.status_financeiro !== "cancelado" && d.status_financeiro !== "reembolsado")
+    .map(d => {
+      const isPaid = ["pago_integral", "pago_parcial", "entrada_paga", "conferido"].includes(d.status_financeiro);
+      const isOverdue = d.status_financeiro === "em_atraso";
+      return {
+        id: d.id,
+        _source: "dossie",
+        patient_name: d.patient_name || "",
+        protocolo_nome: d.procedimento || "Procedimento",
+        data_venda: d.data_vencimento || d.created_date?.slice(0, 10) || "",
+        numero_parcela: d.num_parcelas > 1 ? 1 : 0,
+        tipo: d.entrada > 0 ? "entrada" : "parcela",
+        valor_bruto: d.valor_total || 0,
+        taxa: d.valor_juros || 0,
+        valor_liquido: d.valor_liquido || d.valor_total || 0,
+        vencimento: d.data_vencimento,
+        data_recebimento: isPaid ? d.data_pagamento : null,
+        forma_pagamento: d.forma_pagamento,
+        num_parcelas_total: d.num_parcelas || 1,
+        status: isPaid ? "recebido" : isOverdue ? "vencido" : "pendente",
+      };
+    });
+
+  return [...parcelas, ...fromTransactions, ...fromDossie];
 }

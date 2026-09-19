@@ -17,8 +17,9 @@ export default function FinFluxoCaixa() {
   const [dias, setDias] = useState(30);
   const { data: rawParcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
   const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-due_date", 500) });
+  const { data: dossieFinanceiro = [] } = useQuery({ queryKey: ["dossie-financeiro-fluxo"], queryFn: () => base44.entities.DossieFinanceiro.list("-created_date", 2000) });
   const { data: lancamentos = [] } = useQuery({ queryKey: ["lancamentos"], queryFn: () => base44.entities.DRELancamento.list("-data_vencimento", 500) });
-  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions), [rawParcelas, transactions]);
+  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions, dossieFinanceiro), [rawParcelas, transactions, dossieFinanceiro]);
 
   const projecao = useMemo(() => {
     const now = startOfDay(new Date());

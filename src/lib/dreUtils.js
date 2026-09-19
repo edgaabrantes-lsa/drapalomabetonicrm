@@ -161,17 +161,49 @@ function passesSecondaryFilters(item, filters) {
   return true;
 }
 
+// ─── DossieFinanceiro → DRE mapping ───────────────────────────
+const DOSSIE_PAID_STATUS = ["pago_integral", "pago_parcial", "entrada_paga", "conferido"];
+const DOSSIE_PENDING_STATUS = ["pendente", "em_atraso", "aguardando_conferencia"];
+
+function dossieToDreItem(d) {
+  return {
+    _source: "dossie",
+    type: "income",
+    category: "procedure",
+    description: d.procedimento || "Procedimento",
+    amount: d.valor_total || 0,
+    taxa: d.valor_juros || 0,
+    valor_liquido: d.valor_liquido || d.valor_total || 0,
+    due_date: d.data_vencimento,
+    payment_date: d.data_pagamento,
+    payment_method: d.forma_pagamento,
+    status: DOSSIE_PAID_STATUS.includes(d.status_financeiro) ? "paid"
+      : DOSSIE_PENDING_STATUS.includes(d.status_financeiro) ? "pending"
+      : d.status_financeiro === "cancelado" ? "cancelled"
+      : d.status_financeiro === "reembolsado" ? "cancelled"
+      : "pending",
+    patient_name: d.patient_name,
+    procedimento_nome: d.procedimento,
+  };
+}
+
 // ─── DRE Calculation Engine ───────────────────────────────────
-export function calcularDRE({ transactions = [], lancamentos = [], treatments = [], procedures = [], supplies = [], filters = {}, view = "realizado" }) {
+export function calcularDRE({ transactions = [], lancamentos = [], treatments = [], procedures = [], supplies = [], dossieFinanceiro = [], filters = {}, view = "realizado" }) {
   const period = getPeriodRange(filters);
+
+  // Incorpora DossieFinanceiro como receita (fonte primária de pagamentos de pacientes)
+  const dossieAsTransactions = (dossieFinanceiro || []).map(dossieToDreItem);
+  const allTransactions = [...dossieAsTransactions, ...transactions];
 
   const validTxStatus = view === "realizado" ? ["paid"] : ["paid", "pending", "overdue"];
   const validLancStatus = view === "realizado" ? ["pago"] : ["pago", "pendente", "vencido"];
 
-  const periodTxs = transactions.filter(t => {
-    if (!t.due_date) return false;
+  const periodTxs = allTransactions.filter(t => {
+    // Para "realizado" usa data_pagamento; para "previsto" usa data_vencimento
+    const dateField = view === "realizado" ? (t.payment_date || t.due_date) : (t.due_date || t.payment_date);
+    if (!dateField) return false;
     try {
-      const d = parseISO(t.due_date);
+      const d = parseISO(dateField);
       if (d < period.start || d > period.end) return false;
     } catch { return false; }
     if (!validTxStatus.includes(t.status)) return false;
@@ -199,6 +231,10 @@ export function calcularDRE({ transactions = [], lancamentos = [], treatments = 
     if (t.type === "income") {
       const cat = TX_INCOME_MAP[t.category] || "Outras Receitas";
       sections.receita.items[cat] = (sections.receita.items[cat] || 0) + (t.amount || 0);
+      // Taxas de cartão (juros absorvidos pela clínica) vão como dedução
+      if (t.taxa && t.taxa > 0) {
+        sections.deducoes.items["Taxas de Cartão"] = (sections.deducoes.items["Taxas de Cartão"] || 0) + t.taxa;
+      }
     } else {
       const map = TX_EXPENSE_MAP[t.category] || { tipo: "outra_despesa", categoria: "Outras" };
       sections[map.tipo].items[map.categoria] = (sections[map.tipo].items[map.categoria] || 0) + (t.amount || 0);

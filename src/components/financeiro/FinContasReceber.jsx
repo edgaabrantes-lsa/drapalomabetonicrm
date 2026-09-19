@@ -28,19 +28,36 @@ export default function FinContasReceber() {
   const [filtro, setFiltro] = useState("30d");
   const { data: rawParcelas = [] } = useQuery({ queryKey: ["parcelas"], queryFn: () => base44.entities.ParcelaRecebivel.list("-vencimento", 500) });
   const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-due_date", 500) });
-  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions), [rawParcelas, transactions]);
+  const { data: dossieFinanceiro = [] } = useQuery({ queryKey: ["dossie-financeiro-receber"], queryFn: () => base44.entities.DossieFinanceiro.list("-created_date", 2000) });
+  const parcelas = useMemo(() => normalizarRecebiveis(rawParcelas, transactions, dossieFinanceiro), [rawParcelas, transactions, dossieFinanceiro]);
 
   const { perfil } = usePermissions();
   const isSuperAdmin = perfil === "super_admin";
 
   const receberMutation = useMutation({
-    mutationFn: ({ id, data, source }) => source === "transaction" ? base44.entities.Transaction.update(id, data) : base44.entities.ParcelaRecebivel.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["parcelas"] }); queryClient.invalidateQueries({ queryKey: ["transactions"] }); },
+    mutationFn: ({ id, data, source }) => {
+      if (source === "transaction") return base44.entities.Transaction.update(id, data);
+      if (source === "dossie") return base44.entities.DossieFinanceiro.update(id, data);
+      return base44.entities.ParcelaRecebivel.update(id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parcelas"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dossie-financeiro-receber"] });
+    },
   });
 
   const excluirMutation = useMutation({
-    mutationFn: ({ id, source }) => source === "transaction" ? base44.entities.Transaction.delete(id) : base44.entities.ParcelaRecebivel.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["parcelas"] }); queryClient.invalidateQueries({ queryKey: ["transactions"] }); },
+    mutationFn: ({ id, source }) => {
+      if (source === "transaction") return base44.entities.Transaction.delete(id);
+      if (source === "dossie") return base44.entities.DossieFinanceiro.delete(id);
+      return base44.entities.ParcelaRecebivel.delete(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parcelas"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dossie-financeiro-receber"] });
+    },
   });
 
   const excluirParcela = (p) => {
@@ -57,6 +74,8 @@ export default function FinContasReceber() {
   const confirmarBaixa = (dados) => {
     if (baixaParcela._source === "transaction") {
       receberMutation.mutate({ id: baixaParcela.id, source: "transaction", data: { status: "paid", payment_date: dados.data_recebimento, payment_method: dados.forma_pagamento, taxa: dados.taxa, valor_liquido: dados.valor_liquido } });
+    } else if (baixaParcela._source === "dossie") {
+      receberMutation.mutate({ id: baixaParcela.id, source: "dossie", data: { status_financeiro: "pago_integral", data_pagamento: dados.data_recebimento, forma_pagamento: dados.forma_pagamento, valor_juros: dados.taxa, valor_liquido: dados.valor_liquido } });
     } else {
       receberMutation.mutate({ id: baixaParcela.id, data: { status: "recebido", data_recebimento: dados.data_recebimento, forma_pagamento: dados.forma_pagamento, taxa: dados.taxa, valor_liquido: dados.valor_liquido } });
     }

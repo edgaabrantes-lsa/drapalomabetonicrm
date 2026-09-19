@@ -28,6 +28,10 @@ export default function DREDashboard({ filters }) {
     queryKey: ["transactions"],
     queryFn: () => base44.entities.Transaction.list("-created_date", 2000),
   });
+  const { data: dossieFinanceiro = [] } = useQuery({
+    queryKey: ["dossie-financeiro-dre"],
+    queryFn: () => base44.entities.DossieFinanceiro.list("-created_date", 2000),
+  });
   const { data: lancamentos = [] } = useQuery({
     queryKey: ["dreLancamentos"],
     queryFn: () => base44.entities.DRELancamento.list("-created_date", 2000),
@@ -46,7 +50,7 @@ export default function DREDashboard({ filters }) {
   });
 
   const dre = calcularDRE({
-    transactions, lancamentos, treatments, procedures, supplies,
+    transactions, dossieFinanceiro, lancamentos, treatments, procedures, supplies,
     filters: { ...filters, view },
     view,
   });

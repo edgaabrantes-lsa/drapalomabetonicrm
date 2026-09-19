@@ -248,6 +248,8 @@ export default function Financial() {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
@@ -290,10 +292,10 @@ export default function Financial() {
     }
   };
 
-  // Calculations
+  // Calculations — usa mês/ano selecionados
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const monthStart = startOfMonth(new Date(selectedYear, selectedMonth, 1));
+  const monthEnd = endOfMonth(new Date(selectedYear, selectedMonth, 1));
 
   const monthlyTransactions = transactions.filter(t => {
     if (!t.due_date) return false;
@@ -375,6 +377,29 @@ export default function Financial() {
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", color: "#FFFFFF", margin: 0 }}>Financeiro</h1>
           <p style={{ fontSize: 13, color: "#666666", marginTop: 4 }}>Controle de receitas e despesas</p>
+          {/* Seletor de período */}
+          <div className="flex gap-2 mt-3">
+            <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+              <SelectTrigger className="bg-[#121212] border-[#2B2B2B] text-white" style={{ height: 34, fontSize: 13, width: 140 }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1A1A1A] border-[#2B2B2B]">
+                {["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map((m, i) => (
+                  <SelectItem key={i} value={String(i)} className="text-white">{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+              <SelectTrigger className="bg-[#121212] border-[#2B2B2B] text-white" style={{ height: 34, fontSize: 13, width: 100 }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1A1A1A] border-[#2B2B2B]">
+                {[2024, 2025, 2026, 2027].map((y) => (
+                  <SelectItem key={y} value={String(y)} className="text-white">{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex gap-3">
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
