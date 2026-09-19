@@ -259,6 +259,11 @@ export default function Financial() {
     queryFn: () => base44.entities.Patient.list("-created_date", 1000),
   });
 
+  const { data: dossieFinanceiro = [] } = useQuery({
+    queryKey: ["dossie-financeiro-financial"],
+    queryFn: () => base44.entities.DossieFinanceiro.list("-created_date", 1000),
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Transaction.create(data),
     onSuccess: () => {
@@ -296,6 +301,20 @@ export default function Financial() {
     return date >= monthStart && date <= monthEnd;
   });
 
+  // Pagamentos de pacientes registrados no Dossiê Financeiro
+  const paidDossieStatuses = ["pago_integral", "pago_parcial", "entrada_paga", "conferido"];
+  const dossiePaidThisMonth = dossieFinanceiro.filter(d => {
+    if (!d.data_pagamento) return false;
+    const date = parseISO(d.data_pagamento);
+    return date >= monthStart && date <= monthEnd && paidDossieStatuses.includes(d.status_financeiro);
+  });
+
+  const dossieMonthlyIncome = dossiePaidThisMonth.reduce((sum, d) => {
+    // pago_integral = valor_total; demais = entrada (valor efetivamente recebido)
+    const valor = d.status_financeiro === "pago_integral" ? (d.valor_total || 0) : (d.entrada || 0);
+    return sum + valor;
+  }, 0);
+
   const totalIncome = transactions
     .filter(t => t.type === "income" && t.status === "paid")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
@@ -306,15 +325,19 @@ export default function Financial() {
 
   const monthlyIncome = monthlyTransactions
     .filter(t => t.type === "income" && t.status === "paid")
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
+    .reduce((sum, t) => sum + (t.amount || 0), 0) + dossieMonthlyIncome;
 
   const monthlyExpenses = monthlyTransactions
     .filter(t => t.type === "expense" && t.status === "paid")
     .reduce((sum, t) => sum + (t.amount || 0), 0);
 
+  const pendingDossieReceivables = dossieFinanceiro
+    .filter(d => d.status_financeiro === "pendente" || d.status_financeiro === "em_atraso")
+    .reduce((sum, d) => sum + (d.valor_total || 0), 0);
+
   const pendingReceivables = transactions
     .filter(t => t.type === "income" && t.status === "pending")
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
+    .reduce((sum, t) => sum + (t.amount || 0), 0) + pendingDossieReceivables;
 
   const pendingPayables = transactions
     .filter(t => t.type === "expense" && t.status === "pending")
@@ -469,7 +492,7 @@ export default function Financial() {
                     R$ {pendingReceivables.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {transactions.filter(t => t.type === "income" && t.status === "pending").length} transações pendentes
+                    {transactions.filter(t => t.type === "income" && t.status === "pending").length + dossieFinanceiro.filter(d => d.status_financeiro === "pendente" || d.status_financeiro === "em_atraso").length} transações pendentes
                   </p>
                 </CardContent>
               </Card>
