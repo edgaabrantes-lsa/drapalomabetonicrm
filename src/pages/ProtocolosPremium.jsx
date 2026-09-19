@@ -398,15 +398,23 @@ function ProtocolosTab() {
 
                 <div className="pt-4 border-t flex items-end justify-between" style={{ borderColor: "#2B2B2B" }}>
                   <div>
-                    {proto.valor_procedimentos && !proto.valor_a_partir && (
-                      <p className="text-xs line-through" style={{ color: "#555" }}>
-                        Valor dos procedimentos: {fmtBRL(proto.valor_procedimentos)}
+                    {proto.sob_avaliacao && proto.valor_procedimentos ? (
+                      <p className="text-xs" style={{ color: "#888" }}>
+                        Valor aproximado: {fmtBRL(proto.valor_procedimentos)}
                       </p>
-                    )}
-                    {economia > 0 && (
-                      <p className="text-xs mt-0.5" style={{ color: "#10B981" }}>
-                        Economia de {fmtBRL(economia)}
-                      </p>
+                    ) : (
+                      <>
+                        {proto.valor_procedimentos && !proto.valor_a_partir && (
+                          <p className="text-xs line-through" style={{ color: "#555" }}>
+                            Valor dos procedimentos: {fmtBRL(proto.valor_procedimentos)}
+                          </p>
+                        )}
+                        {economia > 0 && (
+                          <p className="text-xs mt-0.5" style={{ color: "#10B981" }}>
+                            Economia de {fmtBRL(economia)}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className="text-right">
