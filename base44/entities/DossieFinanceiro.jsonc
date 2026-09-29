@@ -8,6 +8,10 @@
     "patient_name": {
       "type": "string"
     },
+    "appointment_id": {
+      "type": "string",
+      "description": "ID do agendamento que originou este registro financeiro (sincroniza\u00e7\u00e3o autom\u00e1tica)"
+    },
     "procedimento": {
       "type": "string"
     },

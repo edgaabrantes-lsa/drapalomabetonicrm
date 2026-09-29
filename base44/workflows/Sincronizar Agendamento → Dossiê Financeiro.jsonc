@@ -1,0 +1,41 @@
+{
+  "name": "Sincronizar Agendamento \u2192 Dossi\u00ea Financeiro",
+  "description": "Cria automaticamente um registro no DossieFinanceiro quando um agendamento \u00e9 criado ou atualizado com pre\u00e7o preenchido. Evita duplicidade e atualiza o valor se o pre\u00e7o mudar.",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "Appointment",
+      "events": [
+        "create",
+        "update"
+      ]
+    },
+    "condition": "${ (.trigger.data.price // 0) > 0 and .trigger.data.status != \"cancelled\" and .trigger.data.status != \"no_show\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sync_agendamento_financeiro",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sincronizar": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sincronizarAgendamentoFinanceiro",
+            "args": {
+              "appointment_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Sincronizar com Dossi\u00ea Financeiro",
+            "description": "Cria/atualiza registro financeiro do agendamento"
+          }
+        }
+      }
+    ]
+  }
+}
