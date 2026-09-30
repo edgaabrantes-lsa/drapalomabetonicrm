@@ -708,9 +708,9 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDel
             return (
               <button key={status} onClick={() => onStatusChange(appointment.id, status)}
                 style={{
-                  background: isActive ? T.onyx : T.pearl,
-                  color: isActive ? "#fff" : T.charcoal,
-                  border: `1px solid ${isActive ? T.onyx : T.subtle}`,
+                  background: isActive ? T.gold : T.pearl,
+                  color: isActive ? "#000" : T.charcoal,
+                  border: `1px solid ${isActive ? T.gold : T.subtle}`,
                   borderRadius: 2, padding: "8px 4px", cursor: "pointer",
                   fontFamily: "Inter", fontSize: 9,
                   letterSpacing: "0.1em", textTransform: "uppercase",
