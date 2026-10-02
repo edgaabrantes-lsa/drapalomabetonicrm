@@ -25,6 +25,7 @@ import PlanosAssinatura from './pages/PlanosAssinatura.jsx';
 import SensorFlowForm from './pages/SensorFlowForm.jsx';
 import GestaoFinanceira from './pages/GestaoFinanceira.jsx';
 import AnalyticsAgenda from './pages/AnalyticsAgenda.jsx';
+import SearchConsoleAgenda from './pages/SearchConsoleAgenda.jsx';
 
 // Rotas do Portal da Paciente — fora do gate de autenticação (acesso por token)
 function PortalRoutes() {
@@ -199,6 +200,13 @@ const AuthenticatedApp = () => {
       <Route path="/AnalyticsAgenda" element={
         <LayoutWrapper currentPageName="AnalyticsAgenda">
           <AnalyticsAgenda />
+        </LayoutWrapper>
+      } />
+
+      {/* Search Console — Páginas de Agendamento */}
+      <Route path="/SearchConsoleAgenda" element={
+        <LayoutWrapper currentPageName="SearchConsoleAgenda">
+          <SearchConsoleAgenda />
         </LayoutWrapper>
       } />
     </Routes>

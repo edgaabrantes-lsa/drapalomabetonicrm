@@ -31,6 +31,7 @@ const navigation = [
   { name: "DRE da Clínica",      href: "DREClinica",         group: "clinico" },
   { name: "Gestão Financeira",   href: "GestaoFinanceira",   group: "clinico" },
   { name: "Analytics Agenda",   href: "AnalyticsAgenda",    group: "comercial" },
+  { name: "Search Console",     href: "SearchConsoleAgenda", group: "comercial" },
   { name: "Estoque",             href: "Inventory",          group: "clinico" },
   // Comercial
   { name: "CRM",                 href: "CRM",                group: "comercial" },
