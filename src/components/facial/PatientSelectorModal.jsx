@@ -52,16 +52,16 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="bg-[#12121a] border-[#1e1e2a] text-white max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-xl font-serif">
             Selecionar Paciente
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex flex-col min-h-0 flex-1 space-y-4">
           {/* Busca instantânea */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
               placeholder="Buscar por nome, telefone ou email..."
@@ -73,7 +73,10 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
           </div>
 
           {/* Resultados — clique direto seleciona e avança */}
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div
+            className="space-y-2 flex-1 overflow-y-auto min-h-0"
+            style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", touchAction: "pan-y" }}
+          >
             {loading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-[#C5A059]" />
@@ -111,7 +114,7 @@ export default function PatientSelectorModal({ open, onOpenChange, onSelect }) {
           </div>
 
           {/* Ações */}
-          <div className="flex justify-end pt-4 border-t border-[#1e1e2a]">
+          <div className="flex justify-end pt-4 border-t border-[#1e1e2a] flex-shrink-0">
             <Button
               type="button"
               variant="outline"

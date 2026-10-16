@@ -82,13 +82,13 @@ const PROCEDURE_MAP: Record<string, { label: string; instruction: string }> = {
 const INTENSITY_MAP: Record<number, { label: string; complement: string; strength: string }> = {
   1: {
     label: "Suave",
-    complement: "Aplicar mudança discreta, leve e conservadora. Resultado sutil, natural e quase imperceptível, mas ainda visualmente identificável.",
-    strength: "approximately 12-15% visible change",
+    complement: "Aplicar mudança moderada, claramente perceptível, equilibrada e natural. O antes e depois devem mostrar melhora evidente sem exagero.",
+    strength: "approximately 20-28% visible change",
   },
   2: {
     label: "Moderada",
-    complement: "Aplicar mudança moderada, claramente perceptível, equilibrada e natural. O antes e depois devem mostrar melhora evidente sem exagero.",
-    strength: "approximately 20-28% visible change",
+    complement: "Aplicar mudança um pouco mais evidente que a moderada, claramente perceptível, com melhora notável e expressiva, mas ainda natural e proporcional. O antes e depois mostram diferença clara mantendo o realismo anatômico.",
+    strength: "approximately 28-36% visible change",
   },
   3: {
     label: "Mais evidente",
