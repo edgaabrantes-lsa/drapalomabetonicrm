@@ -1,5 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { calcularRentabilidade, fmtBRL, fmtPercent, getPeriodLabel, exportRentabilidadeCSV } from "@/lib/dreUtils";
 
@@ -61,6 +62,18 @@ export default function RentabilidadeProcedimento({ filters }) {
         <Kpi label="Procedimentos" value={qtdTotal} color="#C8A96A" hint={`Ticket médio ${fmtBRL(ticketMedio)}`} />
       </div>
 
+      {rows.length > 0 && rowsSemCusto.length === rows.length && (
+        <div style={{ backgroundColor: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: 14 }}>
+          <p style={{ fontSize: 12, color: "#F59E0B", fontWeight: 600, margin: 0 }}>
+            Lucro e margem indisponíveis: nenhum procedimento tem custo cadastrado.
+          </p>
+          <p style={{ fontSize: 11, color: "#B0B0B0", marginTop: 4 }}>
+            A receita abaixo é real (Dossiê Financeiro). Para calcular lucro, cadastre o custo de cada procedimento em{" "}
+            <Link to="/ProtocolosPremium" style={{ color: "#C8A96A", textDecoration: "underline" }}>Protocolos e Procedimentos</Link>.
+          </p>
+        </div>
+      )}
+
       {(maisRentavel || menosRentavel) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {maisRentavel && (
@@ -109,9 +122,9 @@ export default function RentabilidadeProcedimento({ filters }) {
           </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "#666666" }}>Nenhum procedimento no período</p>
+            <p style={{ fontSize: 14, color: "#666666" }}>Nenhum procedimento em {periodLabel}</p>
             <p style={{ fontSize: 12, color: "#555555", marginTop: 4 }}>
-              Registre procedimentos no Dossiê Financeiro da paciente ou marque tratamentos como "realizado".
+              Ajuste o período nos filtros acima ou registre procedimentos no Dossiê Financeiro da paciente.
             </p>
           </div>
         ) : (

@@ -387,7 +387,7 @@ export function calcularRentabilidade({ treatments = [], procedures = [], suppli
   const acharProc = (nome) => indiceProc.get(normalizarNome(nome)) || null;
 
   const grupos = {};
-  const addItem = ({ nome, categoria, data, receita, profissionalId, profissionalNome }) => {
+  const garantirGrupo = (nome, categoria) => {
     const chave = normalizarNome(nome) || "outros";
     if (!grupos[chave]) {
       const proc = acharProc(nome);
@@ -401,10 +401,15 @@ export function calcularRentabilidade({ treatments = [], procedures = [], suppli
         _chavesDossie: new Set(),
       };
     }
-    grupos[chave].count++;
-    grupos[chave].receitaTotal += receita;
-    if (profissionalId) grupos[chave].profissionais.add(profissionalId);
-    else if (profissionalNome) grupos[chave].profissionais.add(profissionalNome);
+    return grupos[chave];
+  };
+
+  const addItem = ({ nome, categoria, receita, profissionalId, profissionalNome }) => {
+    const grupo = garantirGrupo(nome, categoria);
+    grupo.count++;
+    grupo.receitaTotal += receita;
+    if (profissionalId) grupo.profissionais.add(profissionalId);
+    else if (profissionalNome) grupo.profissionais.add(profissionalNome);
   };
 
   // 1) Dossiê Financeiro — vendas/procedimentos do período (competência)
@@ -416,10 +421,10 @@ export function calcularRentabilidade({ treatments = [], procedures = [], suppli
       normalizarNome(d.procedimento) !== normalizarNome(filters.procedimento)) return;
     if (filters.profissional && filters.profissional !== "all" && d.profissional_id !== filters.profissional) return;
     const nome = d.procedimento || "Outros";
-    const chave = normalizarNome(nome) || "outros";
-    if (!grupos[chave]) addItem({ nome, categoria: null, data, receita: 0 });
-    grupos[chave]._chavesDossie.add(`${normalizarNome(d.patient_name)}|${Number(d.valor_total || 0).toFixed(2)}`);
-    addItem({ nome, categoria: grupos[chave]?.categoria, data, receita: Number(d.valor_total || 0) });
+    const valor = Number(d.valor_total || 0);
+    const grupo = garantirGrupo(nome, null);
+    grupo._chavesDossie.add(`${normalizarNome(d.patient_name)}|${valor.toFixed(2)}`);
+    addItem({ nome, categoria: grupo.categoria, receita: valor });
   });
 
   // 2) Tratamentos realizados — evita contar duas vezes o mesmo registro do dossiê
@@ -435,7 +440,7 @@ export function calcularRentabilidade({ treatments = [], procedures = [], suppli
     const chave = normalizarNome(nome) || "outros";
     const assinatura = `${normalizarNome(t.patient_name)}|${valor.toFixed(2)}`;
     if (grupos[chave]?._chavesDossie?.has(assinatura)) return;
-    addItem({ nome, categoria: t.categoria, data: t.data_realizacao, receita: valor, profissionalId: t.profissional_id, profissionalNome: t.profissional_nome });
+    addItem({ nome, categoria: t.categoria, receita: valor, profissionalId: t.profissional_id, profissionalNome: t.profissional_nome });
   });
 
   const rows = Object.values(grupos).map(g => {

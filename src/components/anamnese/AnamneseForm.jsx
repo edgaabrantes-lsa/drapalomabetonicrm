@@ -44,17 +44,18 @@ export default function AnamneseForm({ patient, anamnese, currentUser, onClose, 
 
   const somenteLeitura = form.status === "finalizada";
 
+  // A URL assinada expira — é regenerada a cada abertura, nunca gravada no registro
   useEffect(() => {
     const uri = form.mapa_facial?.imagem_file_uri;
-    const url = form.mapa_facial?.imagem_url;
-    if (!uri || url) return;
+    if (!uri) return;
     base44.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 3600 })
       .then(({ signed_url }) => setForm((f) => ({ ...f, mapa_facial: { ...f.mapa_facial, imagem_url: signed_url } })))
       .catch(() => {});
   }, []);
 
   const persist = async (extra = {}) => {
-    const payload = { ...form, ...extra };
+    const { imagem_url, ...mapaParaSalvar } = form.mapa_facial || {};
+    const payload = { ...form, ...extra, mapa_facial: mapaParaSalvar };
     setSaveState("saving");
     try {
       let salvo;
