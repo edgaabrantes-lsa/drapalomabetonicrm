@@ -26,6 +26,7 @@ import SensorFlowForm from './pages/SensorFlowForm.jsx';
 import GestaoFinanceira from './pages/GestaoFinanceira.jsx';
 import AnalyticsAgenda from './pages/AnalyticsAgenda.jsx';
 import SearchConsoleAgenda from './pages/SearchConsoleAgenda.jsx';
+import AnamnesePacientes from './pages/AnamnesePacientes.jsx';
 
 // Rotas do Portal da Paciente — fora do gate de autenticação (acesso por token)
 function PortalRoutes() {
@@ -207,6 +208,13 @@ const AuthenticatedApp = () => {
       <Route path="/SearchConsoleAgenda" element={
         <LayoutWrapper currentPageName="SearchConsoleAgenda">
           <SearchConsoleAgenda />
+        </LayoutWrapper>
+      } />
+
+      {/* Anamnese de Pacientes + Mapa Facial */}
+      <Route path="/AnamnesePacientes" element={
+        <LayoutWrapper currentPageName="AnamnesePacientes">
+          <AnamnesePacientes />
         </LayoutWrapper>
       } />
     </Routes>

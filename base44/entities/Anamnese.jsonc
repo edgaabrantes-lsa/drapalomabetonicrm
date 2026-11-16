@@ -1,0 +1,221 @@
+{
+  "name": "Anamnese",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "ID da entidade Patient"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "data_avaliacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "profissional_nome": {
+      "type": "string"
+    },
+    "profissional_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "rascunho",
+        "em_avaliacao",
+        "finalizada",
+        "retificada"
+      ],
+      "default": "rascunho",
+      "enumColors": [
+        "gray",
+        "yellow",
+        "green",
+        "blue"
+      ]
+    },
+    "historico_clinico": {
+      "type": "object",
+      "properties": {
+        "queixa_principal": {
+          "type": "string"
+        },
+        "objetivo_paciente": {
+          "type": "string"
+        },
+        "procedimentos_esteticos_anteriores": {
+          "type": "string"
+        },
+        "medicamentos_em_uso": {
+          "type": "string"
+        },
+        "alergias": {
+          "type": "string"
+        },
+        "doencas_condicoes": {
+          "type": "string"
+        },
+        "cirurgias_anteriores": {
+          "type": "string"
+        },
+        "gestacao_amamentacao": {
+          "type": "boolean",
+          "default": false
+        },
+        "gestacao_amamentacao_obs": {
+          "type": "string"
+        },
+        "historico_intercorrencias": {
+          "type": "string"
+        },
+        "informacoes_complementares": {
+          "type": "string"
+        }
+      }
+    },
+    "avaliacao_estetica": {
+      "type": "object",
+      "properties": {
+        "regioes_interesse": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "observacoes_simetria": {
+          "type": "string"
+        },
+        "queixas_aparencia": {
+          "type": "string"
+        },
+        "planejamento_procedimentos": {
+          "type": "string"
+        },
+        "prioridades": {
+          "type": "string"
+        },
+        "expectativas": {
+          "type": "string"
+        },
+        "orientacoes_fornecidas": {
+          "type": "string"
+        }
+      }
+    },
+    "mapa_facial": {
+      "type": "object",
+      "description": "Mapa facial edit\u00e1vel em JSON (objetos com coordenadas normalizadas)",
+      "properties": {
+        "imagem_file_uri": {
+          "type": "string"
+        },
+        "imagem_url": {
+          "type": "string"
+        },
+        "visualizacao": {
+          "type": "string",
+          "default": "planejamento"
+        },
+        "objetos": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "procedimento_realizado": {
+      "type": "object",
+      "description": "Registro do que foi efetivamente executado (independente do planejamento)",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "date"
+        },
+        "profissional": {
+          "type": "string"
+        },
+        "procedimentos": {
+          "type": "string"
+        },
+        "produto": {
+          "type": "string"
+        },
+        "fabricante": {
+          "type": "string"
+        },
+        "lote": {
+          "type": "string"
+        },
+        "validade": {
+          "type": "string"
+        },
+        "quantidade": {
+          "type": "string"
+        },
+        "observacoes": {
+          "type": "string"
+        }
+      }
+    },
+    "versao": {
+      "type": "number",
+      "default": 1
+    },
+    "data_finalizacao": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "historico_versoes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "versao": {
+            "type": "number"
+          },
+          "data": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "string"
+          },
+          "acao": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_name",
+    "data_avaliacao",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {},
+    "update": {},
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

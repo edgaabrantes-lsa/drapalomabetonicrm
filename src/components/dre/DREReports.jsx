@@ -46,6 +46,10 @@ export default function DREReports({ filters }) {
     queryKey: ["supplies"],
     queryFn: () => base44.entities.Supply.list(),
   });
+  const { data: dossieFinanceiro = [] } = useQuery({
+    queryKey: ["dossieFinanceiro"],
+    queryFn: () => base44.entities.DossieFinanceiro.list("-created_date", 2000),
+  });
 
   const periodLabel = getPeriodLabel(filters);
   const year = filters.ano || new Date().getFullYear();
@@ -59,7 +63,7 @@ export default function DREReports({ filters }) {
     year
   );
 
-  const rentabilidade = calcularRentabilidade(treatments, procedures, supplies, filters);
+  const rentabilidade = calcularRentabilidade({ treatments, procedures, supplies, dossieFinanceiro, filters });
 
   // Cost report: top expense categories
   const allExpenses = [
@@ -342,9 +346,15 @@ export default function DREReports({ filters }) {
                       <td style={{ padding: "8px 12px", fontSize: 12, color: "#FFFFFF", fontWeight: 500 }}>{r.nome}</td>
                       <td style={{ padding: "8px 12px", fontSize: 12, color: "#B0B0B0", textAlign: "center" }}>{r.count}</td>
                       <td style={{ padding: "8px 12px", fontSize: 12, color: "#B0B0B0", textAlign: "right" }}>{fmtBRL(r.receitaTotal)}</td>
-                      <td style={{ padding: "8px 12px", fontSize: 12, color: "#EF4444", textAlign: "right" }}>{fmtBRL(r.custoTotal)}</td>
-                      <td style={{ padding: "8px 12px", fontSize: 12, fontWeight: 600, color: r.lucroBruto >= 0 ? "#4ADE80" : "#EF4444", textAlign: "right" }}>{fmtBRL(r.lucroBruto)}</td>
-                      <td style={{ padding: "8px 12px", fontSize: 12, color: r.margem >= 0 ? "#4ADE80" : "#EF4444", textAlign: "right" }}>{fmtPercent(r.margem)}</td>
+                      <td style={{ padding: "8px 12px", fontSize: 12, color: r.custoInformado ? "#EF4444" : "#666666", textAlign: "right" }}>
+                        {r.custoInformado ? fmtBRL(r.custoTotal) : "Custo não informado"}
+                      </td>
+                      <td style={{ padding: "8px 12px", fontSize: 12, fontWeight: 600, color: r.lucroBruto === null ? "#666666" : r.lucroBruto >= 0 ? "#4ADE80" : "#EF4444", textAlign: "right" }}>
+                        {r.lucroBruto === null ? "Indisponível" : fmtBRL(r.lucroBruto)}
+                      </td>
+                      <td style={{ padding: "8px 12px", fontSize: 12, color: r.margem === null ? "#666666" : r.margem >= 0 ? "#4ADE80" : "#EF4444", textAlign: "right" }}>
+                        {r.margem === null ? "—" : fmtPercent(r.margem)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -48,7 +48,7 @@ export const PERFIS = {
 // Menus disponíveis por perfil
 export const MENU_PERMISSIONS = {
   super_admin: [
-    "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
+    "Dashboard", "Patients", "AnamnesePacientes", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
     "PlanosAssinatura",
     "Financial", "Inventory", "CRM", "Chat", "Intake",
@@ -57,7 +57,7 @@ export const MENU_PERMISSIONS = {
     "AuditoriaDuplicidades", "PortalAdmin",
   ],
   gestor: [
-    "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
+    "Dashboard", "Patients", "AnamnesePacientes", "DossiePatient", "Agenda", "MedicalRecords",
     "Financial", "Protocols", "ProtocolosPremium", "PlanosAssinatura",
     "Governanca", "CRM", "Chat", "Intake",
     "UsuariosPermissoes",
@@ -66,13 +66,13 @@ export const MENU_PERMISSIONS = {
     "Dashboard", "Patients", "DossiePatient", "Agenda", "Governanca", "CRM", "Chat",
   ],
   profissional_clinico_premium: [
-    "Patients", "DossiePatient", "Agenda", "MedicalRecords",
+    "Patients", "AnamnesePacientes", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
     "PlanosAssinatura",
     "CRM", "Chat",
   ],
   profissional: [
-    "Dashboard", "Patients", "DossiePatient", "Agenda", "MedicalRecords",
+    "Dashboard", "Patients", "AnamnesePacientes", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
     "PlanosAssinatura",
   ],
@@ -92,36 +92,43 @@ export const ACTION_PERMISSIONS = {
     ver_financeiro: true, ver_auditoria: true, exportar: true,
     mesclar_pacientes: true,
     auditar_duplicidades: true,
+    ver_anamnese: true,
   },
   gestor: {
     criar: true, editar: true, excluir: false, aprovar: true,
     assinar: true, configurar: false, gerenciar_usuarios: true,
     ver_financeiro: true, ver_auditoria: false, exportar: true,
+    ver_anamnese: true,
   },
   recepcao: {
     criar: true, editar: true, excluir: false, aprovar: false,
     assinar: false, configurar: false, gerenciar_usuarios: false,
     ver_financeiro: false, ver_auditoria: false, exportar: false,
+    ver_anamnese: false,
   },
   profissional_clinico_premium: {
     criar: true, editar: true, excluir: false, aprovar: false,
     assinar: true, configurar: false, gerenciar_usuarios: false,
     ver_financeiro: false, ver_auditoria: false, exportar: false,
+    ver_anamnese: true,
   },
   profissional: {
     criar: true, editar: true, excluir: false, aprovar: false,
     assinar: true, configurar: false, gerenciar_usuarios: false,
     ver_financeiro: false, ver_auditoria: false, exportar: false,
+    ver_anamnese: true,
   },
   financeiro: {
     criar: true, editar: true, excluir: false, aprovar: true,
     assinar: false, configurar: false, gerenciar_usuarios: false,
     ver_financeiro: true, ver_auditoria: false, exportar: true,
+    ver_anamnese: false,
   },
   visualizacao: {
     criar: false, editar: false, excluir: false, aprovar: false,
     assinar: false, configurar: false, gerenciar_usuarios: false,
     ver_financeiro: false, ver_auditoria: false, exportar: false,
+    ver_anamnese: false,
   },
 };
 

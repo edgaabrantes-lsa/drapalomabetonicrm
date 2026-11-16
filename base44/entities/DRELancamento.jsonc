@@ -22,6 +22,10 @@
     "descricao": {
       "type": "string"
     },
+    "fornecedor": {
+      "type": "string",
+      "description": "Fornecedor (sa\u00eddas) ou origem do recebimento (entradas)"
+    },
     "valor": {
       "type": "number"
     },
@@ -64,6 +68,26 @@
         "anual"
       ],
       "default": "unica"
+    },
+    "num_parcelas": {
+      "type": "number",
+      "description": "Quantidade total de parcelas quando o lan\u00e7amento \u00e9 parcelado"
+    },
+    "parcela_atual": {
+      "type": "number",
+      "description": "N\u00famero da parcela (1..N)"
+    },
+    "grupo_id": {
+      "type": "string",
+      "description": "Identificador do grupo de parcelas originado de um mesmo lan\u00e7amento"
+    },
+    "origem": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "importacao"
+      ],
+      "default": "manual"
     },
     "data_inicio": {
       "type": "string",

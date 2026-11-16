@@ -339,44 +339,127 @@ export function calcularDREAnual(data, year) {
 }
 
 // ─── Procedure Profitability ──────────────────────────────────
-export function calcularRentabilidade(treatments = [], procedures = [], supplies = [], filters = {}) {
-  const period = getPeriodRange(filters);
-  const periodTreatments = treatments.filter(t => {
-    if (t.status !== "realizado" || !t.data_realizacao) return false;
-    try {
-      const d = parseISO(t.data_realizacao);
-      return d >= period.start && d <= period.end;
-    } catch { return false; }
-  });
+const DOSSIE_CANCELADO = ["cancelado", "reembolsado"];
 
-  const byName = {};
-  periodTreatments.forEach(t => {
-    const name = t.protocolo_nome || "Outros";
-    if (!byName[name]) {
-      byName[name] = { nome: name, categoria: t.categoria || "avulso", count: 0, receitaTotal: 0, custoTotal: 0, comissaoTotal: 0, taxaTotal: 0 };
-    }
-    const proc = procedures.find(p => p.name === name);
-    const preco = t.valor_pago || t.valor || proc?.price || 0;
-    const custo = proc?.cost || calcularCustoProcedimento(proc, supplies);
-    byName[name].count++;
-    byName[name].receitaTotal += preco;
-    byName[name].custoTotal += custo;
-    byName[name].taxaTotal += estimarTaxa(t.forma_pagamento, preco);
-  });
-
-  return Object.values(byName).map(p => {
-    const lucroBruto = p.receitaTotal - p.custoTotal - p.comissaoTotal - p.taxaTotal;
-    const margem = p.receitaTotal > 0 ? (lucroBruto / p.receitaTotal) * 100 : 0;
-    return { ...p, precoMedio: p.count > 0 ? p.receitaTotal / p.count : 0, custoMedio: p.count > 0 ? p.custoTotal / p.count : 0, taxaMedio: p.count > 0 ? p.taxaTotal / p.count : 0, lucroBruto, margem };
-  }).sort((a, b) => b.lucroBruto - a.lucroBruto);
+export function normalizarNome(s) {
+  return (s || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function calcularCustoProcedimento(proc, supplies) {
-  if (!proc?.supplies_required || !supplies) return proc?.cost || 0;
-  return proc.supplies_required.reduce((sum, req) => {
-    const supply = supplies.find(s => s.id === req.supply_id);
-    return sum + (supply?.cost_per_unit || 0) * (req.quantity || 0);
-  }, 0);
+  if (!proc) return { custo: 0, informado: false };
+  const itens = Array.isArray(proc.supplies_required) ? proc.supplies_required : [];
+  if (itens.length > 0) {
+    const custoItens = itens.reduce((sum, req) => {
+      const supply = (supplies || []).find(s => s.id === req.supply_id);
+      return sum + (supply?.cost_per_unit || 0) * (req.quantity || 0);
+    }, 0);
+    if (custoItens > 0) return { custo: custoItens, informado: true };
+  }
+  if (Number(proc.cost) > 0) return { custo: Number(proc.cost), informado: true };
+  return { custo: 0, informado: false };
+}
+
+/**
+ * Rentabilidade por procedimento.
+ * Fontes de receita: Dossiê Financeiro (fonte primária de vendas) + tratamentos realizados.
+ * Custo direto: custo cadastrado no procedimento (insumos vinculados ou custo informado).
+ * Quando o custo não existe, o item é marcado como "custo não informado" (não entra como custo zero).
+ */
+export function calcularRentabilidade({ treatments = [], procedures = [], supplies = [], dossieFinanceiro = [], filters = {} } = {}) {
+  const period = getPeriodRange(filters);
+  const dentroPeriodo = (data) => {
+    if (!data) return false;
+    try {
+      const d = parseISO(data);
+      return d >= period.start && d <= period.end;
+    } catch { return false; }
+  };
+
+  const indiceProc = new Map();
+  (procedures || []).forEach(p => { if (p?.name) indiceProc.set(normalizarNome(p.name), p); });
+  const acharProc = (nome) => indiceProc.get(normalizarNome(nome)) || null;
+
+  const grupos = {};
+  const addItem = ({ nome, categoria, data, receita, profissionalId, profissionalNome }) => {
+    const chave = normalizarNome(nome) || "outros";
+    if (!grupos[chave]) {
+      const proc = acharProc(nome);
+      const { custo, informado } = calcularCustoProcedimento(proc, supplies);
+      grupos[chave] = {
+        nome: nome || "Outros",
+        categoria: categoria || proc?.linha || proc?.category || "avulso",
+        procedimentoId: proc?.id || null,
+        count: 0, receitaTotal: 0, custoUnitario: custo, custoInformado: informado,
+        profissionais: new Set(),
+        _chavesDossie: new Set(),
+      };
+    }
+    grupos[chave].count++;
+    grupos[chave].receitaTotal += receita;
+    if (profissionalId) grupos[chave].profissionais.add(profissionalId);
+    else if (profissionalNome) grupos[chave].profissionais.add(profissionalNome);
+  };
+
+  // 1) Dossiê Financeiro — vendas/procedimentos do período (competência)
+  (dossieFinanceiro || []).forEach(d => {
+    if (DOSSIE_CANCELADO.includes(d.status_financeiro)) return;
+    const data = d.data_vencimento || d.data_pagamento;
+    if (!dentroPeriodo(data)) return;
+    if (filters.procedimento && filters.procedimento !== "all" &&
+      normalizarNome(d.procedimento) !== normalizarNome(filters.procedimento)) return;
+    if (filters.profissional && filters.profissional !== "all" && d.profissional_id !== filters.profissional) return;
+    const nome = d.procedimento || "Outros";
+    const chave = normalizarNome(nome) || "outros";
+    if (!grupos[chave]) addItem({ nome, categoria: null, data, receita: 0 });
+    grupos[chave]._chavesDossie.add(`${normalizarNome(d.patient_name)}|${Number(d.valor_total || 0).toFixed(2)}`);
+    addItem({ nome, categoria: grupos[chave]?.categoria, data, receita: Number(d.valor_total || 0) });
+  });
+
+  // 2) Tratamentos realizados — evita contar duas vezes o mesmo registro do dossiê
+  (treatments || []).forEach(t => {
+    if (t.status !== "realizado" || !t.data_realizacao) return;
+    if (!dentroPeriodo(t.data_realizacao)) return;
+    const nome = t.protocolo_nome || "Outros";
+    if (filters.procedimento && filters.procedimento !== "all" &&
+      normalizarNome(nome) !== normalizarNome(filters.procedimento)) return;
+    if (filters.profissional && filters.profissional !== "all" &&
+      t.profissional_id !== filters.profissional) return;
+    const valor = Number(t.valor_pago || t.valor || 0);
+    const chave = normalizarNome(nome) || "outros";
+    const assinatura = `${normalizarNome(t.patient_name)}|${valor.toFixed(2)}`;
+    if (grupos[chave]?._chavesDossie?.has(assinatura)) return;
+    addItem({ nome, categoria: t.categoria, data: t.data_realizacao, receita: valor, profissionalId: t.profissional_id, profissionalNome: t.profissional_nome });
+  });
+
+  const rows = Object.values(grupos).map(g => {
+    const custoTotal = g.custoInformado ? g.custoUnitario * g.count : null;
+    const lucroBruto = custoTotal === null ? null : g.receitaTotal - custoTotal;
+    const margem = (lucroBruto === null || g.receitaTotal <= 0) ? null : (lucroBruto / g.receitaTotal) * 100;
+    return {
+      nome: g.nome,
+      categoria: g.categoria,
+      procedimentoId: g.procedimentoId,
+      count: g.count,
+      receitaTotal: g.receitaTotal,
+      precoMedio: g.count > 0 ? g.receitaTotal / g.count : 0,
+      custoUnitario: g.custoUnitario,
+      custoTotal,
+      custoMedio: custoTotal === null ? null : custoTotal / g.count,
+      custoInformado: g.custoInformado,
+      lucroBruto,
+      margem,
+      profissionais: Array.from(g.profissionais),
+    };
+  });
+
+  return rows.sort((a, b) => b.receitaTotal - a.receitaTotal);
 }
 
 // ─── CSV Export ───────────────────────────────────────────────
@@ -431,8 +514,18 @@ export function exportRentabilidadeCSV(data, periodLabel) {
   const rows = [
     ["Rentabilidade por Procedimento", periodLabel],
     [],
-    ["Procedimento", "Categoria", "Vezes Realizado", "Preco Medio", "Custo Medio", "Taxa Media", "Receita Total", "Custo Total", "Lucro Bruto", "Margem %"],
-    ...data.map(p => [p.nome, p.categoria, p.count, fmtBRL(p.precoMedio), fmtBRL(p.custoMedio), fmtBRL(p.taxaMedio), fmtBRL(p.receitaTotal), fmtBRL(p.custoTotal), fmtBRL(p.lucroBruto), fmtPercent(p.margem)]),
+    ["Procedimento", "Categoria", "Vezes Realizado", "Preco Medio", "Custo Medio", "Receita Total", "Custo Total", "Lucro Bruto", "Margem %"],
+    ...data.map(p => [
+      p.nome,
+      p.categoria,
+      p.count,
+      fmtBRL(p.precoMedio),
+      p.custoInformado ? fmtBRL(p.custoMedio) : "Custo não informado",
+      fmtBRL(p.receitaTotal),
+      p.custoInformado ? fmtBRL(p.custoTotal) : "—",
+      p.lucroBruto === null ? "Indisponível" : fmtBRL(p.lucroBruto),
+      p.margem === null ? "—" : fmtPercent(p.margem),
+    ]),
   ];
   const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });

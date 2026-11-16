@@ -19,6 +19,7 @@ const navigation = [
   // Clínico
   { name: "Dashboard",           href: "Dashboard",          group: "clinico" },
   { name: "Pacientes",           href: "Patients",            group: "clinico" },
+  { name: "Anamnese de Pacientes", href: "AnamnesePacientes", group: "clinico" },
   { name: "Dossiê da Paciente",  href: "DossiePatient",      group: "clinico" },
   { name: "Agenda",              href: "Agenda",             group: "clinico" },
   { name: "Prontuários",         href: "MedicalRecords",     group: "clinico" },
