@@ -50,8 +50,11 @@ export default function MapaFacialEditor({
   const fonte = imagemUrl || ROSTO_REFERENCIA_URL || "";
   const recorteReferencia = !imagemUrl && Boolean(ROSTO_REFERENCIA_CROP);
   const compacto = viewport.w < 768;
-  // Área de marcação ampliada: usa toda a largura disponível e uma altura generosa.
-  const alturaLimite = Math.max(440, Math.min(1200, Math.round(viewport.h - 150)));
+  // Área de marcação: generosa no desktop/tablet e enquadrada (cabe na tela) no celular.
+  const alturaLimite = compacto
+    ? Math.max(280, Math.min(460, Math.round(viewport.h * 0.44)))
+    : Math.max(440, Math.min(1200, Math.round(viewport.h - 150)));
+  const recuoLateral = compacto ? 26 : 12;
 
   useEffect(() => {
     const aoRedimensionar = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -99,7 +102,7 @@ export default function MapaFacialEditor({
     const el = wrapRef.current;
     if (!el) return;
     const medir = () => {
-      const disponivelW = Math.max(140, el.clientWidth - 12);
+      const disponivelW = Math.max(140, el.clientWidth - recuoLateral);
       const escala = Math.min(disponivelW / ratio.w, alturaLimite / ratio.h);
       setDims({
         w: Math.max(80, Math.round(ratio.w * escala)),
@@ -110,7 +113,7 @@ export default function MapaFacialEditor({
     const ro = new ResizeObserver(medir);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [ratio.w, ratio.h, alturaLimite]);
+  }, [ratio.w, ratio.h, alturaLimite, recuoLateral]);
 
   const conteudoW = Math.round(dims.w * zoom);
   const conteudoH = Math.round(dims.h * zoom);
