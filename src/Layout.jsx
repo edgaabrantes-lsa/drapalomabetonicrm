@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import BuscaPacientes from "@/components/layout/BuscaPacientes";
 
 const navigation = [
   // Clínico
@@ -82,9 +82,9 @@ export default function Layout({ children, currentPageName }) {
       {/* ── Mobile top bar ── */}
       <div
         className="lg:hidden fixed top-0 left-0 right-0 z-50 glass-topbar"
-        style={{ borderBottom: "1px solid #1E1E1E", height: 52 }}
+        style={{ borderBottom: "1px solid #1E1E1E" }}
       >
-        <div className="flex items-center justify-between h-full px-4">
+        <div className="flex items-center justify-between px-4" style={{ height: 52 }}>
           <button
             onClick={() => setMobileOpen(true)}
             className="flex items-center justify-center rounded-md transition-colors hover:bg-white/5"
@@ -106,6 +106,11 @@ export default function Layout({ children, currentPageName }) {
               {user?.full_name?.[0] || "P"}
             </AvatarFallback>
           </Avatar>
+        </div>
+
+        {/* Busca de pacientes — mobile */}
+        <div style={{ padding: "0 12px 10px" }}>
+          <BuscaPacientes variant="mobile" />
         </div>
       </div>
 
@@ -360,20 +365,8 @@ export default function Layout({ children, currentPageName }) {
             padding: "0 32px",
           }}
         >
-          {/* Search */}
-          <div className="relative" style={{ width: 280 }}>
-            <Input
-              placeholder="Buscar pacientes..."
-              style={{
-                height: 34,
-                backgroundColor: "#121212",
-                borderColor: "#2B2B2B",
-                color: "#FFFFFF",
-                fontSize: 13,
-                borderRadius: 6,
-              }}
-            />
-          </div>
+          {/* Busca de pacientes */}
+          <BuscaPacientes />
 
           {/* Logo central */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
@@ -408,7 +401,7 @@ export default function Layout({ children, currentPageName }) {
           }}
         >
           {/* Mobile top-bar spacer */}
-          <div className="lg:hidden" style={{ height: 52 }} />
+          <div className="lg:hidden" style={{ height: 96 }} />
           <div className="min-w-0" style={{ minWidth: 0 }}>
             {children}
           </div>
