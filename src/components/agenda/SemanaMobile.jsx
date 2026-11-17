@@ -31,7 +31,7 @@ export default function SemanaMobile({ weekDays, appointments, onClickAppointmen
                 {format(day, "EEE", { locale: ptBR })}
               </span>
               <span style={{
-                fontFamily: hoje ? "'Playfair Display', serif" : "Inter",
+                fontFamily: "Inter",
                 fontSize: 16, fontWeight: 400, color: hoje ? T.gold : T.onyx,
               }}>
                 {format(day, "d 'de' MMM", { locale: ptBR })}
@@ -67,7 +67,7 @@ export default function SemanaMobile({ weekDays, appointments, onClickAppointmen
                         </span>
                         <span style={{ flex: 1, minWidth: 0 }}>
                           <span style={{
-                            display: "block", fontFamily: "'Playfair Display', serif", fontStyle: "italic",
+                            display: "block", fontFamily: "Inter", fontWeight: 500,
                             fontSize: 13, color: T.onyx, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                           }}>
                             {appt.patient_name}

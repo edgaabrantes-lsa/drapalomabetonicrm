@@ -241,7 +241,7 @@ const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
                 padding: "4px 8px", cursor: "pointer", overflow: "hidden",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
               }}>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 12, color: T.onyx, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <p style={{ fontFamily: "Inter", fontWeight: 500, fontSize: 12, color: T.onyx, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {appt.patient_name}
               </p>
               {height > 40 && (
@@ -304,7 +304,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
                 {format(day, "EEE", { locale: ptBR })}
               </p>
               <p style={{
-                fontFamily: isToday(day) ? "'Playfair Display', serif" : "Inter",
+                fontFamily: "Inter",
                 fontSize: isToday(day) ? 20 : 18, fontWeight: 300,
                 color: isToday(day) ? T.gold : T.onyx, marginTop: 2,
               }}>
@@ -353,7 +353,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
                         borderRadius: 2, padding: "3px 6px", cursor: "pointer",
                         overflow: "hidden",
                       }}>
-                      <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 11, color: T.onyx, margin: 0 }}>
+                      <p style={{ fontFamily: "Inter", fontWeight: 500, fontSize: 11, color: T.onyx, margin: 0 }}>
                         {appt.patient_name}
                       </p>
                       {height > 36 && (
@@ -432,7 +432,7 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
                 opacity: isCurrentMonth ? 1 : 0.3,
               }}>
               <p style={{
-                fontFamily: isToday(day) ? "'Playfair Display', serif" : "Inter",
+                fontFamily: "Inter",
                 fontSize: isMobile ? 11 : 12, fontWeight: isToday(day) ? 500 : 300,
                 color: isToday(day) ? T.gold : T.onyx, marginBottom: 4,
               }}>
@@ -495,7 +495,7 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
           {/* Date heading */}
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: isMobile ? 12 : 16 }}>
             <p style={{
-              fontFamily: isToday(parseISO(dateKey)) ? "'Playfair Display', serif" : "Inter",
+              fontFamily: "Inter",
               fontSize: isToday(parseISO(dateKey)) ? (isMobile ? 14 : 16) : (isMobile ? 10 : 11),
               fontStyle: isToday(parseISO(dateKey)) ? "normal" : "normal",
               letterSpacing: isToday(parseISO(dateKey)) ? "0.02em" : "0.12em",
@@ -558,8 +558,8 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
                           </p>
                         )}
                         <p style={{
-                          fontFamily: "'Playfair Display', serif",
-                          fontStyle: "italic",
+                          fontFamily: "Inter",
+                          fontWeight: 500,
                           fontSize: isMobile ? 15 : 18, color: T.onyx,
                           margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                         }}>
@@ -639,7 +639,7 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDel
           <User size={18} color={T.charcoal} />
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 20, color: T.onyx, margin: 0 }}>
+          <p style={{ fontFamily: "Inter", fontWeight: 500, fontSize: 20, color: T.onyx, margin: 0 }}>
             {appointment.patient_name}
           </p>
           <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal, marginTop: 4 }}>
@@ -729,7 +729,7 @@ export default function Agenda() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState("list");
+  const [viewMode, setViewMode] = useState("week");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -798,7 +798,7 @@ export default function Agenda() {
       {/* ── Header ───────────────────────────────────────── */}
       <div style={{ marginBottom: isMobile ? 20 : 32, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
         <div style={{ minWidth: 0 }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? 24 : 32, fontWeight: 500, letterSpacing: "0.02em", color: T.onyx, margin: 0 }}>
+          <h1 style={{ fontFamily: "Inter", fontSize: isMobile ? 24 : 32, fontWeight: 600, letterSpacing: "-0.02em", color: T.onyx, margin: 0 }}>
             Agenda Clínica
           </h1>
           <p style={{ fontFamily: "Inter", fontSize: isMobile ? 10 : 11, letterSpacing: "0.08em", textTransform: "uppercase", color: T.charcoal, marginTop: 6 }}>
@@ -897,7 +897,7 @@ export default function Agenda() {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="w-[calc(100vw-16px)] sm:w-full" style={{ maxWidth: 520, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: T.onyx }}>
+            <DialogTitle style={{ fontFamily: "Inter", fontSize: 22, fontWeight: 600, color: T.onyx }}>
               {editingAppointment ? "Editar Consulta" : "Nova Consulta"}
             </DialogTitle>
           </DialogHeader>
@@ -915,7 +915,7 @@ export default function Agenda() {
       <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
         <DialogContent className="w-[calc(100vw-16px)] sm:w-full" style={{ maxWidth: 440 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: T.onyx }}>
+            <DialogTitle style={{ fontFamily: "Inter", fontSize: 22, fontWeight: 600, color: T.onyx }}>
               Detalhes da Consulta
             </DialogTitle>
           </DialogHeader>
