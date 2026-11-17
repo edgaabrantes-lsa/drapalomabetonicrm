@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  MAPA_W, MAPA_H, ROSTO_REFERENCIA_URL, criarObjeto, acharObjetoProximo,
+  MAPA_W, MAPA_H, ROSTO_REFERENCIA_URL, ROSTO_REFERENCIA_CROP, criarObjeto, acharObjetoProximo,
   moverObjeto, escalarObjeto, suavizarPontos, bboxNormalizado,
 } from "@/lib/mapaFacial";
 import FundoRosto from "./FundoRosto";
@@ -48,8 +48,10 @@ export default function MapaFacialEditor({
   }));
 
   const fonte = imagemUrl || ROSTO_REFERENCIA_URL || "";
+  const recorteReferencia = !imagemUrl && Boolean(ROSTO_REFERENCIA_CROP);
   const compacto = viewport.w < 768;
-  const alturaLimite = Math.max(260, Math.min(700, viewport.h - 290));
+  // Área de marcação ampliada: usa toda a largura disponível e uma altura generosa.
+  const alturaLimite = Math.max(440, Math.min(1200, Math.round(viewport.h - 150)));
 
   useEffect(() => {
     const aoRedimensionar = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -74,9 +76,13 @@ export default function MapaFacialEditor({
     const img = new Image();
     img.onload = () => {
       if (!ativo) return;
+      const nw = img.naturalWidth || MAPA_W;
+      const nh = img.naturalHeight || MAPA_H;
+      const c = recorteReferencia ? ROSTO_REFERENCIA_CROP : { x: 0, y: 0, w: 1, h: 1 };
+      const cw = Math.max(1, nw * c.w);
+      const ch = Math.max(1, nh * c.h);
       const w = 1000;
-      const h = img.naturalWidth ? Math.round((1000 * img.naturalHeight) / img.naturalWidth) : MAPA_H;
-      setRatio({ w, h: Math.max(200, h) });
+      setRatio({ w, h: Math.max(200, Math.round((w * ch) / cw)) });
       setCarregando(false);
     };
     img.onerror = () => {
@@ -334,7 +340,7 @@ export default function MapaFacialEditor({
           backgroundColor: "#0F0F0F",
           padding: 6,
           maxHeight: alturaLimite + 12,
-          overflow: zoom > 1 ? "auto" : "hidden",
+          overflow: zoom > 1 || conteudoH > alturaLimite ? "auto" : "hidden",
           WebkitOverflowScrolling: "touch",
         }}
         onContextMenu={(e) => e.preventDefault()}
@@ -368,7 +374,7 @@ export default function MapaFacialEditor({
                   y={0}
                   width={ratio.w}
                   height={ratio.h}
-                  preserveAspectRatio="xMidYMid meet"
+                  preserveAspectRatio={recorteReferencia ? "xMidYMid slice" : "xMidYMid meet"}
                 />
               )
             ) : (

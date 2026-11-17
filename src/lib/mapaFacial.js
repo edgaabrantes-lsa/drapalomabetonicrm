@@ -8,7 +8,14 @@ export const MAPA_H = 1400;
  * Imagem de referência fixa do mapa facial (rosto único, recortado e centralizado).
  * Quando vazia, o editor exibe o desenho anatômico neutro como base.
  */
-export const ROSTO_REFERENCIA_URL = "";
+export const ROSTO_REFERENCIA_URL =
+  "https://base44.app/api/apps/699dbefdfbf6a591f90b6e3b/files/mp/public/699dbefdfbf6a591f90b6e3b/9c21add86_rosto-referencia-mapa-facial.jpg";
+
+/**
+ * Recorte central aplicado sobre a foto de referência (frações 0–1 da imagem original),
+ * para que o rosto ocupe a maior parte da área de marcação. Não afeta a foto da paciente.
+ */
+export const ROSTO_REFERENCIA_CROP = { x: 0.15, y: 0, w: 0.7, h: 1 };
 
 export const CORES = ["#C8A96A", "#4ADE80", "#38BDF8", "#A78BFA", "#F472B6", "#EF4444", "#FFFFFF"];
 
