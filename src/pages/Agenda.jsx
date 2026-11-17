@@ -20,26 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
-// ── Tokens LSA Dark ──────────────────────────────────────────────
-const T = {
-  pearl: "#111620",
-  white: "#171D29",
-  onyx: "#E8EDF5",
-  charcoal: "#8A95AA",
-  subtle: "#252D3E",
-  gold: "#C5A059",
-};
-
-// Status config LSA — dots only, no big badges
-const statusDot = {
-  scheduled:   { dot: T.gold,    label: "Agendado" },
-  confirmed:   { dot: T.onyx,    label: "Confirmado" },
-  in_progress: { dot: T.gold,    label: "Em Andamento" },
-  completed:   { dot: "#CCCCCC", label: "Concluído" },
-  cancelled:   { dot: "#E53935", label: "Cancelado" },
-  no_show:     { dot: "#E53935", label: "Não Compareceu" },
-};
+import { useIsMobile } from "@/hooks/use-mobile";
+import SemanaMobile from "@/components/agenda/SemanaMobile";
+import { T, statusDot } from "@/lib/agendaTokens";
 
 const HOUR_HEIGHT = 64;
 const DAY_START = 8;
@@ -218,17 +201,18 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
 
 // ── Day View ─────────────────────────────────────────────────
 const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
+  const isMobile = useIsMobile();
   const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
   const dayAppts = appointments
     .filter(a => a.start_time && isSameDay(parseISO(a.start_time), date))
     .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
   return (
-    <div style={{ display: "flex", overflow: "auto", maxHeight: 600 }}>
+    <div style={{ display: "flex", overflowY: "auto", overflowX: "hidden", maxHeight: 600 }}>
       {/* Time axis */}
-      <div style={{ width: 56, flexShrink: 0 }}>
+      <div style={{ width: isMobile ? 40 : 56, flexShrink: 0 }}>
         {hours.map(h => (
-          <div key={h} style={{ height: HOUR_HEIGHT, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingRight: 12, paddingTop: 4 }}>
+          <div key={h} style={{ height: HOUR_HEIGHT, display: "flex", alignItems: "flex-start", justifyContent: "flex-end", paddingRight: isMobile ? 6 : 12, paddingTop: 4 }}>
             <span style={{ fontFamily: "Inter", fontSize: 11, color: "#BCBCBC" }}>{h}:00</span>
           </div>
         ))}
@@ -254,10 +238,10 @@ const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
                 top, height, borderRadius: 2,
                 background: T.white, borderLeft: `3px solid ${cfg.dot}`,
                 border: `1px solid ${T.subtle}`, borderLeftColor: cfg.dot,
-                padding: "4px 8px", cursor: "pointer",
+                padding: "4px 8px", cursor: "pointer", overflow: "hidden",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
               }}>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 12, color: T.onyx, margin: 0 }}>
+              <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 12, color: T.onyx, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {appt.patient_name}
               </p>
               {height > 40 && (
@@ -392,6 +376,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
 
 // ── Month View ────────────────────────────────────────────────
 const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot, onPrevMonth, onNextMonth }) => {
+  const isMobile = useIsMobile();
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -428,7 +413,7 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
       </button>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${T.subtle}` }}>
         {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(d => (
-          <div key={d} style={{ padding: "10px 0", textAlign: "center", fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: T.charcoal }}>
+          <div key={d} style={{ padding: isMobile ? "6px 0" : "10px 0", textAlign: "center", fontFamily: "Inter", fontSize: isMobile ? 8 : 9, letterSpacing: isMobile ? "0.06em" : "0.12em", textTransform: "uppercase", color: T.charcoal }}>
             {d}
           </div>
         ))}
@@ -440,7 +425,7 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
           return (
             <div key={day.toISOString()} onClick={() => onClickSlot(day, 9)}
               style={{
-                minHeight: 90, padding: 8,
+                minHeight: isMobile ? 72 : 90, padding: isMobile ? 4 : 8, overflow: "hidden",
                 borderBottom: `1px solid ${T.subtle}`, borderRight: `1px solid ${T.subtle}`,
                 cursor: "pointer",
                 background: isToday(day) ? "rgba(197,160,89,0.04)" : "transparent",
@@ -448,7 +433,7 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
               }}>
               <p style={{
                 fontFamily: isToday(day) ? "'Playfair Display', serif" : "Inter",
-                fontSize: 12, fontWeight: isToday(day) ? 500 : 300,
+                fontSize: isMobile ? 11 : 12, fontWeight: isToday(day) ? 500 : 300,
                 color: isToday(day) ? T.gold : T.onyx, marginBottom: 4,
               }}>
                 {format(day, "d")}
@@ -481,6 +466,7 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
 
 // ── List View — "The Exclusive Timeline" ─────────────────────
 const ListView = ({ appointments, onClickAppointment, onDelete }) => {
+  const isMobile = useIsMobile();
   const sorted = [...appointments].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
   const grouped = sorted.reduce((acc, apt) => {
     if (!apt.start_time) return acc;
@@ -502,15 +488,15 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
   }
 
   return (
-    <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 8 }}>
-      <div style={{ minWidth: 460 }}>
+    <div style={{ overflowX: "hidden", paddingBottom: 8 }}>
+      <div style={{ minWidth: isMobile ? 0 : 460 }}>
       {Object.entries(grouped).map(([dateKey, appts]) => (
         <div key={dateKey} style={{ marginBottom: 32 }}>
           {/* Date heading */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: isMobile ? 12 : 16 }}>
             <p style={{
               fontFamily: isToday(parseISO(dateKey)) ? "'Playfair Display', serif" : "Inter",
-              fontSize: isToday(parseISO(dateKey)) ? 16 : 11,
+              fontSize: isToday(parseISO(dateKey)) ? (isMobile ? 14 : 16) : (isMobile ? 10 : 11),
               fontStyle: isToday(parseISO(dateKey)) ? "normal" : "normal",
               letterSpacing: isToday(parseISO(dateKey)) ? "0.02em" : "0.12em",
               textTransform: isToday(parseISO(dateKey)) ? "none" : "uppercase",
@@ -531,10 +517,12 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
 
           {/* Timeline */}
           <div style={{ display: "flex", gap: 0 }}>
-            {/* Vertical line */}
-            <div style={{ width: 56, flexShrink: 0, position: "relative" }}>
-              <div style={{ position: "absolute", left: 28, top: 0, bottom: 0, width: "0.5px", background: T.subtle }} />
-            </div>
+            {/* Vertical line — apenas em telas maiores */}
+            {!isMobile && (
+              <div style={{ width: 56, flexShrink: 0, position: "relative" }}>
+                <div style={{ position: "absolute", left: 28, top: 0, bottom: 0, width: "0.5px", background: T.subtle }} />
+              </div>
+            )}
             {/* Cards */}
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
               {appts.map(appt => {
@@ -542,29 +530,37 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
                 return (
                   <div key={appt.id} style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
                     {/* Time to the left of the line */}
-                    <div style={{ width: 56, flexShrink: 0, textAlign: "right", paddingRight: 16, paddingTop: 14 }}>
-                      <span style={{ fontFamily: "Inter", fontSize: 11, color: "#BCBCBC" }}>
-                        {format(parseISO(appt.start_time), "HH:mm")}
-                      </span>
-                    </div>
+                    {!isMobile && (
+                      <div style={{ width: 56, flexShrink: 0, textAlign: "right", paddingRight: 16, paddingTop: 14 }}>
+                        <span style={{ fontFamily: "Inter", fontSize: 11, color: "#BCBCBC" }}>
+                          {format(parseISO(appt.start_time), "HH:mm")}
+                        </span>
+                      </div>
+                    )}
                     {/* "Invite" card */}
                     <div onClick={() => onClickAppointment(appt)}
                       style={{
                         flex: 1, background: T.white,
                         border: `1px solid ${T.subtle}`, borderRadius: 4,
-                        padding: "16px 20px", cursor: "pointer",
+                        padding: isMobile ? "12px 14px" : "16px 20px", cursor: "pointer",
                         boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
                         transition: "box-shadow 0.2s",
-                        display: "flex", alignItems: "center", gap: 16,
+                        display: "flex", alignItems: isMobile ? "stretch" : "center",
+                        flexDirection: isMobile ? "column" : "row", gap: isMobile ? 8 : 16,
                       }}
                       onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.06)"}
                       onMouseLeave={e => e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.03)"}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
+                        {isMobile && (
+                          <p style={{ fontFamily: "Inter", fontSize: 11, color: "#BCBCBC", margin: "0 0 4px" }}>
+                            {format(parseISO(appt.start_time), "HH:mm")}
+                          </p>
+                        )}
                         <p style={{
                           fontFamily: "'Playfair Display', serif",
                           fontStyle: "italic",
-                          fontSize: 18, color: T.onyx,
+                          fontSize: isMobile ? 15 : 18, color: T.onyx,
                           margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                         }}>
                           {appt.patient_name}
@@ -577,7 +573,7 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
                           {appt.procedure_name}{appt.professional_name ? ` — ${appt.professional_name}` : ""}
                         </p>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: isMobile ? 10 : 16, flexShrink: 0 }}>
                         {appt.duration_minutes && (
                           <span style={{ fontFamily: "Inter", fontSize: 10, color: T.charcoal }}>
                             {appt.duration_minutes}min
@@ -632,12 +628,13 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
 
 // ── Appointment Detail ────────────────────────────────────────
 const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDelete }) => {
+  const isMobile = useIsMobile();
   if (!appointment) return null;
   const cfg = statusDot[appointment.status] || statusDot.scheduled;
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", flexWrap: isMobile ? "wrap" : "nowrap", gap: 16, marginBottom: 24 }}>
         <div style={{ width: 44, height: 44, borderRadius: 2, background: T.pearl, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <User size={18} color={T.charcoal} />
         </div>
@@ -669,7 +666,7 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDel
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 20 }}>
         {[
           { label: "Horário", value: appointment.start_time && format(parseISO(appointment.start_time), "dd/MM/yyyy HH:mm") },
           { label: "Duração", value: `${appointment.duration_minutes} min` },
@@ -701,7 +698,7 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDel
         <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: T.charcoal, marginBottom: 10 }}>
           Atualizar Status
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 6 }}>
           {["confirmed", "in_progress", "completed", "no_show", "cancelled"].map(status => {
             const s = statusDot[status];
             const isActive = appointment.status === status;
@@ -730,6 +727,7 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDel
 // ── Main Page ─────────────────────────────────────────────────
 export default function Agenda() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("list");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -798,26 +796,27 @@ export default function Agenda() {
     <div style={{ fontFamily: "Inter, sans-serif", maxWidth: 1400, position: "relative", minHeight: "80vh" }}>
 
       {/* ── Header ───────────────────────────────────────── */}
-      <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
-        <div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 500, letterSpacing: "0.02em", color: T.onyx, margin: 0 }}>
+      <div style={{ marginBottom: isMobile ? 20 : 32, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? 24 : 32, fontWeight: 500, letterSpacing: "0.02em", color: T.onyx, margin: 0 }}>
             Agenda Clínica
           </h1>
-          <p style={{ fontFamily: "Inter", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal, marginTop: 6 }}>
+          <p style={{ fontFamily: "Inter", fontSize: isMobile ? 10 : 11, letterSpacing: "0.08em", textTransform: "uppercase", color: T.charcoal, marginTop: 6 }}>
             {getViewTitle()}
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
           {/* View toggle */}
-          <div style={{ display: "flex", border: `1px solid ${T.subtle}`, borderRadius: 2, overflow: "hidden" }}>
+          <div style={{ display: "flex", border: `1px solid ${T.subtle}`, borderRadius: 2, overflow: "hidden", width: isMobile ? "100%" : "auto" }}>
             {views.map(v => (
               <button key={v.id} onClick={() => setViewMode(v.id)}
                 style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "7px 14px", background: viewMode === v.id ? T.gold : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  flex: isMobile ? 1 : undefined,
+                  padding: isMobile ? "8px 4px" : "7px 14px", background: viewMode === v.id ? T.gold : "transparent",
                   color: viewMode === v.id ? "#000" : T.charcoal,
                   border: "none", cursor: "pointer",
-                  fontFamily: "Inter", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
+                  fontFamily: "Inter", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase",
                   borderRight: `1px solid ${T.subtle}`,
                 }}>
                 {v.icon} <span>{v.label}</span>
@@ -826,7 +825,7 @@ export default function Agenda() {
           </div>
           {/* Navigation */}
           {viewMode !== "list" && (
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: 6, width: isMobile ? "100%" : "auto" }}>
               <button onClick={() => handleNav(-1)} style={{ border: `1px solid ${T.subtle}`, background: "transparent", borderRadius: 2, padding: "7px 10px", cursor: "pointer", color: T.onyx }}>
                 <ChevronLeft size={14} />
               </button>
@@ -844,7 +843,7 @@ export default function Agenda() {
       </div>
 
       {/* ── Mini KPIs ──────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
         {[
           { label: "Consultas Hoje", value: todayAppts.length },
           { label: "Confirmadas", value: todayAppts.filter(a => a.status === "confirmed").length },
@@ -854,13 +853,13 @@ export default function Agenda() {
           <div key={stat.label} style={{
             background: T.white, border: `1px solid ${T.subtle}`,
             borderBottom: stat.gold ? `2px solid ${T.gold}` : `1px solid ${T.subtle}`,
-            borderRadius: 4, padding: "16px 20px",
+            borderRadius: 4, padding: isMobile ? "12px 14px" : "16px 20px",
             boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
           }}>
-            <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#999", marginBottom: 8 }}>
+            <p style={{ fontFamily: "Inter", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "#999", marginBottom: 8 }}>
               {stat.label}
             </p>
-            <p style={{ fontFamily: "Inter", fontSize: 22, fontWeight: 300, color: stat.gold ? T.gold : T.onyx }}>
+            <p style={{ fontFamily: "Inter", fontSize: isMobile ? 18 : 22, fontWeight: 300, color: stat.gold ? T.gold : T.onyx }}>
               {stat.value}
             </p>
           </div>
@@ -868,11 +867,13 @@ export default function Agenda() {
       </div>
 
       {/* ── Calendar ──────────────────────────────────── */}
-      <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+      <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflowX: isMobile ? "hidden" : "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
         {viewMode === "day" && <DayView date={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
-        {viewMode === "week" && <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />}
+        {viewMode === "week" && (isMobile
+          ? <SemanaMobile weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />
+          : <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />)}
         {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevMonth={() => handleNav(-1)} onNextMonth={() => handleNav(1)} />}
-        {viewMode === "list" && <div style={{ padding: "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} onDelete={(id) => deleteMutation.mutate(id)} /></div>}
+        {viewMode === "list" && <div style={{ padding: isMobile ? "16px 12px" : "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} onDelete={(id) => deleteMutation.mutate(id)} /></div>}
       </div>
 
       {/* ── FAB: Novo Agendamento ─────────────────────── */}
@@ -894,7 +895,7 @@ export default function Agenda() {
 
       {/* ── Form Dialog ──────────────────────────────── */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent style={{ maxWidth: 520, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <DialogContent className="w-[calc(100vw-16px)] sm:w-full" style={{ maxWidth: 520, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: T.onyx }}>
               {editingAppointment ? "Editar Consulta" : "Nova Consulta"}
@@ -912,7 +913,7 @@ export default function Agenda() {
 
       {/* ── Detail Dialog ─────────────────────────────── */}
       <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
-        <DialogContent style={{ maxWidth: 440 }}>
+        <DialogContent className="w-[calc(100vw-16px)] sm:w-full" style={{ maxWidth: 440 }}>
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: T.onyx }}>
               Detalhes da Consulta
