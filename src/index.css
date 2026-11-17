@@ -456,3 +456,25 @@ svg[class*="lucide"] {
 .portal-cat-scroll::-webkit-scrollbar-thumb:hover {
   background: #C8A96A;
 }
+
+/* ── Rolagem horizontal da tabela de Lançamentos (DRE) ── */
+.dre-table-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #4A4A4A #141414;
+}
+.dre-table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.dre-table-scroll::-webkit-scrollbar-track {
+  background: #141414;
+  border-radius: 4px;
+}
+.dre-table-scroll::-webkit-scrollbar-thumb {
+  background: #4A4A4A;
+  border-radius: 4px;
+}
+.dre-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #C8A96A;
+}

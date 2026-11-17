@@ -177,7 +177,19 @@ export default function LancamentosDRE({ filters }) {
             style={{ height: 34, fontSize: 12, width: 220 }}
           />
           <Select value={tipoFilter} onValueChange={setTipoFilter}>
-            <SelectTrigger className="w-32 bg-[#121212] border-[#2B2B2B] text-white" style={{ height: 34, fontSize: 12 }}>
+            <SelectTrigger
+              className="bg-[#121212] border-[#2B2B2B] text-white flex-none"
+              style={{
+                height: 34,
+                fontSize: 12,
+                width: "max-content",
+                minWidth: 136,
+                maxWidth: "100%",
+                paddingLeft: 12,
+                paddingRight: 12,
+                whiteSpace: "nowrap",
+              }}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[#1A1A1A] border-[#2B2B2B]">
@@ -239,7 +251,19 @@ export default function LancamentosDRE({ filters }) {
       {verResumo ? (
         <ResumoDiario lancamentos={filtered} />
       ) : (
-        <div style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", borderRadius: 8, overflowX: "auto" }}>
+        <div
+          className="dre-table-scroll w-full min-w-0"
+          style={{
+            backgroundColor: "#1A1A1A",
+            border: "1px solid #2B2B2B",
+            borderRadius: 8,
+            width: "100%",
+            maxWidth: "100%",
+            minWidth: 0,
+            overflowX: "auto",
+            overflowY: "hidden",
+          }}
+        >
           {isLoading ? (
             <div style={{ padding: 40, textAlign: "center" }}>
               <div className="inline-block w-6 h-6 border-2 border-[#2B2B2B] border-t-[#C8A96A] rounded-full animate-spin" />
@@ -252,7 +276,7 @@ export default function LancamentosDRE({ filters }) {
               </p>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1080 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #2B2B2B" }}>
                   <th style={th}>Data</th>
