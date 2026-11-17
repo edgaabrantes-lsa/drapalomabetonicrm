@@ -17,10 +17,9 @@ const btn = (ativo) => ({
 const linha = {
   display: "flex",
   alignItems: "center",
+  flexWrap: "wrap",
   gap: 6,
-  overflowX: "auto",
   paddingBottom: 2,
-  WebkitOverflowScrolling: "touch",
 };
 
 export default function MapaToolbar({

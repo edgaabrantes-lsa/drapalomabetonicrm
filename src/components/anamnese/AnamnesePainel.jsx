@@ -86,7 +86,7 @@ export default function AnamnesePainel({ patient, currentUser, compacto = false 
       )}
 
       <Dialog open={!!aberta || nova} onOpenChange={(o) => { if (!o) fechar(); }}>
-        <DialogContent className="text-white max-w-4xl max-h-[92vh] overflow-y-auto" style={{ backgroundColor: "#1A1A1A", borderColor: "#2B2B2B" }}>
+        <DialogContent className="text-white w-[calc(100vw-16px)] max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6" style={{ backgroundColor: "#1A1A1A", borderColor: "#2B2B2B" }}>
           <DialogHeader>
             <DialogTitle style={{ fontSize: 16, fontWeight: 600, color: "#FFFFFF" }}>
               {aberta ? `Anamnese — ${fmt(aberta.data_avaliacao)}` : "Nova anamnese"}

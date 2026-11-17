@@ -146,7 +146,7 @@ export default function AnamnesePacientes() {
       </div>
 
       <Dialog open={!!paciente} onOpenChange={(o) => { if (!o) setPaciente(null); }}>
-        <DialogContent className="text-white max-w-5xl max-h-[92vh] overflow-y-auto" style={{ backgroundColor: "#1A1A1A", borderColor: "#2B2B2B" }}>
+        <DialogContent className="text-white w-[calc(100vw-16px)] max-w-5xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6" style={{ backgroundColor: "#1A1A1A", borderColor: "#2B2B2B" }}>
           <DialogHeader>
             <DialogTitle style={{ fontSize: 16, fontWeight: 600, color: "#FFFFFF" }}>
               Anamnese — {paciente?.full_name}

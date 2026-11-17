@@ -133,10 +133,10 @@ export default function AnamneseForm({ patient, anamnese, currentUser, onClose, 
   const est = estadoSalvamento[saveState];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full min-w-0">
       {/* Cabeçalho / identificação */}
-      <div style={{ backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 8, padding: 14 }}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div style={{ backgroundColor: "#121212", border: "1px solid #2B2B2B", borderRadius: 8, padding: 14 }} className="min-w-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 min-w-0">
           <div>
             <Label style={labelStyle}>Paciente</Label>
             <p style={{ fontSize: 13, color: "#FFFFFF", marginTop: 4 }}>{form.patient_name}</p>
@@ -203,7 +203,7 @@ export default function AnamneseForm({ patient, anamnese, currentUser, onClose, 
         <p style={{ fontSize: 10, color: "#555555" }}>
           Preencha somente o que foi efetivamente executado — o planejamento não é copiado automaticamente.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 min-w-0">
           {[
             ["data", "Data", "date"],
             ["profissional", "Profissional", "text"],
