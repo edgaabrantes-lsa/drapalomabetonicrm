@@ -368,15 +368,6 @@ export default function Layout({ children, currentPageName }) {
           {/* Busca de pacientes */}
           <BuscaPacientes />
 
-          {/* Logo central */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
-            <img
-              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
-              alt="Paloma Betoni"
-              style={{ height: 132, objectFit: "contain" }}
-            />
-          </div>
-
           {/* Right side */}
           <div className="flex items-center" style={{ gap: 16 }}>
             <div style={{ width: 1, height: 20, backgroundColor: "#1E1E1E" }} />
