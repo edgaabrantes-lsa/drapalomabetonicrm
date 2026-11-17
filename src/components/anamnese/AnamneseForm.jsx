@@ -53,7 +53,18 @@ export default function AnamneseForm({ patient, anamnese, currentUser, onClose, 
       .catch(() => {});
   }, []);
 
+  // Evita gravações simultâneas: uma resposta antiga nunca sobrescreve alterações recentes
+  const salvando = useRef(false);
+  const aguardando = useRef(false);
+  const pendentes = useRef([]);
+
   const persist = async (extra = {}) => {
+    if (salvando.current) {
+      aguardando.current = true;
+      if (extra && Object.keys(extra).length) pendentes.current.push(extra);
+      return null;
+    }
+    salvando.current = true;
     const { imagem_url, ...mapaParaSalvar } = form.mapa_facial || {};
     const payload = { ...form, ...extra, mapa_facial: mapaParaSalvar };
     setSaveState("saving");
@@ -74,6 +85,15 @@ export default function AnamneseForm({ patient, anamnese, currentUser, onClose, 
     } catch (e) {
       setSaveState("error");
       return null;
+    } finally {
+      salvando.current = false;
+      if (aguardando.current) {
+        aguardando.current = false;
+        const proximo = pendentes.current.shift() || {};
+        setTimeout(() => {
+          if (dirty.current || Object.keys(proximo).length) persist(proximo);
+        }, 400);
+      }
     }
   };
 
