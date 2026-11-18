@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import readSimulationImageDimensions from "@/components/facial/readSimulationImageDimensions";
 import { Camera, Upload, X, Check, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -186,13 +187,15 @@ export default function FullFaceSimulationModal({
       const { file_url: original_image_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
       if (!original_image_url) throw new Error("Falha no upload da imagem");
 
-      // Chamar backend function via SDK
+      // Preserve the original photograph's proportions in the contour edit.
+      const imageMetadata = await readSimulationImageDimensions(imageFile);
       const response = await base44.functions.invoke("generateFullFaceSimulation", {
         patient_id: patientId,
         original_image_url,
         source_type: sourceType || "upload",
         consent_lgpd: true,
         simulation_options: ["full_face"],
+        image_metadata: imageMetadata,
       });
 
       const result = response.data;

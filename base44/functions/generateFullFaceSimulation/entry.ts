@@ -1,11 +1,12 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { refineJawContour } from './jawContour.js';
 
 // ══════════════════════════════════════════════════════════════
-//  Simulação Antes e Depois v15 — Apollo
-//  • Prompt forte por procedimento + nível de intensidade
-//  • Ângulo mandibular em graus (feminino 125°, masculino 129°)
-//  • Validação anti-erro: hash da imagem + retry com prompt reforçado
-//  • Nunca devolve a imagem original como resultado
+//  Simulação Antes e Depois v16 — Contorno localizado
+//  • Preserva os procedimentos e níveis selecionados
+//  • Edição dedicada do ângulo e da borda mandibular
+//  • Verificação visual do contorno, identidade e enquadramento
+//  • Nunca usa o rascunho como resultado se o refinamento falhar
 // ══════════════════════════════════════════════════════════════
 
 // Decodificadores de imagem puros-JS para comparação de pixels
@@ -142,26 +143,12 @@ function buildPrompt(options: string[], intensity: number, isRetry: boolean): st
     ? `\n\nATENÇÃO — CORREÇÃO OBRIGATÓRIA: a tentativa anterior devolveu uma imagem praticamente idêntica à foto original, o que é um ERRO. Refazer com alteração FRANCA e IMEDIATAMENTE visível ${regions}. É proibido devolver a foto original sem alteração.`
     : "";
 
-  // Ângulo gonial em graus: referência anatômica explícita pedida pela clínica.
-  const wantsGonialAngle = options.some(o =>
-    ["mandibula", "mandibula_mento", "mento", "papada", "full_face"].includes(o)
-  );
-  const gonialBlock = wantsGonialAngle
-    ? `\nÂNGULO MANDIBULAR — MEDIDA OBRIGATÓRIA:
-- Observe se o rosto da foto é feminino ou masculino.
-- Rosto FEMININO: construir ângulo mandibular (gônio) de aproximadamente 125 graus.
-- Rosto MASCULINO: construir ângulo mandibular (gônio) de aproximadamente 129 graus.
-- O ângulo precisa aparecer no contorno: a linha vertical do ramo da mandíbula encontra a linha do corpo mandibular formando um gônio bem definido, com sombra nítida naquele ponto.
-- O mento acompanha essa mudança: projeção à frente e leve alongamento vertical, deixando o terço inferior marcado.`
-    : "";
-
   return `TAREFA: editar a foto enviada e devolver a MESMA pessoa, a mesma fotografia (mesmo enquadramento, roupa, fundo, luz e expressão), porém já com o resultado do procedimento estético aplicado. Esta é uma simulação clínica de resultado.
 
 REGRA Nº 1 — A MUDANÇA É OBRIGATÓRIA: a região tratada PRECISA mudar de forma claramente visível. "Preservar a identidade" significa manter a mesma pessoa reconhecível (mesmo rosto, etnia, idade aparente, olhos, cabelo, sobrancelhas, expressão) — NÃO significa manter a região tratada igual à foto original. A região tratada deve ficar visivelmente diferente; o resto da foto permanece intacto.
 
 PROCEDIMENTO(S) ESCOLHIDO(S):
 ${procBlock}
-${gonialBlock}
 
 REGRA DE EVIDÊNCIA: em todos os níveis, o resultado deve ser um pouco MAIS evidente que o padrão de mercado de simuladores estéticos. A clínica precisa que a paciente veja a diferença sem esforço. Nunca entregue uma mudança que só aparece ampliando a imagem.
 
@@ -256,17 +243,17 @@ async function imageHash(url: string): Promise<string | null> {
   }
 }
 
-Deno.serve(async (req) => {
+export default async function(req) {
   let simulationId: string | null = null;
   let base44Client: any = null;
 
   try {
     base44Client = createClientFromRequest(req);
-    const user = await base44Client.auth.me();
+    const user = await base44Client.auth.me().catch(e => e.status === 401 ? null : Promise.reject(e));
     if (!user) return Response.json({ error: "Não autorizado" }, { status: 401 });
 
-    const payload = await req.json();
-    const { patient_id, original_image_url, source_type, consent_lgpd, simulation_options, intensity } = payload;
+    const payload = await req.json().catch(() => ({}));
+    const { patient_id, original_image_url, source_type, consent_lgpd, simulation_options, intensity, image_metadata: sourceImageMetadata } = payload;
 
     if (!patient_id || !original_image_url) {
       return Response.json({ error: "patient_id e original_image_url são obrigatórios" }, { status: 400 });
@@ -294,7 +281,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v15_apollo",
+      ai_prompt_version: "v16_jaw_contour",
       intensity: finalIntensity,
     });
     simulationId = simulation.id;
@@ -310,54 +297,77 @@ Deno.serve(async (req) => {
       console.log("Aviso: não foi possível buscar paciente:", (e as Error).message);
     }
 
-    // Geração com verificação: se a IA devolver a mesma foto (mesma URL ou
-    // bytes idênticos), refazemos uma vez com prompt reforçado. O hash evita
-    // decodificar a imagem, então não há risco de estourar a memória.
+    const needsJawContour = finalOptions.some(o => ["full_face", "mandibula", "mandibula_mento"].includes(o));
     let generated_image_url = "";
-    let diffPct: number | null = null;
-    const originalHash = await imageHash(original_image_url);
+    let diffPct = null;
+    let jawRefinement = null;
 
     console.log(`Geração — opções: ${finalOptions.join(", ")} | intensidade: ${finalIntensity}`);
 
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const isRetry = attempt > 0;
-      const imageResult = await base44Client.asServiceRole.integrations.Core.GenerateImage({
-        prompt: buildPrompt(finalOptions, finalIntensity, isRetry),
-        existing_image_urls: [original_image_url],
+    if (needsJawContour) {
+      // Jaw-only goes straight to the dedicated edit. Combined treatments retain
+      // their other selected changes before refining the mandibular contour.
+      const draftOptions = [...new Set(finalOptions.flatMap(o =>
+        o === "mandibula" ? [] : o === "mandibula_mento" ? ["mento"] : [o]
+      ))];
+      let draftUrl = original_image_url;
+      if (draftOptions.length) {
+        const draft = await base44Client.asServiceRole.integrations.Core.GenerateImage({
+          prompt: buildPrompt(draftOptions, finalIntensity, false),
+          existing_image_urls: [original_image_url],
+        });
+        if (!draft?.url) throw new Error("Nenhuma imagem gerada para os procedimentos selecionados.");
+        draftUrl = draft.url;
+      }
+      jawRefinement = await refineJawContour(base44Client, {
+        draftUrl, originalUrl: original_image_url, intensity: finalIntensity,
+        imageMetadata: sourceImageMetadata,
       });
-
-      const url = imageResult?.url || "";
-      if (!url) {
-        if (isRetry) throw new Error("Nenhuma imagem gerada pela plataforma.");
-        continue;
+      generated_image_url = jawRefinement.imageUrl;
+      console.log("Verificação visual mandibular:", JSON.stringify(jawRefinement.validation));
+    } else {
+      // Other isolated procedures retain their existing generation flow.
+      const originalHash = await imageHash(original_image_url);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const isRetry = attempt > 0;
+        const imageResult = await base44Client.asServiceRole.integrations.Core.GenerateImage({
+          prompt: buildPrompt(finalOptions, finalIntensity, isRetry),
+          existing_image_urls: [original_image_url],
+        });
+        const url = imageResult?.url || "";
+        if (!url) {
+          if (isRetry) throw new Error("Nenhuma imagem gerada pela plataforma.");
+          continue;
+        }
+        const generatedHash = await imageHash(url);
+        const unchanged = url === original_image_url ||
+          (!!originalHash && !!generatedHash && originalHash === generatedHash);
+        if (!unchanged) {
+          generated_image_url = url;
+          break;
+        }
+        console.log(`Tentativa ${attempt + 1}: imagem idêntica à original — repetindo com prompt reforçado.`);
       }
-
-      const generatedHash = await imageHash(url);
-      const unchanged =
-        url === original_image_url ||
-        (!!originalHash && !!generatedHash && originalHash === generatedHash);
-
-      if (!unchanged) {
-        generated_image_url = url;
-        break;
-      }
-      console.log(`Tentativa ${attempt + 1}: imagem idêntica à original — repetindo com prompt reforçado.`);
     }
 
     if (!generated_image_url) {
       await base44Client.asServiceRole.entities.FullFaceSimulation.update(simulationId, {
         status: "failed",
-        error_message: "IA devolveu a imagem original sem alteração após duas tentativas.",
+        error_message: needsJawContour
+          ? `Refinamento mandibular não aprovado: ${jawRefinement?.validation?.observation || "contorno, identidade ou enquadramento inconsistentes"}`
+          : "IA devolveu a imagem original sem alteração após duas tentativas.",
       });
       return Response.json({
-        error: "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente com outro nível de intensidade.",
+        error: needsJawContour
+          ? "A verificação visual não aprovou o contorno mandibular preservando a foto. Tente uma foto com o ângulo da mandíbula visível, livre e bem iluminado."
+          : "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente com outro nível de intensidade.",
         code: "NO_VISIBLE_CHANGE",
       }, { status: 422 });
     }
 
     const procLabels = finalOptions.map(o => PROCEDURE_MAP[o]?.label || o).join(", ");
     const intensityLabel = INTENSITY_MAP[finalIntensity]?.label || "Moderada";
-    const technicalReport = `Simulação clínica v15 (Apollo) gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}. Identidade facial, etnia, cor dos olhos, tom de pele e áreas não selecionadas preservados. Resultado meramente ilustrativo para apoio visual em consulta estética.`;
+    const technicalReport = `Simulação ilustrativa v16 gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}.${needsJawContour ? " Edição específica dos ângulos e da borda mandibular, com verificação visual por IA do contorno, identidade e enquadramento. Essa verificação não constitui avaliação clínica." : " Preservação da identidade e das áreas não selecionadas solicitada à IA."} Resultado meramente ilustrativo para apoio visual em consulta estética, sem promessa de resultado clínico.`;
 
     // Salvar resultado
     await base44Client.entities.FullFaceSimulation.update(simulationId, {
@@ -368,12 +378,16 @@ Deno.serve(async (req) => {
         simulation_options: finalOptions,
         intensity: finalIntensity,
         intensity_label: intensityLabel,
-        prompt_version: "v15_apollo",
+        prompt_version: "v16_jaw_contour",
         identity_preserved: true,
         natural_realism: true,
         diff_pct: diffPct,
+        jaw_contour_refinement: jawRefinement ? {
+          method: jawRefinement.method,
+          visual_check: jawRefinement.validation,
+        } : null,
       },
-      image_metadata: { format: "png", width: 1024, height: 1024 },
+      image_metadata: needsJawContour ? { format: "png" } : { format: "png", width: 1024, height: 1024 },
     });
 
     // Log de auditoria
@@ -390,7 +404,7 @@ Deno.serve(async (req) => {
       console.log("Log de auditoria falhou (não crítico):", (e as Error).message);
     }
 
-    console.log("Simulação v15 concluída:", simulationId, "diff:", diffPct);
+    console.log("Simulação v16 concluída:", simulationId, "refinamento mandibular:", needsJawContour);
     return Response.json({
       success: true,
       simulation_id: simulationId,
@@ -418,4 +432,4 @@ Deno.serve(async (req) => {
       code: "GENERATION_FAILED",
     }, { status: 500 });
   }
-});
+}

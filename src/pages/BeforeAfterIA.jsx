@@ -25,6 +25,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import PatientSelectorModal from "@/components/facial/PatientSelectorModal";
+import readSimulationImageDimensions from "@/components/facial/readSimulationImageDimensions";
+import SimulationFullscreenModal from "@/components/facial/SimulationFullscreenModal";
+import SimulationSideBySideView from "@/components/facial/SimulationSideBySideView";
 
 const T = {
   bg: "#111620",
@@ -369,63 +372,6 @@ function BeforeAfterSlider({ before, after }) {
   );
 }
 
-/* ─────────────────────────────────────
-   VISUALIZADOR LADO A LADO
-───────────────────────────────────────*/
-function SideBySideView({ before, after }) {
-  return (
-    <div className="grid grid-cols-2 gap-2 w-full">
-      <div className="relative rounded-xl overflow-hidden bg-black">
-        <img src={before} alt="Antes"
-          style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
-        />
-        <div className="absolute bottom-2 left-2 text-xs font-semibold text-white px-2 py-0.5 rounded"
-          style={{ background: "rgba(0,0,0,0.65)" }}>ANTES</div>
-      </div>
-      <div className="relative rounded-xl overflow-hidden bg-black">
-        <img src={after} alt="Depois"
-          style={{ display: "block", width: "100%", height: "auto", objectFit: "contain" }}
-        />
-        <div className="absolute bottom-2 right-2 text-xs font-semibold text-white px-2 py-0.5 rounded"
-          style={{ background: "rgba(0,0,0,0.65)" }}>DEPOIS</div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────
-   MODAL FULLSCREEN
-───────────────────────────────────────*/
-function FullscreenModal({ image, onClose }) {
-  useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.95)" }}
-      onClick={onClose}
-    >
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center z-10"
-        style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
-      >
-        <X className="h-5 w-5" />
-      </button>
-      <img
-        src={image}
-        alt="Imagem completa"
-        style={{ maxWidth: "95vw", maxHeight: "95vh", objectFit: "contain", borderRadius: 8 }}
-        onClick={e => e.stopPropagation()}
-        draggable={false}
-      />
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────
    WIZARD PRINCIPAL DE SIMULAÇÃO
@@ -512,6 +458,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
       setOriginalImageUrl(file_url);
 
+      const imageMetadata = await readSimulationImageDimensions(imageFile);
       const response = await base44.functions.invoke("generateFullFaceSimulation", {
         patient_id: patient.id,
         original_image_url: file_url,
@@ -519,6 +466,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
         consent_lgpd: true,
         simulation_options: selectedOptions,
         intensity,
+        image_metadata: imageMetadata,
       });
 
       const result = response.data;
@@ -805,7 +753,11 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
         <p className="text-xs" style={{ color: T.muted }}>
           Intensidade: {INTENSITY_LEVELS.find(l => l.value === intensity)?.label || "Moderada"}
         </p>
-        <p className="text-xs" style={{ color: T.muted }}>Isso pode levar até 60 segundos</p>
+        <p className="text-xs" style={{ color: T.muted }}>
+          {selectedOptions.some(id => ["full_face", "mandibula", "mandibula_mento"].includes(id))
+            ? "Inclui refinamento específico do contorno mandibular e verificação visual. Pode levar alguns minutos e consumir mais créditos de IA."
+            : "Isso pode levar até 60 segundos"}
+        </p>
       </div>
     </div>
   );
@@ -942,7 +894,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
 
       {/* Modal fullscreen */}
       {fullscreen && generatedImage && (
-        <FullscreenModal image={generatedImage} onClose={() => setFullscreen(false)} />
+        <SimulationFullscreenModal image={generatedImage} onClose={() => setFullscreen(false)} />
       )}
     </div>
   );
