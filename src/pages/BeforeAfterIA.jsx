@@ -58,9 +58,9 @@ const SIMULATION_OPTIONS = [
 ];
 
 const INTENSITY_LEVELS = [
-  { value: 1, label: "Suave", desc: "Refinamento leve, visível na comparação" },
-  { value: 2, label: "Moderada", desc: "Mudança clara já na primeira olhada" },
-  { value: 3, label: "Mais evidente", desc: "Resultado máximo, diferença óbvia" },
+  { value: 1, label: "Suave", desc: "Refinamento já bem visível na comparação" },
+  { value: 2, label: "Moderada", desc: "Mudança forte, evidente na primeira olhada" },
+  { value: 3, label: "Mais evidente", desc: "Resultado máximo, diferença inconfundível" },
 ];
 
 const statusConfig = {

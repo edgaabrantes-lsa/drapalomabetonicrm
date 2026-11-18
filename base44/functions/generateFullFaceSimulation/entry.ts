@@ -1,10 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // ══════════════════════════════════════════════════════════════
-//  Simulação Antes e Depois v13 — Apollo
+//  Simulação Antes e Depois v15 — Apollo
 //  • Prompt forte por procedimento + nível de intensidade
-//  • Validação anti-erro: compara pixels antes/depois
-//  • Retry automático com prompt mais forte se sem diferença
+//  • Ângulo mandibular em graus (feminino 125°, masculino 129°)
+//  • Validação anti-erro: hash da imagem + retry com prompt reforçado
 //  • Nunca devolve a imagem original como resultado
 // ══════════════════════════════════════════════════════════════
 
@@ -55,18 +55,18 @@ const PROCEDURE_MAP: Record<string, { label: string; region: string; delta: stri
   },
   mandibula: {
     label: "Mandíbula",
-    region: "somente a linha da mandíbula",
-    delta: "definir e marcar o ângulo mandibular, contorno inferior mais reto e nítido, sombra anatômica sob o osso coerente com a luz da foto",
+    region: "somente a linha da mandíbula e o ângulo gônio",
+    delta: "definir e marcar com força o ângulo mandibular (gônio) no ângulo indicado para o rosto, contorno inferior reto e nítido, sombra anatômica bem visível sob o osso coerente com a luz da foto, afinando visualmente a parte inferior do rosto",
   },
   mento: {
     label: "Mento / Queixo",
     region: "somente o queixo",
-    delta: "projetar e alongar o queixo, corrigir a retração, equilibrar o terço inferior do rosto",
+    delta: "projetar e alongar o queixo de forma nítida, corrigir a retração, criar sombra e contorno definido no mento, equilibrando o terço inferior do rosto",
   },
   mandibula_mento: {
     label: "Mandíbula e Mento",
     region: "somente a mandíbula e o queixo",
-    delta: "definir o ângulo mandibular e projetar o queixo, criando contorno inferior marcado, reto e equilibrado",
+    delta: "construir o ângulo mandibular (gônio) no ângulo indicado para o rosto e projetar o queixo, criando contorno inferior marcado, reto, angular e equilibrado, com sombra definida no gônio e no mento",
   },
   labios: {
     label: "Lábios",
@@ -102,19 +102,19 @@ const INTENSITY_MAP: Record<number, { label: string; complement: string; magnitu
     label: "Suave",
     complement:
       "Resultado discreto e elegante: a mudança é sutil, mas existe e é identificável quando as duas imagens são comparadas lado a lado. Nada de resultado idêntico à foto original.",
-    magnitude: "cerca de 30% da magnitude máxima descrita (refinamento leve)",
+    magnitude: "cerca de 50% da magnitude máxima descrita (refinamento já bem identificável)",
   },
   2: {
     label: "Moderada",
     complement:
       "Resultado claramente perceptível já na primeira olhada, sem parecer artificial. A região tratada fica visivelmente diferente da foto original.",
-    magnitude: "cerca de 60% da magnitude máxima descrita (mudança clara)",
+    magnitude: "cerca de 85% da magnitude máxima descrita (mudança clara e imediata)",
   },
   3: {
     label: "Mais evidente",
     complement:
       "Resultado marcante e inconfundível: a mudança é a mais forte possível mantendo aparência natural e clinicamente plausível. Colocando as duas fotos lado a lado, a diferença é óbvia à primeira vista.",
-    magnitude: "90 a 100% da magnitude máxima descrita (mudança expressiva e óbvia)",
+    magnitude: "100% da magnitude máxima descrita, podendo ir um pouco além dentro do plausível clínico (mudança expressiva e óbvia)",
   },
 };
 
@@ -133,13 +133,26 @@ function buildPrompt(options: string[], intensity: number, isRetry: boolean): st
 
   // Cada nível precisa entregar um resultado MENSURAVELMENTE diferente do outro.
   const separation: Record<number, string> = {
-    1: "Nível 1 de 3 (o mais discreto): refinamento leve. Quem olhar as duas fotos em sequência percebe a melhora, mas o rosto continua muito próximo do original.",
-    2: "Nível 2 de 3: a região tratada fica CLARAMENTE diferente do original — volume, contorno, linhas ou tom mudam de forma óbvia para qualquer observador, mantendo naturalidade.",
+    1: "Nível 1 de 3 (o mais discreto): refinamento que já se percebe com clareza ao comparar as duas fotos, mesmo em tela pequena. O rosto continua próximo do original, mas a região tratada está nitidamente melhor.",
+    2: "Nível 2 de 3: a região tratada fica MUITO diferente do original — volume, contorno, linhas ou tom mudam de forma óbvia e imediata para qualquer observador, mesmo sem comparação lado a lado, mantendo naturalidade.",
     3: "Nível 3 de 3 (o mais forte): resultado de revista, o máximo que ainda parece natural. A diferença em relação ao original é gritante e não deixa dúvida de que o procedimento foi feito naquela região.",
   };
 
   const retryBoost = isRetry
     ? `\n\nATENÇÃO — CORREÇÃO OBRIGATÓRIA: a tentativa anterior devolveu uma imagem praticamente idêntica à foto original, o que é um ERRO. Refazer com alteração FRANCA e IMEDIATAMENTE visível ${regions}. É proibido devolver a foto original sem alteração.`
+    : "";
+
+  // Ângulo gonial em graus: referência anatômica explícita pedida pela clínica.
+  const wantsGonialAngle = options.some(o =>
+    ["mandibula", "mandibula_mento", "mento", "papada", "full_face"].includes(o)
+  );
+  const gonialBlock = wantsGonialAngle
+    ? `\nÂNGULO MANDIBULAR — MEDIDA OBRIGATÓRIA:
+- Observe se o rosto da foto é feminino ou masculino.
+- Rosto FEMININO: construir ângulo mandibular (gônio) de aproximadamente 125 graus.
+- Rosto MASCULINO: construir ângulo mandibular (gônio) de aproximadamente 129 graus.
+- O ângulo precisa aparecer no contorno: a linha vertical do ramo da mandíbula encontra a linha do corpo mandibular formando um gônio bem definido, com sombra nítida naquele ponto.
+- O mento acompanha essa mudança: projeção à frente e leve alongamento vertical, deixando o terço inferior marcado.`
     : "";
 
   return `TAREFA: editar a foto enviada e devolver a MESMA pessoa, a mesma fotografia (mesmo enquadramento, roupa, fundo, luz e expressão), porém já com o resultado do procedimento estético aplicado. Esta é uma simulação clínica de resultado.
@@ -148,6 +161,9 @@ REGRA Nº 1 — A MUDANÇA É OBRIGATÓRIA: a região tratada PRECISA mudar de f
 
 PROCEDIMENTO(S) ESCOLHIDO(S):
 ${procBlock}
+${gonialBlock}
+
+REGRA DE EVIDÊNCIA: em todos os níveis, o resultado deve ser um pouco MAIS evidente que o padrão de mercado de simuladores estéticos. A clínica precisa que a paciente veja a diferença sem esforço. Nunca entregue uma mudança que só aparece ampliando a imagem.
 
 INTENSIDADE — ${intensityInfo.label}:
 ${separation[intensity] || separation[2]}
@@ -278,7 +294,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v14_apollo",
+      ai_prompt_version: "v15_apollo",
       intensity: finalIntensity,
     });
     simulationId = simulation.id;
@@ -341,7 +357,7 @@ Deno.serve(async (req) => {
 
     const procLabels = finalOptions.map(o => PROCEDURE_MAP[o]?.label || o).join(", ");
     const intensityLabel = INTENSITY_MAP[finalIntensity]?.label || "Moderada";
-    const technicalReport = `Simulação clínica v14 (Apollo) gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}. Identidade facial, etnia, cor dos olhos, tom de pele e áreas não selecionadas preservados. Resultado meramente ilustrativo para apoio visual em consulta estética.`;
+    const technicalReport = `Simulação clínica v15 (Apollo) gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}. Identidade facial, etnia, cor dos olhos, tom de pele e áreas não selecionadas preservados. Resultado meramente ilustrativo para apoio visual em consulta estética.`;
 
     // Salvar resultado
     await base44Client.entities.FullFaceSimulation.update(simulationId, {
@@ -352,7 +368,7 @@ Deno.serve(async (req) => {
         simulation_options: finalOptions,
         intensity: finalIntensity,
         intensity_label: intensityLabel,
-        prompt_version: "v14_apollo",
+        prompt_version: "v15_apollo",
         identity_preserved: true,
         natural_realism: true,
         diff_pct: diffPct,
@@ -374,7 +390,7 @@ Deno.serve(async (req) => {
       console.log("Log de auditoria falhou (não crítico):", (e as Error).message);
     }
 
-    console.log("Simulação v14 concluída:", simulationId, "diff:", diffPct);
+    console.log("Simulação v15 concluída:", simulationId, "diff:", diffPct);
     return Response.json({
       success: true,
       simulation_id: simulationId,
