@@ -11,123 +11,161 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // Decodificadores de imagem puros-JS para comparação de pixels
 let PNG, jpeg;
 
-// Mapeamento de procedimento → instrução específica (PT-BR descritivo para o modelo)
-const PROCEDURE_MAP: Record<string, { label: string; instruction: string }> = {
+// Mapeamento de procedimento → região exata + efeito visual concreto (magnitude máxima)
+const PROCEDURE_MAP: Record<string, { label: string; region: string; delta: string }> = {
   full_face: {
     label: "Harmonização Facial Completa (Full Face)",
-    instruction: "Aplicar melhora global na harmonia facial: refinamento sutil de proporções, suavização de sinais e linhas, melhora de contorno e equilíbrio geral do rosto. Manter a identidade absoluta da pessoa.",
+    region: "o rosto inteiro",
+    delta: "elevar o terço médio, atenuar sulcos nasogenianos, definir a mandíbula, reduzir olheiras e rugas, pele mais firme, uniforme e luminosa, contorno facial mais harmônico",
   },
   nariz: {
     label: "Rinomodelação (região nasal)",
-    instruction: "Modificar APENAS a região nasal. Corrigir visualmente dorso, ponta, assimetria e proporção do nariz com base em harmonia facial. A intensidade controla o quanto o nariz será refinado. Não alterar bochechas, lábios, olhos ou queixo.",
+    region: "somente o nariz",
+    delta: "dorso mais reto e estreito, ponta do nariz refinada e levemente elevada, base nasal mais estreita, nariz proporcional ao rosto",
   },
   testa: {
     label: "Rugas na Testa",
-    instruction: "Atuar APENAS na testa. Suavizar ou remover as linhas horizontais da testa conforme o nível escolhido, preservando a textura natural da pele e o movimento aparente. Não alterar outras áreas.",
+    region: "somente a testa",
+    delta: "apagar as linhas horizontais da testa e o vinco de repouso, deixando a testa lisa, mantendo o relevo ósseo e a textura dos poros",
   },
   glabela: {
     label: "Glabela (entre as sobrancelhas)",
-    instruction: "Atuar APENAS na região entre as sobrancelhas. Suavizar as linhas de expressão da glabela conforme a intensidade. Preservar sobrancelhas e testa.",
+    region: "somente a região entre as sobrancelhas",
+    delta: "apagar as duas linhas verticais de expressão da glabela, deixando a área lisa, sem mexer no formato das sobrancelhas",
   },
   pes_galinha: {
     label: "Pés de Galinha",
-    instruction: "Atuar APENAS na região lateral dos olhos. Reduzir as rugas perioculares sem alterar o formato ou a cor dos olhos. Preservar pálpebras.",
+    region: "somente o canto externo dos olhos",
+    delta: "apagar as linhas em leque do canto externo dos olhos, pele lisa ao redor dos olhos, mantendo o formato e a cor dos olhos",
   },
   olheiras: {
     label: "Olheiras",
-    instruction: "Atuar APENAS na região abaixo dos olhos. Reduzir escurecimento, profundidade e aspecto de cansaço, mantendo naturalidade e a sombra periorbital real. Não clarear toda a face.",
+    region: "somente a região abaixo dos olhos",
+    delta: "eliminar a sombra escura e o sulco abaixo dos olhos, olhar descansado e iluminado, sem clarear o resto do rosto",
   },
   melasma: {
     label: "Melasma / Manchas",
-    instruction: "Atuar APENAS nas manchas da pele. Reduzir manchas e uniformizar o tom da pele preservando a textura natural. Não clarear o rosto inteiro de forma artificial. Bordas suaves.",
+    region: "somente as áreas manchadas da pele",
+    delta: "remover as manchas escuras e as placas de pigmentação, tom de pele uniforme e luminoso, mantendo poros, textura e relevo natural",
   },
   malar: {
     label: "Malar (maçãs do rosto)",
-    instruction: "Atuar APENAS na região das maçãs do rosto. Aumentar sustentação, projeção e harmonia malar conforme a intensidade, mantendo naturalidade.",
+    region: "somente as maçãs do rosto",
+    delta: "aumentar a projeção e o volume das maçãs do rosto, criar sombra suave sob o malar, aspecto de sustentação e lifting do terço médio",
   },
   mandibula: {
     label: "Mandíbula",
-    instruction: "Atuar APENAS no contorno mandibular. Melhorar definição e contorno da mandíbula de forma realista, com sombreamento anatômico coerente com a luz original.",
+    region: "somente a linha da mandíbula",
+    delta: "definir e marcar o ângulo mandibular, contorno inferior mais reto e nítido, sombra anatômica sob o osso coerente com a luz da foto",
   },
   mento: {
     label: "Mento / Queixo",
-    instruction: "Atuar APENAS no queixo. Melhorar proporção, projeção e equilíbrio do mento em relação ao rosto. Não alterar lábios ou mandíbula.",
+    region: "somente o queixo",
+    delta: "projetar e alongar o queixo, corrigir a retração, equilibrar o terço inferior do rosto",
   },
   mandibula_mento: {
     label: "Mandíbula e Mento",
-    instruction: "Atuar APENAS no contorno mandibular e no queixo. Melhorar definição e contorno facial combinado de forma realista e harmônica.",
+    region: "somente a mandíbula e o queixo",
+    delta: "definir o ângulo mandibular e projetar o queixo, criando contorno inferior marcado, reto e equilibrado",
   },
   labios: {
     label: "Lábios",
-    instruction: "Atuar APENAS nos lábios. Melhorar volume, hidratação aparente, contorno e simetria, sem deformar ou exagerar. Seguir o arco de Cupido natural e a borda vermelilha.",
+    region: "somente os lábios",
+    delta: "aumentar o volume do lábio superior e do inferior, definir o arco do cupido e a borda dos lábios, hidratação e viço visíveis, simetria entre os lados",
   },
   sulcos: {
     label: "Sulcos (nasogeniano)",
-    instruction: "Atuar APENAS no sulco nasogeniano e linhas próximas. Suavizar a profundidade dos sulcos mantendo a textura natural da pele.",
+    region: "somente o sulco nasogeniano",
+    delta: "apagar a profundidade do sulco do nariz até a boca, pele plana e lisa nessa linha",
   },
   temporas: {
     label: "Têmporas",
-    instruction: "Atuar APENAS nas têmporas. Melhorar o aspecto de preenchimento e sustentação lateral do rosto, mantendo naturalidade.",
+    region: "somente as têmporas",
+    delta: "preencher a depressão das têmporas, alargando e arredondando o terço superior do rosto, removendo a aparência de têmpora afundada",
   },
   papada: {
     label: "Papada",
-    instruction: "Atuar APENAS na região submentoniana. Reduzir visualmente o volume da papada e melhorar a definição do contorno inferior do rosto.",
+    region: "somente a região sob o queixo",
+    delta: "eliminar o volume e a flacidez sob o queixo, criar ângulo cervicomentoniano definido e contorno inferior alongado",
   },
   bioestimulador: {
     label: "Bioestimulador (qualidade da pele)",
-    instruction: "Atuar na qualidade geral da pele da área selecionada. Melhorar firmeza, viço e textura sem modificar a identidade facial.",
+    region: "a pele do rosto",
+    delta: "pele visivelmente mais firme, densa e viçosa, textura uniforme, poros menores, contorno levemente elevado e sem flacidez",
   },
 };
 
-const INTENSITY_MAP: Record<number, { label: string; complement: string; strength: string }> = {
+// Três degraus bem separados: cada nível aplica uma FRAÇÃO da magnitude máxima
+// descrita no procedimento. Sem sobreposição entre os níveis.
+const INTENSITY_MAP: Record<number, { label: string; complement: string; magnitude: string }> = {
   1: {
     label: "Suave",
-    complement: "Aplicar mudança moderada, claramente perceptível, equilibrada e natural. O antes e depois devem mostrar melhora evidente sem exagero.",
-    strength: "approximately 20-28% visible change",
+    complement:
+      "Resultado discreto e elegante: a mudança é sutil, mas existe e é identificável quando as duas imagens são comparadas lado a lado. Nada de resultado idêntico à foto original.",
+    magnitude: "cerca de 30% da magnitude máxima descrita (refinamento leve)",
   },
   2: {
     label: "Moderada",
-    complement: "Aplicar mudança um pouco mais evidente que a moderada, claramente perceptível, com melhora notável e expressiva, mas ainda natural e proporcional. O antes e depois mostram diferença clara mantendo o realismo anatômico.",
-    strength: "approximately 28-36% visible change",
+    complement:
+      "Resultado claramente perceptível já na primeira olhada, sem parecer artificial. A região tratada fica visivelmente diferente da foto original.",
+    magnitude: "cerca de 60% da magnitude máxima descrita (mudança clara)",
   },
   3: {
     label: "Mais evidente",
-    complement: "Aplicar mudança mais evidente e expressiva na região selecionada, mantendo realismo anatômico, proporção facial e identidade original.",
-    strength: "approximately 30-40% visible change",
+    complement:
+      "Resultado marcante e inconfundível: a mudança é a mais forte possível mantendo aparência natural e clinicamente plausível. Colocando as duas fotos lado a lado, a diferença é óbvia à primeira vista.",
+    magnitude: "90 a 100% da magnitude máxima descrita (mudança expressiva e óbvia)",
   },
 };
 
 function buildPrompt(options: string[], intensity: number, isRetry: boolean): string {
-  const procLabels = options.map(o => PROCEDURE_MAP[o]?.label || o).join(" + ");
-  const procInstructions = options
-    .map(o => `• ${PROCEDURE_MAP[o]?.label || o}: ${PROCEDURE_MAP[o]?.instruction || "Editar a região correspondente."}`)
-    .join("\n");
-
   const intensityInfo = INTENSITY_MAP[intensity] || INTENSITY_MAP[2];
 
+  const procBlock = options
+    .map(o => {
+      const p = PROCEDURE_MAP[o];
+      if (!p) return `• ${o}: aplicar a alteração estética correspondente na região indicada pelo nome.`;
+      return `• ${p.label}\n  Região exata a editar: ${p.region}.\n  Efeito visual obrigatório (magnitude máxima): ${p.delta}.`;
+    })
+    .join("\n");
+
+  const regions = options.map(o => PROCEDURE_MAP[o]?.region || o).join(" / ");
+
+  // Cada nível precisa entregar um resultado MENSURAVELMENTE diferente do outro.
+  const separation: Record<number, string> = {
+    1: "Nível 1 de 3 (o mais discreto): refinamento leve. Quem olhar as duas fotos em sequência percebe a melhora, mas o rosto continua muito próximo do original.",
+    2: "Nível 2 de 3: a região tratada fica CLARAMENTE diferente do original — volume, contorno, linhas ou tom mudam de forma óbvia para qualquer observador, mantendo naturalidade.",
+    3: "Nível 3 de 3 (o mais forte): resultado de revista, o máximo que ainda parece natural. A diferença em relação ao original é gritante e não deixa dúvida de que o procedimento foi feito naquela região.",
+  };
+
   const retryBoost = isRetry
-    ? "\n\nIMPORTANTE — TENTATIVA DE CORREÇÃO: A geração anterior ficou praticamente idêntica à foto original, sem alteração perceptível. Você DEVE aplicar uma alteração VISÍVEL e CLARAMENTE DETECTÁVEL na região selecionada. Compare mentalmente o antes e o depois: um observador deve notar a diferença imediatamente."
+    ? `\n\nATENÇÃO — CORREÇÃO OBRIGATÓRIA: a tentativa anterior devolveu uma imagem praticamente idêntica à foto original, o que é um ERRO. Refazer com alteração FRANCA e IMEDIATAMENTE visível ${regions}. É proibido devolver a foto original sem alteração.`
     : "";
 
-  return `Crie uma simulação estética realista de antes e depois, mantendo a identidade facial original da pessoa. Preserve cor dos olhos, formato dos olhos, sobrancelhas, cabelo, tom de pele, expressão, roupa, fundo, iluminação e características pessoais. Aplique a alteração SOMENTE na região: ${procLabels}. A intensidade da alteração deve ser: ${intensityInfo.label}. O resultado deve ser VISIVELMENTE DIFERENTE do antes, porém natural, clínico, elegante e proporcional. Não transforme o rosto em outra pessoa. Não altere áreas não selecionadas. Gere uma imagem final realista mostrando como essa região poderia ficar após um procedimento estético bem executado.
+  return `TAREFA: editar a foto enviada e devolver a MESMA pessoa, a mesma fotografia (mesmo enquadramento, roupa, fundo, luz e expressão), porém já com o resultado do procedimento estético aplicado. Esta é uma simulação clínica de resultado.
 
-PROCEDIMENTO(S) SELECIONADO(S):
-${procInstructions}
+REGRA Nº 1 — A MUDANÇA É OBRIGATÓRIA: a região tratada PRECISA mudar de forma claramente visível. "Preservar a identidade" significa manter a mesma pessoa reconhecível (mesmo rosto, etnia, idade aparente, olhos, cabelo, sobrancelhas, expressão) — NÃO significa manter a região tratada igual à foto original. A região tratada deve ficar visivelmente diferente; o resto da foto permanece intacto.
 
-NÍVEL DE INTENSIDADE: ${intensityInfo.label} — ${intensityInfo.complement}
-Força da alteração visual: ${intensityInfo.strength}.
+PROCEDIMENTO(S) ESCOLHIDO(S):
+${procBlock}
 
-REGRAS DE PRESERVAÇÃO (obrigatórias):
-1. Manter fielmente o rosto original da pessoa.
-2. Não trocar identidade, etnia, idade aparente, cor dos olhos, formato dos olhos, cabelo, sobrancelhas, boca, expressão, roupa, fundo ou iluminação.
-3. Não transformar a pessoa em outro rosto.
-4. Não aplicar embelezamento genérico no rosto inteiro, exceto quando o procedimento for Full Face.
-5. Alterar somente a área correspondente ao procedimento selecionado.
-6. A imagem final deve parecer uma simulação estética realista, clínica, natural e profissional.
+INTENSIDADE — ${intensityInfo.label}:
+${separation[intensity] || separation[2]}
+Magnitude a aplicar: ${intensityInfo.magnitude}.
+${intensityInfo.complement}
+Os três níveis são bem diferentes entre si: um nível mais alto nunca pode sair parecido com um nível mais baixo.
 
-A imagem "depois" NÃO pode ser praticamente igual à imagem "antes". A alteração na região selecionada deve ser claramente visível.${retryBoost}
+O QUE NÃO PODE ACONTECER:
+- Devolver a imagem original sem alteração, ou apenas com mudança de brilho, contraste, saturação, suavização de pele genérica ou filtro.
+- Alterar regiões fora de ${regions}.
+- Trocar a pessoa, o enquadramento, a roupa, o fundo ou a iluminação.
+- Deformar a anatomia ou criar aparência artificial/exagerada.
 
-AVISO LEGAL: Imagem meramente ilustrativa para apoio visual em consulta estética.`;
+O QUE PRECISA ACONTECER:
+- Alteração real de volume, contorno, linhas, sombra ou pigmentação na região tratada, coerente com a luz e a anatomia da foto.
+- Resultado final com aparência de foto real de consultório, sem aspecto de filtro.${retryBoost}
+
+AVISO LEGAL: imagem meramente ilustrativa para apoio visual em consulta estética.`;
 }
 
 // ── Comparação de pixels entre antes e depois ──
@@ -188,7 +226,19 @@ async function computeDifferencePct(urlA: string, urlB: string): Promise<number 
   return (mean / 255) * 100;
 }
 
-const NO_CHANGE_THRESHOLD = 1.5; // % de diferença média abaixo da qual consideramos "sem alteração visível"
+// Hash do arquivo (sem decodificar a imagem) — detecta quando a IA devolveu
+// exatamente a mesma foto, de forma barata e sem risco de estourar a memória.
+async function imageHash(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const digest = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return null;
+  }
+}
 
 Deno.serve(async (req) => {
   let simulationId: string | null = null;
@@ -228,7 +278,7 @@ Deno.serve(async (req) => {
       consent_timestamp: new Date().toISOString(),
       status: "processing",
       protocol_type: finalOptions.join(","),
-      ai_prompt_version: "v13_apollo",
+      ai_prompt_version: "v14_apollo",
       intensity: finalIntensity,
     });
     simulationId = simulation.id;
@@ -244,44 +294,54 @@ Deno.serve(async (req) => {
       console.log("Aviso: não foi possível buscar paciente:", (e as Error).message);
     }
 
-    // Geração — 1 chamada à IA. A comparação de pixels foi removida pois
-    // decodificar a foto original grande (iPhone ~4032x3024 ≈ 48MB RGBA) estoura
-    // a memória da função no contexto do invoke e a mata instantaneamente —
-    // por isso fotos enviadas (grandes) falhavam e a câmera (pequena) funcionava.
-    // A IA gera diferença visível de forma consistente; a validação de
-    // "URL != original" evita devolver a foto original como resultado.
+    // Geração com verificação: se a IA devolver a mesma foto (mesma URL ou
+    // bytes idênticos), refazemos uma vez com prompt reforçado. O hash evita
+    // decodificar a imagem, então não há risco de estourar a memória.
     let generated_image_url = "";
     let diffPct: number | null = null;
+    const originalHash = await imageHash(original_image_url);
 
-    const prompt = buildPrompt(finalOptions, finalIntensity, false);
     console.log(`Geração — opções: ${finalOptions.join(", ")} | intensidade: ${finalIntensity}`);
 
-    const imageResult = await base44Client.asServiceRole.integrations.Core.GenerateImage({
-      prompt,
-      existing_image_urls: [original_image_url],
-    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const isRetry = attempt > 0;
+      const imageResult = await base44Client.asServiceRole.integrations.Core.GenerateImage({
+        prompt: buildPrompt(finalOptions, finalIntensity, isRetry),
+        existing_image_urls: [original_image_url],
+      });
 
-    if (!imageResult?.url) {
-      throw new Error("Nenhuma imagem gerada pela plataforma.");
+      const url = imageResult?.url || "";
+      if (!url) {
+        if (isRetry) throw new Error("Nenhuma imagem gerada pela plataforma.");
+        continue;
+      }
+
+      const generatedHash = await imageHash(url);
+      const unchanged =
+        url === original_image_url ||
+        (!!originalHash && !!generatedHash && originalHash === generatedHash);
+
+      if (!unchanged) {
+        generated_image_url = url;
+        break;
+      }
+      console.log(`Tentativa ${attempt + 1}: imagem idêntica à original — repetindo com prompt reforçado.`);
     }
 
-    // Guarda de segurança: a URL gerada nunca pode ser a mesma da original
-    if (imageResult.url === original_image_url) {
+    if (!generated_image_url) {
       await base44Client.asServiceRole.entities.FullFaceSimulation.update(simulationId, {
         status: "failed",
-        error_message: "IA devolveu a imagem original sem alteração.",
+        error_message: "IA devolveu a imagem original sem alteração após duas tentativas.",
       });
       return Response.json({
-        error: "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente ou selecione outro nível de intensidade.",
+        error: "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente com outro nível de intensidade.",
         code: "NO_VISIBLE_CHANGE",
       }, { status: 422 });
     }
 
-    generated_image_url = imageResult.url;
-
     const procLabels = finalOptions.map(o => PROCEDURE_MAP[o]?.label || o).join(", ");
     const intensityLabel = INTENSITY_MAP[finalIntensity]?.label || "Moderada";
-    const technicalReport = `Simulação clínica v13 (Apollo) gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}. Diferença visual detectada: ${diffPct !== null ? diffPct.toFixed(2) + "%" : "não medida"}. Identidade facial, etnia, cor dos olhos, tom de pele e áreas não selecionadas preservados. Resultado meramente ilustrativo para apoio visual em consulta estética.`;
+    const technicalReport = `Simulação clínica v14 (Apollo) gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}. Identidade facial, etnia, cor dos olhos, tom de pele e áreas não selecionadas preservados. Resultado meramente ilustrativo para apoio visual em consulta estética.`;
 
     // Salvar resultado
     await base44Client.entities.FullFaceSimulation.update(simulationId, {
@@ -292,7 +352,7 @@ Deno.serve(async (req) => {
         simulation_options: finalOptions,
         intensity: finalIntensity,
         intensity_label: intensityLabel,
-        prompt_version: "v13_apollo",
+        prompt_version: "v14_apollo",
         identity_preserved: true,
         natural_realism: true,
         diff_pct: diffPct,
@@ -314,7 +374,7 @@ Deno.serve(async (req) => {
       console.log("Log de auditoria falhou (não crítico):", (e as Error).message);
     }
 
-    console.log("Simulação v13 concluída:", simulationId, "diff:", diffPct);
+    console.log("Simulação v14 concluída:", simulationId, "diff:", diffPct);
     return Response.json({
       success: true,
       simulation_id: simulationId,
