@@ -324,7 +324,7 @@ export default async function(req) {
         imageMetadata: sourceImageMetadata,
       });
       generated_image_url = jawRefinement.imageUrl;
-      console.log("Verificação visual mandibular:", JSON.stringify(jawRefinement.validation));
+      console.log("Refinamento mandibular concluído.");
     } else {
       // Other isolated procedures retain their existing generation flow.
       const originalHash = await imageHash(original_image_url);
@@ -353,21 +353,17 @@ export default async function(req) {
     if (!generated_image_url) {
       await base44Client.asServiceRole.entities.FullFaceSimulation.update(simulationId, {
         status: "failed",
-        error_message: needsJawContour
-          ? `Refinamento mandibular não aprovado: ${jawRefinement?.validation?.observation || "contorno, identidade ou enquadramento inconsistentes"}`
-          : "IA devolveu a imagem original sem alteração após duas tentativas.",
+        error_message: "Nenhuma imagem foi retornada pela IA.",
       });
       return Response.json({
-        error: needsJawContour
-          ? "A verificação visual não aprovou o contorno mandibular preservando a foto. Tente uma foto com o ângulo da mandíbula visível, livre e bem iluminado."
-          : "Não foi possível gerar uma simulação com diferença visual suficiente. Tente novamente com outro nível de intensidade.",
+        error: "Não foi possível gerar a imagem da simulação. Tente novamente em instantes.",
         code: "NO_VISIBLE_CHANGE",
       }, { status: 422 });
     }
 
     const procLabels = finalOptions.map(o => PROCEDURE_MAP[o]?.label || o).join(", ");
     const intensityLabel = INTENSITY_MAP[finalIntensity]?.label || "Moderada";
-    const technicalReport = `Simulação ilustrativa v16 gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}.${needsJawContour ? " Edição específica dos ângulos e da borda mandibular, com verificação visual por IA do contorno, identidade e enquadramento. Essa verificação não constitui avaliação clínica." : " Preservação da identidade e das áreas não selecionadas solicitada à IA."} Resultado meramente ilustrativo para apoio visual em consulta estética, sem promessa de resultado clínico.`;
+    const technicalReport = `Simulação ilustrativa v16 gerada por IA. Procedimento(s): ${procLabels}. Nível de intensidade: ${intensityLabel}.${needsJawContour ? " Edição específica dos ângulos e da borda mandibular." : " Preservação da identidade e das áreas não selecionadas solicitada à IA."} Resultado meramente ilustrativo para apoio visual em consulta estética, sem promessa de resultado clínico.`;
 
     // Salvar resultado
     await base44Client.entities.FullFaceSimulation.update(simulationId, {
@@ -382,10 +378,7 @@ export default async function(req) {
         identity_preserved: true,
         natural_realism: true,
         diff_pct: diffPct,
-        jaw_contour_refinement: jawRefinement ? {
-          method: jawRefinement.method,
-          visual_check: jawRefinement.validation,
-        } : null,
+        jaw_contour_refinement: jawRefinement ? { method: jawRefinement.method } : null,
       },
       image_metadata: needsJawContour ? { format: "png" } : { format: "png", width: 1024, height: 1024 },
     });

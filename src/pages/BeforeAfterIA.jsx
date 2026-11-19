@@ -766,7 +766,7 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
         </p>
         <p className="text-xs" style={{ color: T.muted }}>
           {selectedOptions.some(id => ["full_face", "mandibula", "mandibula_mento"].includes(id))
-            ? "Inclui refinamento específico do contorno mandibular e verificação visual. Pode levar alguns minutos e consumir mais créditos de IA."
+            ? "Inclui refinamento específico do contorno mandibular. Pode levar alguns minutos e consumir mais créditos de IA."
             : "Isso pode levar até 60 segundos"}
         </p>
       </div>

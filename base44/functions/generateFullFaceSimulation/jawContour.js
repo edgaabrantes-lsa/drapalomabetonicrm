@@ -47,20 +47,5 @@ export async function refineJawContour(base44, { draftUrl, originalUrl, intensit
   if (!response.ok) throw new Error(result.error?.message || "Não foi possível refinar o contorno mandibular.");
   const imageUrl = result.data?.[0]?.url;
   if (!imageUrl) throw new Error("O refinamento mandibular não retornou uma imagem.");
-
-  // Compare photograph content, not file hashes: a re-encoded unedited photo has different bytes.
-  const validation = await base44.asServiceRole.integrations.Core.InvokeLLM({
-    file_urls: [originalUrl, imageUrl],
-    prompt: `Compare the two attached photographs visually. Image 1 is the ORIGINAL; image 2 is the proposed AFTER simulation. Do not assume that the requested edit succeeded. Inspect only the visible posterior mandibular corners immediately below the earlobes and the adjoining lower mandibular edge, not generic skin smoothing, lip changes or lighting. Set contour_visible to true only if image 2 shows a clearly distinguishable structural contour at those corners and cleaner separation of the jaw border from the neck at normal viewing size. Brightness, makeup, different crop, darker drawn lines or different encoding alone do not count. Set identity_consistent and framing_consistent based on the actual same person, pose, expression and camera framing. Changes in other selected aesthetic areas are allowed. Describe the observed mandibular difference, or its absence, in one short Portuguese sentence. This is visual quality control of an illustration, not clinical evaluation or gonial-angle measurement.`,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        contour_visible: { type: "boolean" }, identity_consistent: { type: "boolean" },
-        framing_consistent: { type: "boolean" }, observation: { type: "string" },
-      },
-      required: ["contour_visible", "identity_consistent", "framing_consistent", "observation"],
-    },
-  });
-  const accepted = validation.contour_visible === true && validation.identity_consistent === true && validation.framing_consistent === true;
-  return { imageUrl: accepted ? imageUrl : "", validation, method: "dedicated_jaw_contour_edit" };
+  return { imageUrl, method: "dedicated_jaw_contour_edit" };
 }
