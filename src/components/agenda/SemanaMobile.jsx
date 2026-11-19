@@ -2,9 +2,10 @@ import React from "react";
 import { format, parseISO, isSameDay, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { T, statusDot } from "@/lib/agendaTokens";
+import { bloqueiosDoDia, rotuloHorario } from "@/lib/agendaBloqueios";
 
 /* Visão semanal no celular — dias empilhados, sem rolagem lateral */
-export default function SemanaMobile({ weekDays, appointments, onClickAppointment, onClickSlot }) {
+export default function SemanaMobile({ weekDays, appointments, bloqueios = [], onClickAppointment, onClickSlot }) {
   return (
     <div>
       {weekDays.map((day) => {
@@ -12,6 +13,7 @@ export default function SemanaMobile({ weekDays, appointments, onClickAppointmen
           .filter((a) => a.start_time && isSameDay(parseISO(a.start_time), day))
           .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
         const hoje = isToday(day);
+        const bloqueiosDia = bloqueiosDoDia(bloqueios, day);
 
         return (
           <div key={day.toISOString()} style={{ borderBottom: `1px solid ${T.subtle}` }}>
@@ -42,6 +44,19 @@ export default function SemanaMobile({ weekDays, appointments, onClickAppointmen
             </button>
 
             <div style={{ padding: "0 12px 10px" }}>
+              {bloqueiosDia.map((b) => (
+                <p
+                  key={b.id}
+                  style={{
+                    fontFamily: "Inter", fontSize: 10, letterSpacing: "0.06em",
+                    textTransform: "uppercase", color: "#E53935",
+                    margin: "0 0 6px", padding: "5px 8px",
+                    border: `1px dashed ${T.charcoal}`, borderRadius: 3,
+                  }}
+                >
+                  Indisponível · {rotuloHorario(b)}{b.motivo ? ` · ${b.motivo}` : ""}
+                </p>
+              ))}
               {dayAppts.length === 0 ? (
                 <p style={{ fontFamily: "Inter", fontSize: 11, color: "#4B5468", margin: 0 }}>
                   Sem agendamentos

@@ -22,7 +22,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SemanaMobile from "@/components/agenda/SemanaMobile";
+import BloqueioOverlay from "@/components/agenda/BloqueioOverlay";
+import BloqueiosModal from "@/components/agenda/BloqueiosModal";
 import { T, statusDot } from "@/lib/agendaTokens";
+import { bloqueiosDoDia, conflitoBloqueio, rotuloHorario } from "@/lib/agendaBloqueios";
 
 const HOUR_HEIGHT = 64;
 const DAY_START = 8;
@@ -35,7 +38,7 @@ const timeSlots = Array.from({ length: (DAY_END - DAY_START) * 2 }, (_, i) => {
 });
 
 // ── Appointment Form ─────────────────────────────────────────
-const AppointmentForm = ({ appointment, patients, procedures, professionals, rooms, onSave, onClose }) => {
+const AppointmentForm = ({ appointment, patients, procedures, professionals, rooms, bloqueios = [], onSave, onClose }) => {
   const [formData, setFormData] = useState(appointment || {
     patient_id: "", patient_name: "", professional_id: "", professional_name: "",
     room_id: "", procedure_id: "", procedure_name: "",
@@ -47,12 +50,19 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
   const [selectedTime, setSelectedTime] = useState(
     appointment?.start_time ? format(parseISO(appointment.start_time), "HH:mm") : "09:00"
   );
+  const [erro, setErro] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const [hours, minutes] = selectedTime.split(":").map(Number);
     const startTime = setMinutes(setHours(selectedDate, hours), minutes);
     const endTime = new Date(startTime.getTime() + (formData.duration_minutes || 60) * 60000);
+    const bloqueio = conflitoBloqueio(bloqueios, startTime, formData.duration_minutes || 60, formData.professional_id);
+    if (bloqueio) {
+      setErro(`Horário indisponível (${rotuloHorario(bloqueio)}${bloqueio.motivo ? ` · ${bloqueio.motivo}` : ""}). Escolha outro horário.`);
+      return;
+    }
+    setErro("");
     onSave({ ...formData, start_time: startTime.toISOString(), end_time: endTime.toISOString() });
   };
 
@@ -181,6 +191,9 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
             rows={2} style={{ ...inputStyle, resize: "vertical" }} />
         </div>
       </div>
+      {erro && (
+        <p style={{ fontFamily: "Inter", fontSize: 12, color: "#E53935", margin: 0 }}>{erro}</p>
+      )}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8 }}>
         <button type="button" onClick={onClose} style={{
           background: "none", border: `1px solid ${T.subtle}`, borderRadius: 2,
@@ -200,7 +213,7 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
 };
 
 // ── Day View ─────────────────────────────────────────────────
-const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
+const DayView = ({ date, appointments, bloqueios = [], onClickAppointment, onClickSlot }) => {
   const isMobile = useIsMobile();
   const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
   const dayAppts = appointments
@@ -226,6 +239,9 @@ const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
           />
         ))}
+        {bloqueiosDoDia(bloqueios, date).map(b => (
+          <BloqueioOverlay key={b.id} bloqueio={b} horaInicioDia={DAY_START} horaFimDia={DAY_END} hourHeight={HOUR_HEIGHT} />
+        ))}
         {dayAppts.map(appt => {
           const start = parseISO(appt.start_time);
           const top = ((start.getHours() - DAY_START) + start.getMinutes() / 60) * HOUR_HEIGHT;
@@ -235,7 +251,7 @@ const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
             <div key={appt.id} onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
               style={{
                 position: "absolute", left: 4, right: 4,
-                top, height, borderRadius: 2,
+                top, height, borderRadius: 2, zIndex: 10,
                 background: T.white, borderLeft: `3px solid ${cfg.dot}`,
                 border: `1px solid ${T.subtle}`, borderLeftColor: cfg.dot,
                 padding: "4px 8px", cursor: "pointer", overflow: "hidden",
@@ -258,7 +274,7 @@ const DayView = ({ date, appointments, onClickAppointment, onClickSlot }) => {
 };
 
 // ── Week View ─────────────────────────────────────────────────
-const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onPrevWeek, onNextWeek }) => {
+const WeekView = ({ weekDays, appointments, bloqueios = [], onClickAppointment, onClickSlot, onPrevWeek, onNextWeek }) => {
   const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
 
   const sideBtnStyle = {
@@ -339,6 +355,9 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
                   <div key={h} onClick={() => onClickSlot(day, h)}
                     style={{ height: HOUR_HEIGHT, borderBottom: `1px solid ${T.subtle}`, cursor: "pointer" }} />
                 ))}
+                {bloqueiosDoDia(bloqueios, day).map(b => (
+                  <BloqueioOverlay key={b.id} bloqueio={b} horaInicioDia={DAY_START} horaFimDia={DAY_END} hourHeight={HOUR_HEIGHT} />
+                ))}
                 {dayAppts.map(appt => {
                   const start = parseISO(appt.start_time);
                   const top = ((start.getHours() - DAY_START) + start.getMinutes() / 60) * HOUR_HEIGHT;
@@ -347,7 +366,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
                   return (
                     <div key={appt.id} onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
                       style={{
-                        position: "absolute", left: 2, right: 2, top, height,
+                        position: "absolute", left: 2, right: 2, top, height, zIndex: 10,
                         background: T.white, borderLeft: `2px solid ${cfg.dot}`,
                         border: `1px solid ${T.subtle}`, borderLeftColor: cfg.dot,
                         borderRadius: 2, padding: "3px 6px", cursor: "pointer",
@@ -375,7 +394,7 @@ const WeekView = ({ weekDays, appointments, onClickAppointment, onClickSlot, onP
 };
 
 // ── Month View ────────────────────────────────────────────────
-const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot, onPrevMonth, onNextMonth }) => {
+const MonthView = ({ currentDate, appointments, bloqueios = [], onClickAppointment, onClickSlot, onPrevMonth, onNextMonth }) => {
   const isMobile = useIsMobile();
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -421,6 +440,7 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
         {calDays.map(day => {
           const dayAppts = appointments.filter(a => a.start_time && isSameDay(parseISO(a.start_time), day));
+          const bloqueado = bloqueiosDoDia(bloqueios, day).length > 0;
           const isCurrentMonth = day.getMonth() === currentDate.getMonth();
           return (
             <div key={day.toISOString()} onClick={() => onClickSlot(day, 9)}
@@ -438,6 +458,11 @@ const MonthView = ({ currentDate, appointments, onClickAppointment, onClickSlot,
               }}>
                 {format(day, "d")}
               </p>
+              {bloqueado && (
+                <p style={{ fontFamily: "Inter", fontSize: 8, letterSpacing: "0.06em", textTransform: "uppercase", color: "#E53935", marginBottom: 2 }}>
+                  Indisponível
+                </p>
+              )}
               {dayAppts.slice(0, 2).map(appt => {
                 const cfg = statusDot[appt.status] || statusDot.scheduled;
                 return (
@@ -734,6 +759,7 @@ export default function Agenda() {
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [prefilledTime, setPrefilledTime] = useState(null);
+  const [isBloqueiosOpen, setIsBloqueiosOpen] = useState(false);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -744,6 +770,16 @@ export default function Agenda() {
   const { data: procedures = [] } = useQuery({ queryKey: ["procedures"], queryFn: () => base44.entities.Procedure.list() });
   const { data: professionals = [] } = useQuery({ queryKey: ["professionals"], queryFn: () => base44.entities.Professional.list() });
   const { data: rooms = [] } = useQuery({ queryKey: ["rooms"], queryFn: () => base44.entities.Room.list() });
+  const { data: bloqueios = [] } = useQuery({ queryKey: ["bloqueios-agenda"], queryFn: () => base44.entities.BloqueioAgenda.list("-data_inicio", 200) });
+
+  const criarBloqueio = useMutation({
+    mutationFn: (data) => base44.entities.BloqueioAgenda.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["bloqueios-agenda"] }); setIsBloqueiosOpen(false); },
+  });
+  const removerBloqueio = useMutation({
+    mutationFn: (id) => base44.entities.BloqueioAgenda.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bloqueios-agenda"] }),
+  });
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Appointment.create(data),
@@ -823,6 +859,18 @@ export default function Agenda() {
               </button>
             ))}
           </div>
+          {/* Indisponibilidade */}
+          <button
+            onClick={() => setIsBloqueiosOpen(true)}
+            style={{
+              border: `1px solid ${T.subtle}`, background: "transparent", borderRadius: 2,
+              padding: "7px 14px", cursor: "pointer", fontFamily: "Inter", fontSize: 9,
+              letterSpacing: "0.1em", textTransform: "uppercase", color: T.onyx,
+              width: isMobile ? "100%" : "auto",
+            }}
+          >
+            Indisponível
+          </button>
           {/* Navigation */}
           {viewMode !== "list" && (
             <div style={{ display: "flex", gap: 6, width: isMobile ? "100%" : "auto" }}>
@@ -868,11 +916,11 @@ export default function Agenda() {
 
       {/* ── Calendar ──────────────────────────────────── */}
       <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflowX: isMobile ? "hidden" : "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
-        {viewMode === "day" && <DayView date={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
+        {viewMode === "day" && <DayView date={currentDate} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
         {viewMode === "week" && (isMobile
-          ? <SemanaMobile weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />
-          : <WeekView weekDays={weekDays} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />)}
-        {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevMonth={() => handleNav(-1)} onNextMonth={() => handleNav(1)} />}
+          ? <SemanaMobile weekDays={weekDays} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />
+          : <WeekView weekDays={weekDays} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />)}
+        {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevMonth={() => handleNav(-1)} onNextMonth={() => handleNav(1)} />}
         {viewMode === "list" && <div style={{ padding: isMobile ? "16px 12px" : "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} onDelete={(id) => deleteMutation.mutate(id)} /></div>}
       </div>
 
@@ -904,7 +952,7 @@ export default function Agenda() {
           <AppointmentForm
             appointment={editingAppointment || (prefilledTime ? { start_time: prefilledTime.toISOString() } : null)}
             patients={patients} procedures={procedures}
-            professionals={professionals} rooms={rooms}
+            professionals={professionals} rooms={rooms} bloqueios={bloqueios}
             onSave={handleSave}
             onClose={() => { setIsFormOpen(false); setEditingAppointment(null); setPrefilledTime(null); }}
           />
@@ -935,6 +983,16 @@ export default function Agenda() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* ── Indisponibilidade ─────────────────────────── */}
+      <BloqueiosModal
+        open={isBloqueiosOpen}
+        onOpenChange={setIsBloqueiosOpen}
+        bloqueios={bloqueios}
+        professionals={professionals}
+        onSave={(data) => criarBloqueio.mutate(data)}
+        onDelete={(id) => removerBloqueio.mutate(id)}
+      />
     </div>
   );
 }

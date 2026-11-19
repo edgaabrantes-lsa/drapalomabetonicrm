@@ -1,0 +1,82 @@
+{
+  "name": "BloqueioAgenda",
+  "type": "object",
+  "properties": {
+    "professional_id": {
+      "type": "string",
+      "description": "Profissional bloqueado (vazio = toda a cl\u00ednica)"
+    },
+    "professional_name": {
+      "type": "string"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "dia_inteiro": {
+      "type": "boolean",
+      "default": false
+    },
+    "hora_inicio": {
+      "type": "string",
+      "description": "Hor\u00e1rio inicial do bloqueio (HH:mm)"
+    },
+    "hora_fim": {
+      "type": "string",
+      "description": "Hor\u00e1rio final do bloqueio (HH:mm)"
+    },
+    "motivo": {
+      "type": "string"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "data_inicio"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
