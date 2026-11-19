@@ -159,8 +159,8 @@ export default function Layout({ children, currentPageName }) {
             className="hidden lg:flex items-center justify-center rounded-md transition-colors hover:bg-white/5 ml-auto flex-shrink-0"
             style={{
               width: 28, height: 28,
-              color: "#555555",
-              fontSize: 16, fontWeight: 300, lineHeight: 1,
+              color: "#FFFFFF",
+              fontSize: 18, fontWeight: 400, lineHeight: 1,
               position: collapsed ? "static" : "absolute",
               right: collapsed ? undefined : 12,
               border: "none", background: "transparent", cursor: "pointer",
