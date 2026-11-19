@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import PatientSelectorModal from "@/components/facial/PatientSelectorModal";
 import readSimulationImageDimensions from "@/components/facial/readSimulationImageDimensions";
+import { downloadSimulationComposite, downloadImageFile } from "@/lib/simulationComposite";
 import SimulationFullscreenModal from "@/components/facial/SimulationFullscreenModal";
 import SimulationSideBySideView from "@/components/facial/SimulationSideBySideView";
 
@@ -492,6 +493,16 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
     }
   };
 
+  const handleDownloadResult = async () => {
+    const fileName = `simulacao_${patient.full_name?.replace(/\s+/g, "_") || "paciente"}.png`;
+    try {
+      await downloadSimulationComposite({ beforeUrl: originalImageUrl, afterUrl: generatedImage, fileName });
+    } catch {
+      toast.error("Não foi possível montar o antes e depois. Baixando apenas a imagem simulada.");
+      downloadImageFile(generatedImage, fileName).catch(() => toast.error("Erro ao baixar imagem."));
+    }
+  };
+
   const handleSaveMedicalRecord = async () => {
     if (!simulationId || !generatedImage) {
       toast.error("Não foi possível salvar no prontuário. Verifique se a paciente está selecionada e tente novamente.");
@@ -862,14 +873,14 @@ function SimulationWizard({ patient, onBack, onSuccess }) {
 
           {/* ── Botões de ação ── */}
           <div className="flex flex-wrap gap-3 pt-1">
-            <a
-              href={generatedImage}
-              download={`simulacao_${patient.full_name?.replace(/\s+/g, "_")}.png`}
+            <button
+              type="button"
+              onClick={handleDownloadResult}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-opacity hover:opacity-90"
               style={{ background: T.gold, color: "#111620" }}
             >
               <Download className="h-4 w-4" /> Baixar
-            </a>
+            </button>
 
             {savedToRecord ? (
               <Button disabled variant="outline"
@@ -946,15 +957,23 @@ function SimulationHistory() {
     return name.includes(search.toLowerCase());
   });
 
-  const handleDownload = async (url, name) => {
+  const handleDownload = async (sim) => {
+    if (!sim?.generated_image_url) return;
+    const fileName = `simulacao_${getPatient(sim.patient_id)?.full_name || sim.patient_name || "paciente"}.png`;
     try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = name;
-      a.click();
-    } catch { toast.error("Erro ao baixar imagem."); }
+      if (sim.original_image_url) {
+        await downloadSimulationComposite({
+          beforeUrl: sim.original_image_url,
+          afterUrl: sim.generated_image_url,
+          fileName,
+        });
+        return;
+      }
+      await downloadImageFile(sim.generated_image_url, fileName);
+    } catch {
+      toast.error("Não foi possível montar o antes e depois. Baixando apenas a imagem simulada.");
+      downloadImageFile(sim.generated_image_url, fileName).catch(() => toast.error("Erro ao baixar imagem."));
+    }
   };
 
   return (
@@ -1050,7 +1069,7 @@ function SimulationHistory() {
                       </Button>
                       {sim.generated_image_url && (
                         <Button size="sm" variant="outline"
-                          onClick={e => { e.stopPropagation(); handleDownload(sim.generated_image_url, `simulacao_${patient?.full_name || "paciente"}.png`); }}
+                          onClick={e => { e.stopPropagation(); handleDownload(sim); }}
                           className="flex-1 h-8 text-xs" style={{ borderColor: `${T.gold}40`, color: T.gold }}>
                           <Download className="h-3 w-3 mr-1" /> Baixar
                         </Button>
@@ -1105,12 +1124,11 @@ function SimulationHistory() {
               </div>
               <div className="flex flex-wrap gap-3 pt-2 border-t" style={{ borderColor: T.border }}>
                 {selected.generated_image_url && (
-                  <a href={selected.generated_image_url}
-                    download={`simulacao_${getPatient(selected.patient_id)?.full_name || "paciente"}.png`}
+                  <button type="button" onClick={() => handleDownload(selected)}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium"
                     style={{ background: T.gold, color: "#111620" }}>
                     <Download className="h-4 w-4" /> Baixar Imagem
-                  </a>
+                  </button>
                 )}
                 {isAdmin && (
                   <Button onClick={() => setToDelete(selected)} variant="destructive" className="ml-auto">
