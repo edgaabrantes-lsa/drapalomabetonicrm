@@ -153,3 +153,20 @@ export function canDo(perfil, action) {
   const perms = ACTION_PERMISSIONS[perfil] || ACTION_PERMISSIONS.visualizacao;
   return !!perms[action];
 }
+
+/**
+ * Permissão exclusiva — Excluir Kit Documental.
+ * Não é concedida por perfil: apenas as contas da Dra. Paloma possuem esta função,
+ * mesmo que outro usuário seja super_admin/admin.
+ */
+export const EMAILS_EXCLUSAO_KIT = [
+  "drapalomabetonipasta@gmail.com",
+  "palomabetoni@hotmail.com",
+  "clinicapalomacampobelo@gmail.com",
+];
+
+export function podeExcluirKitDocumental(user) {
+  const email = (user?.email || "").toLowerCase();
+  if (!email || user?.role !== "admin") return false;
+  return EMAILS_EXCLUSAO_KIT.includes(email);
+}

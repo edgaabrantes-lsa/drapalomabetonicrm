@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { appParams } from "@/lib/app-params";
 import { T, S } from "@/lib/designTokens";
+import { usePermissions } from "@/lib/PermissionsContext";
 import {
   Shield, Download, Upload, RotateCcw, History,
-  AlertTriangle, FileText, Bug, Printer, Eye
+  AlertTriangle, FileText, Bug, Printer, Eye, Trash2
 } from "lucide-react";
 import KitStatusBadge from "./KitStatusBadge";
 import KitChecklistInterno from "./KitChecklistInterno";
@@ -179,6 +180,9 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
   const [showHistorico, setShowHistorico]         = useState(false);
   const [showDiagnostico, setShowDiagnostico]     = useState(false);
   const [erroDetalhe, setErroDetalhe]             = useState(null);
+  const [excluindoKit, setExcluindoKit]           = useState(false);
+
+  const { podeExcluirKit } = usePermissions();
 
   const isAdmin           = currentUser?.role === "admin";
   const isAssinado        = ["assinado", "pdf_externo_anexado"].includes(kit.status);
@@ -294,6 +298,19 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
       setErroDetalhe(error.message);
     } finally {
       setBaixandoPdf(false);
+    }
+  }
+
+  // Excluir Kit — exclusivo da conta da Dra. Paloma
+  async function handleExcluirKit() {
+    const nomeKit = kit.kit_nome || `Kit — ${kit.procedimento_nome}`;
+    if (!window.confirm(`Excluir definitivamente o kit "${nomeKit}"?\n\nEsta ação não pode ser desfeita.`)) return;
+    setExcluindoKit(true);
+    try {
+      await base44.entities.DossieKitDocumental.delete(kit.id);
+      if (onRefresh) onRefresh();
+    } finally {
+      setExcluindoKit(false);
     }
   }
 
@@ -452,6 +469,13 @@ export default function KitDocumentalCard({ kit, patient, currentUser, onRefresh
                   <Bug size={13} /> Diagnosticar PDF
                 </button>
               </>
+            )}
+
+            {podeExcluirKit && (
+              <button onClick={handleExcluirKit} disabled={excluindoKit}
+                style={{ ...S.btnGhost, fontSize: 12, height: 34, display: "flex", alignItems: "center", gap: 6, borderColor: "#EF4444", color: "#EF4444", opacity: excluindoKit ? 0.5 : 1 }}>
+                <Trash2 size={13} /> {excluindoKit ? "Excluindo..." : "Excluir Kit"}
+              </button>
             )}
           </div>
 

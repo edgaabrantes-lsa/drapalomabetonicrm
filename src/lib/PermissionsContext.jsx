@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { getPerfilEfetivo, canAccessMenu, canDo, MENU_PERMISSIONS, ACTION_PERMISSIONS } from "./permissions";
+import { getPerfilEfetivo, canAccessMenu, canDo, podeExcluirKitDocumental, MENU_PERMISSIONS, ACTION_PERMISSIONS } from "./permissions";
 
 const PermissionsContext = createContext(null);
 
@@ -36,9 +36,10 @@ export function PermissionsProvider({ children }) {
 
   const hasMenu = (menuKey) => canAccessMenu(perfil, menuKey);
   const hasAction = (action) => canDo(perfil, action);
+  const podeExcluirKit = podeExcluirKitDocumental(user);
 
   return (
-    <PermissionsContext.Provider value={{ user, clinicUser, perfil, loading, hasMenu, hasAction }}>
+    <PermissionsContext.Provider value={{ user, clinicUser, perfil, loading, hasMenu, hasAction, podeExcluirKit }}>
       {children}
     </PermissionsContext.Provider>
   );
