@@ -27,7 +27,6 @@ const statusEfetivo = (l) =>
     : l.status;
 
 const th = { textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#666666", whiteSpace: "nowrap" };
-const td = { padding: "10px 12px", fontSize: 13, color: "#B0B0B0", whiteSpace: "nowrap" };
 
 export default function LancamentosDRE({ filters }) {
   const queryClient = useQueryClient();
@@ -276,87 +275,95 @@ export default function LancamentosDRE({ filters }) {
               </p>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1080 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid #2B2B2B" }}>
-                  <th style={th}>Data</th>
-                  <th style={th}>Descrição</th>
-                  <th style={th}>Tipo</th>
-                  <th style={th}>Categoria</th>
-                  <th style={{ ...th, textAlign: "right" }}>Valor</th>
-                  <th style={{ ...th, textAlign: "center" }}>Vencimento</th>
-                  <th style={{ ...th, textAlign: "center" }}>Status</th>
-                  <th style={{ ...th, textAlign: "center" }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((l) => {
-                  const stKey = statusEfetivo(l);
-                  const st = statusConfig[stKey] || statusConfig.pendente;
-                  const isEntrada = l.tipo === "receita";
-                  return (
-                    <tr key={l.id} style={{ borderBottom: "1px solid #1E1E1E", cursor: canEdit ? "pointer" : "default" }}
-                      onClick={() => { if (canEdit) { setEditing(l); setIsFormOpen(true); } }}
-                      className="hover:bg-white/5">
-                      <td style={{ ...td, color: "#FFFFFF" }}>
-                        {l.data_pagamento ? format(parseISO(l.data_pagamento), "dd/MM/yyyy") : "—"}
-                      </td>
-                      <td style={{ ...td, color: "#FFFFFF", fontWeight: 500, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {l.descricao}
-                        {l.fornecedor && <span style={{ fontSize: 10, color: "#555555", marginLeft: 6 }}>{l.fornecedor}</span>}
-                      </td>
-                      <td style={{ ...td, color: isEntrada ? "#4ADE80" : "#EF4444", fontSize: 11, fontWeight: 600, letterSpacing: "0.04em" }}>
-                        {isEntrada ? "ENTRADA" : "SAÍDA"}
-                      </td>
-                      <td style={td}>{l.categoria || "-"}</td>
-                      <td style={{ ...td, textAlign: "right", fontWeight: 600, color: isEntrada ? "#4ADE80" : "#EF4444" }}>
-                        {fmtBRL(l.valor)}
-                      </td>
-                      <td style={{ ...td, textAlign: "center" }}>
-                        {l.data_vencimento ? format(parseISO(l.data_vencimento), "dd/MM/yyyy") : "-"}
-                      </td>
-                      <td style={{ ...td, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div>
+              {/* Cabeçalho — visível no desktop */}
+              <div className="hidden lg:flex items-center gap-x-3" style={{ padding: "10px 12px", borderBottom: "1px solid #2B2B2B" }}>
+                <span style={{ ...th, padding: 0, width: 88 }}>Data</span>
+                <span style={{ ...th, padding: 0, flex: 1, minWidth: 0 }}>Descrição</span>
+                <span style={{ ...th, padding: 0, width: 68 }}>Tipo</span>
+                <span className="hidden xl:block" style={{ ...th, padding: 0, width: 110 }}>Categoria</span>
+                <span style={{ ...th, padding: 0, width: 92, textAlign: "right" }}>Valor</span>
+                <span style={{ ...th, padding: 0, width: 92, textAlign: "center" }}>Vencimento</span>
+                <span style={{ ...th, padding: 0, width: 84, textAlign: "center" }}>Status</span>
+                <span style={{ ...th, padding: 0, width: 104, textAlign: "center" }}>Ações</span>
+              </div>
+
+              {filtered.map((l) => {
+                const stKey = statusEfetivo(l);
+                const st = statusConfig[stKey] || statusConfig.pendente;
+                const isEntrada = l.tipo === "receita";
+                return (
+                  <div
+                    key={l.id}
+                    onClick={() => { if (canEdit) { setEditing(l); setIsFormOpen(true); } }}
+                    className="flex flex-wrap items-center gap-x-3 gap-y-2 hover:bg-white/5"
+                    style={{ padding: "10px 12px", borderBottom: "1px solid #1E1E1E", cursor: canEdit ? "pointer" : "default" }}
+                  >
+                    <span style={{ width: 88, fontSize: 13, color: "#FFFFFF", whiteSpace: "nowrap" }}>
+                      {l.data_pagamento ? format(parseISO(l.data_pagamento), "dd/MM/yyyy") : "—"}
+                    </span>
+                    <span
+                      title={l.descricao}
+                      style={{ flex: 1, minWidth: 140, fontSize: 13, fontWeight: 500, color: "#FFFFFF", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {l.descricao}
+                      {l.fornecedor && <span style={{ fontSize: 10, color: "#555555", marginLeft: 6 }}>{l.fornecedor}</span>}
+                    </span>
+                    <span style={{ width: 68, fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", color: isEntrada ? "#4ADE80" : "#EF4444", whiteSpace: "nowrap" }}>
+                      {isEntrada ? "ENTRADA" : "SAÍDA"}
+                    </span>
+                    <span
+                      className="hidden xl:block"
+                      title={l.categoria || ""}
+                      style={{ width: 110, fontSize: 13, color: "#B0B0B0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {l.categoria || "-"}
+                    </span>
+                    <span style={{ width: 92, textAlign: "right", fontSize: 13, fontWeight: 600, color: isEntrada ? "#4ADE80" : "#EF4444", whiteSpace: "nowrap" }}>
+                      {fmtBRL(l.valor)}
+                    </span>
+                    <span className="hidden lg:block" style={{ width: 92, textAlign: "center", fontSize: 13, color: "#B0B0B0", whiteSpace: "nowrap" }}>
+                      {l.data_vencimento ? format(parseISO(l.data_vencimento), "dd/MM/yyyy") : "-"}
+                    </span>
+                    <span style={{ width: 84, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        disabled={!canEdit || l.status === "pago"}
+                        onClick={() => setBaixa(l)}
+                        title={canEdit && l.status !== "pago" ? (isEntrada ? "Marcar como recebido" : "Marcar como pago") : undefined}
+                        style={{
+                          padding: "3px 8px", borderRadius: 4, fontSize: 11, fontWeight: 500,
+                          backgroundColor: st.color, color: st.textColor, border: "none",
+                          cursor: canEdit && l.status !== "pago" ? "pointer" : "default",
+                        }}
+                      >
+                        {stKey === "pago" ? (isEntrada ? "Recebido" : "Pago") : st.label}
+                      </button>
+                    </span>
+                    <span style={{ width: 104, display: "flex", justifyContent: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                      {l.tipo !== "receita" && l.status !== "pago" && canEdit && (
                         <button
                           type="button"
-                          disabled={!canEdit || l.status === "pago"}
                           onClick={() => setBaixa(l)}
-                          title={canEdit && l.status !== "pago" ? (isEntrada ? "Marcar como recebido" : "Marcar como pago") : undefined}
-                          style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 11, fontWeight: 500,
-                            backgroundColor: st.color, color: st.textColor, border: "none",
-                            cursor: canEdit && l.status !== "pago" ? "pointer" : "default",
-                          }}
+                          style={{ background: "transparent", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 4, cursor: "pointer", padding: "3px 8px", fontSize: 10, fontWeight: 600, color: "#4ADE80" }}
                         >
-                          {stKey === "pago" ? (isEntrada ? "Recebido" : "Pago") : st.label}
+                          Pagar
                         </button>
-                      </td>
-                      <td style={{ ...td, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center" style={{ gap: 6 }}>
-                          {l.tipo !== "receita" && l.status !== "pago" && canEdit && (
-                            <button
-                              type="button"
-                              onClick={() => setBaixa(l)}
-                              style={{ background: "transparent", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 4, cursor: "pointer", padding: "3px 8px", fontSize: 10, fontWeight: 600, color: "#4ADE80" }}
-                            >
-                              Pagar
-                            </button>
-                          )}
-                          {canDelete && (
-                            <button
-                              type="button"
-                              onClick={() => { if (confirm("Excluir este lançamento?")) deleteMut.mutate(l.id); }}
-                              style={{ background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 4, cursor: "pointer", padding: "3px 8px", fontSize: 10, fontWeight: 600, color: "#EF4444" }}
-                            >
-                              Excluir
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => { if (confirm("Excluir este lançamento?")) deleteMut.mutate(l.id); }}
+                          style={{ background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 4, cursor: "pointer", padding: "3px 8px", fontSize: 10, fontWeight: 600, color: "#EF4444" }}
+                        >
+                          Excluir
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
