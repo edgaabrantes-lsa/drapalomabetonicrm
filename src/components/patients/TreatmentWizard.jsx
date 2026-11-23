@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import ConsumoMateriaisForm, { novaLinhaConsumo } from "@/components/estoque/ConsumoMateriaisForm";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -578,8 +579,44 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
   const [payment, setPayment] = useState({ method: null });
   const [record, setRecord] = useState({ profissional: "Dra. Paloma Betoni" });
   const [saving, setSaving] = useState(false);
+  const [consumoRows, setConsumoRows] = useState([]);
+  const [consumoValido, setConsumoValido] = useState(false);
+  const [semConsumo, setSemConsumo] = useState(false);
+  const [prefillFeito, setPrefillFeito] = useState(false);
 
-  const STEPS = ["Tipo", tipo === "protocol" ? "Protocolo" : "Procedimento", "Pagamento", "Prontuário"];
+  const STEPS = ["Tipo", tipo === "protocol" ? "Protocolo" : "Procedimento", "Pagamento", "Materiais", "Prontuário"];
+
+  const { data: catalogoProcedimentos = [] } = useQuery({
+    queryKey: ["procedures-oficial"],
+    queryFn: () => base44.entities.Procedure.list(),
+    enabled: tipo === "procedure",
+  });
+
+  const procedimentosSelecionados = tipo === "procedure"
+    ? (sel.items || []).map((i) => ({ id: i.id, name: i.nome }))
+    : [{ id: sel.item?.id || "", name: sel.item?.nome || "Protocolo" }];
+
+  // Pré-preenche os materiais esperados do procedimento (Procedure.supplies_required)
+  useEffect(() => {
+    if (step !== 3 || prefillFeito) return;
+    if (tipo === "procedure") {
+      const rows = [];
+      for (const it of sel.items || []) {
+        const proc = catalogoProcedimentos.find((p) => p.id === it.id);
+        (proc?.supplies_required || []).forEach((req) => {
+          if (!req?.supply_id) return;
+          rows.push(novaLinhaConsumo({
+            procedure_id: it.id,
+            procedure_name: it.nome,
+            supply_id: req.supply_id,
+            quantity: req.quantity ? String(req.quantity) : "",
+          }));
+        });
+      }
+      if (rows.length > 0) setConsumoRows(rows);
+    }
+    setPrefillFeito(true);
+  }, [step, prefillFeito, tipo, catalogoProcedimentos]);
 
   const baseValue = tipo === "procedure"
     ? (sel.items || []).reduce((s, i) => s + (i.valorFinal || 0), 0)
@@ -599,6 +636,7 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
     if (step === 0) return !!tipo;
     if (step === 1) return tipo === "procedure" ? (sel.items?.length || 0) > 0 : !!sel.item;
     if (step === 2) return !!payment.method;
+    if (step === 3) return semConsumo || (consumoRows.length > 0 && consumoValido);
     return true;
   };
 
@@ -614,6 +652,7 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
         : (sel.item?.nome || "Tratamento");
       const isInstallment = payment.method === "installments";
       const numParcelas = isInstallment ? (payment.installments || 2) : 1;
+      const tratamentosCriados = [];
 
       if (isMulti) {
         const items = sel.items;
@@ -635,7 +674,7 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
             quantidade_ml: parseFloat(it.qty) || 1,
             regioes_tratadas: it.regioes ? [it.regioes] : [],
             observacoes: it.obs || "",
-          });
+          }).then((criado) => tratamentosCriados.push({ id: criado.id, nome: it.nome }));
         }
       } else {
         await base44.entities.PatientTreatment.create({
@@ -652,7 +691,37 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
           quantidade_ml: parseFloat(sel.qty) || parseFloat(sel.mlUsado) || 1,
           regioes_tratadas: sel.regioes ? [sel.regioes] : (sel.item?.regioes || []),
           observacoes: sel.obs || record.evolucao || "",
+        }).then((criado) => tratamentosCriados.push({ id: criado.id, nome }));
+      }
+
+      // ── Baixa de materiais no estoque (obrigatória quando há consumo registrado) ──
+      if (!semConsumo && consumoRows.length > 0) {
+        const grupos = {};
+        consumoRows.filter((r) => r.supply_id).forEach((r) => {
+          const nomeGrupo = r.procedure_name || tratamentosCriados[0]?.nome || nome;
+          if (!grupos[nomeGrupo]) grupos[nomeGrupo] = [];
+          grupos[nomeGrupo].push({ supply_id: r.supply_id, batch_id: r.batch_id || "", quantity: Number(r.quantity) });
         });
+
+        try {
+          for (const [nomeGrupo, items] of Object.entries(grupos)) {
+            const trat = tratamentosCriados.find((t) => t.nome === nomeGrupo) || tratamentosCriados[0];
+            const res = await base44.functions.invoke("registrarConsumoProcedimento", {
+              patient_id: patient.id,
+              patient_name: patient.full_name,
+              treatment_id: trat?.id || "",
+              procedure_name: nomeGrupo,
+              items,
+            });
+            const data = res?.data;
+            if (!data || data.error) throw new Error(data?.error || "Falha ao registrar o consumo de materiais");
+          }
+        } catch (consumoErr) {
+          for (const t of tratamentosCriados) {
+            await base44.entities.PatientTreatment.delete(t.id).catch(() => {});
+          }
+          throw new Error("Consumo de materiais não confirmado — o tratamento não foi salvo. " + consumoErr.message);
+        }
       }
 
       for (let i = 0; i < numParcelas; i++) {
@@ -729,7 +798,7 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao salvar. Tente novamente.");
+      toast.error(err?.message || "Erro ao salvar. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -766,7 +835,37 @@ export default function TreatmentWizard({ patient, onClose, onSuccess }) {
           {step === 1 && tipo === "procedure" && <StepProcedimento sel={sel} onUpdate={setSel} />}
           {step === 1 && tipo === "protocol" && <StepProtocolo sel={sel} onUpdate={setSel} />}
           {step === 2 && <StepPagamento baseValue={baseValue} payment={payment} onUpdate={setPayment} />}
-          {step === 3 && <StepProntuario record={record} onUpdate={setRecord} />}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-serif text-white mb-1">Materiais utilizados</h2>
+                <p className="text-sm text-gray-400">
+                  Registre o que foi efetivamente utilizado. Ao finalizar, o lote e o estoque são baixados automaticamente.
+                </p>
+              </div>
+
+              <ConsumoMateriaisForm
+                value={consumoRows}
+                onChange={setConsumoRows}
+                procedures={procedimentosSelecionados}
+                onValidChange={setConsumoValido}
+                disabled={saving || semConsumo}
+              />
+
+              <label className="flex items-start gap-2 p-3 rounded-lg border border-[#252D3E] bg-[#141820] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={semConsumo}
+                  onChange={(e) => setSemConsumo(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-xs text-gray-400">
+                  Este procedimento não utilizou materiais controlados pelo estoque
+                </span>
+              </label>
+            </div>
+          )}
+          {step === 4 && <StepProntuario record={record} onUpdate={setRecord} />}
         </div>
 
         {/* Footer */}

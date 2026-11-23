@@ -1,0 +1,117 @@
+{
+  "name": "ConsumoMaterial",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "treatment_id": {
+      "type": "string",
+      "description": "ID do PatientTreatment vinculado (garante baixa \u00fanica)"
+    },
+    "procedure_id": {
+      "type": "string"
+    },
+    "procedure_name": {
+      "type": "string"
+    },
+    "appointment_id": {
+      "type": "string"
+    },
+    "profissional_id": {
+      "type": "string"
+    },
+    "profissional_nome": {
+      "type": "string"
+    },
+    "supply_id": {
+      "type": "string"
+    },
+    "supply_name": {
+      "type": "string"
+    },
+    "brand": {
+      "type": "string"
+    },
+    "batch_id": {
+      "type": "string"
+    },
+    "batch_number": {
+      "type": "string"
+    },
+    "lote_nao_cadastrado": {
+      "type": "boolean",
+      "default": false
+    },
+    "quantidade": {
+      "type": "number",
+      "description": "Quantidade efetivamente utilizada na unidade de consumo do produto (mL, U, un...)"
+    },
+    "unidade": {
+      "type": "string"
+    },
+    "quantidade_estoque": {
+      "type": "number",
+      "description": "Quantidade abatida do estoque, na unidade de controle do produto"
+    },
+    "data_consumo": {
+      "type": "string",
+      "format": "date"
+    },
+    "movimento_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "confirmado",
+        "estornado"
+      ],
+      "default": "confirmado",
+      "enumColors": [
+        "green",
+        "red"
+      ]
+    },
+    "estorno_motivo": {
+      "type": "string"
+    },
+    "estorno_por": {
+      "type": "string"
+    },
+    "estorno_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "supply_id",
+    "quantidade",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

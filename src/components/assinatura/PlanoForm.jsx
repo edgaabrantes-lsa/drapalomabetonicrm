@@ -86,7 +86,7 @@ export default function PlanoForm({ plano, onSubmit, onCancel }) {
       </div>
       <div>
         <Label>Inclui todo mês (vírgula)</Label>
-        <Input value={incluiMensal} onChange={(e) => setIncluiMensal(e.target.value)} className="mt-1" placeholder="Ex: Limpeza de Pele Premium, LED Terapêutico" />
+        <Input value={incluiMensal} onChange={(e) => setIncluiMensal(e.target.value)} className="mt-1" placeholder="Ex: LED Terapêutico, Máscaras Regeneradoras" />
       </div>
       <div>
         <Label>Rotação mensal (vírgula)</Label>

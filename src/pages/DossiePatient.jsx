@@ -14,11 +14,13 @@ import DossiePerfilSensorial         from "@/components/dossie/DossiePerfilSenso
 import DossieSensorFlowTab            from "@/components/dossie/DossieSensorFlowTab";
 import PainelAssinaturaPaciente       from "@/components/assinatura/PainelAssinaturaPaciente";
 import DossieAnamnese                 from "@/components/anamnese/DossieAnamnese";
+import DossieReceitas                 from "@/components/receitas/DossieReceitas";
 
 const ABAS = [
   { id: "cadastro",         label: "Cadastro" },
   { id: "prontuario",       label: "Prontuário" },
   { id: "anamnese",         label: "Anamnese" },
+  { id: "receitas",         label: "Receitas" },
   { id: "fotos",            label: "Fotos" },
   { id: "financeiro",       label: "Financeiro" },
   { id: "documentacao",     label: "Documentação" },
@@ -327,6 +329,7 @@ export default function DossiePatient() {
                   {activeTab === "cadastro"      && <DossieCadastro patient={selectedPatient} onPatientUpdate={() => {}} />}
                   {activeTab === "prontuario"    && <DossieProntuario patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "anamnese"      && <DossieAnamnese patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "receitas"      && <DossieReceitas patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "fotos"         && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "financeiro"    && <DossieFinanceiroTab patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "documentacao"  && <DossieDocumentacaoNew patient={selectedPatient} currentUser={currentUser} />}

@@ -69,6 +69,11 @@
         }
       }
     },
+    "exige_consumo_materiais": {
+      "type": "boolean",
+      "default": false,
+      "description": "Exige registro obrigat\u00f3rio de materiais utilizados ao finalizar o procedimento"
+    },
     "contraindications": {
       "type": "array",
       "items": {

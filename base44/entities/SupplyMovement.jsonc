@@ -27,6 +27,14 @@
     "quantity": {
       "type": "number"
     },
+    "unidade": {
+      "type": "string",
+      "description": "Unidade do registro de consumo (mL, U, un...)"
+    },
+    "quantidade_consumo": {
+      "type": "number",
+      "description": "Quantidade na unidade de consumo informada pela profissional"
+    },
     "patient_id": {
       "type": "string"
     },
@@ -34,6 +42,12 @@
       "type": "string"
     },
     "appointment_id": {
+      "type": "string"
+    },
+    "treatment_id": {
+      "type": "string"
+    },
+    "consumo_id": {
       "type": "string"
     },
     "procedure_name": {

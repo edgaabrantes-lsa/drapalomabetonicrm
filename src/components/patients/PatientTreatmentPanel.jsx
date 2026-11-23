@@ -20,8 +20,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, CheckCircle, Clock, XCircle, Calendar, DollarSign } from "lucide-react";
+import ProdutosUtilizados from "@/components/estoque/ProdutosUtilizados";
+import { usePermissions } from "@/lib/PermissionsContext";
 
 export default function PatientTreatmentPanel({ patientId, patientName }) {
+  const { user, hasAction } = usePermissions();
+  const podeRegistrarConsumo = user?.role === "admin" || hasAction("assinar");
+  const podeCorrigirConsumo = user?.role === "admin";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProtocolo, setSelectedProtocolo] = useState(null);
   const queryClient = useQueryClient();
@@ -153,6 +158,13 @@ export default function PatientTreatmentPanel({ patientId, patientName }) {
                         {formatCurrency(tratamento.valor)}
                       </p>
                     )}
+                    <ProdutosUtilizados
+                      treatment={tratamento}
+                      patient={{ id: patientId, full_name: patientName }}
+                      onRefresh={() => queryClient.invalidateQueries({ queryKey: ["patient-treatments"] })}
+                      podeRegistrar={podeRegistrarConsumo && tratamento.status === "realizado"}
+                      podeCorrigir={podeCorrigirConsumo}
+                    />
                   </div>
                   <div className="flex gap-2">
                     {tratamento.status === "indicado" && (

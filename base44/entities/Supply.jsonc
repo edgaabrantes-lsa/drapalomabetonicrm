@@ -27,7 +27,26 @@
         "cx",
         "fr",
         "amp"
-      ]
+      ],
+      "description": "Unidade de controle do estoque"
+    },
+    "unidade_consumo": {
+      "type": "string",
+      "enum": [
+        "ml",
+        "u",
+        "mg",
+        "un",
+        "amp",
+        "cx",
+        "fr"
+      ],
+      "description": "Unidade usada no registro de consumo do procedimento (ex: mL para \u00e1cido hialur\u00f4nico, U para toxina)"
+    },
+    "conteudo_por_unidade": {
+      "type": "number",
+      "default": 1,
+      "description": "Quanto da unidade de consumo existe em 1 unidade de estoque (ex: 1 mL por seringa, 100 U por frasco)"
     },
     "current_stock": {
       "type": "number",
