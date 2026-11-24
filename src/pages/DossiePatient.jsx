@@ -15,6 +15,7 @@ import DossieSensorFlowTab            from "@/components/dossie/DossieSensorFlow
 import PainelAssinaturaPaciente       from "@/components/assinatura/PainelAssinaturaPaciente";
 import DossieAnamnese                 from "@/components/anamnese/DossieAnamnese";
 import DossieReceitas                 from "@/components/receitas/DossieReceitas";
+import DossieTabBar                   from "@/components/dossie/DossieTabBar";
 
 const ABAS = [
   { id: "cadastro",         label: "Cadastro" },
@@ -292,32 +293,7 @@ export default function DossiePatient() {
                 </button>
               </div>
 
-              <div className="w-full overflow-x-auto scrollbar-hide flex-shrink-0" style={{
-                backgroundColor: T.bgSecondary,
-                borderBottom: `1px solid ${T.border}`,
-                WebkitOverflowScrolling: "touch",
-              }}>
-                <div style={{ display: "flex", padding: "0 8px", minWidth: "max-content" }}>
-                  {ABAS.map(aba => {
-                    const isActive = activeTab === aba.id;
-                    return (
-                      <button
-                        key={aba.id}
-                        onClick={() => setActiveTab(aba.id)}
-                        style={{
-                          fontFamily: T.font, fontSize: 12, fontWeight: isActive ? 600 : 400,
-                          color: isActive ? T.textPrimary : T.textMuted,
-                          padding: "10px 12px", border: "none",
-                          borderBottom: isActive ? `2px solid ${T.gold}` : "2px solid transparent",
-                          backgroundColor: "transparent", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s",
-                        }}
-                      >
-                        {aba.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <DossieTabBar tabs={ABAS} activeTab={activeTab} onChange={setActiveTab} />
 
               <div className="w-full max-w-full min-w-0 flex-1 overflow-y-auto" style={{ padding: "max(12px, 1.5vw)", backgroundColor: T.bgPrimary }}>
                 <div className="w-full max-w-full min-w-0">
