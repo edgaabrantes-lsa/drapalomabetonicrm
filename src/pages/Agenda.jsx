@@ -843,7 +843,7 @@ export default function Agenda() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
           {/* View toggle */}
-          <div style={{ display: "flex", border: `1px solid ${T.subtle}`, borderRadius: 2, overflow: "hidden", width: isMobile ? "100%" : "auto" }}>
+          <div style={{ display: "flex", border: `1px solid ${T.subtle}`, borderRadius: 8, overflow: "hidden", width: isMobile ? "100%" : "auto" }}>
             {views.map(v => (
               <button key={v.id} onClick={() => setViewMode(v.id)}
                 style={{
@@ -863,7 +863,7 @@ export default function Agenda() {
           <button
             onClick={() => setIsBloqueiosOpen(true)}
             style={{
-              border: `1px solid ${T.subtle}`, background: "transparent", borderRadius: 2,
+              border: `1px solid ${T.subtle}`, background: "transparent", borderRadius: 8,
               padding: "7px 14px", cursor: "pointer", fontFamily: "Inter", fontSize: 9,
               letterSpacing: "0.1em", textTransform: "uppercase", color: T.onyx,
               width: isMobile ? "100%" : "auto",
