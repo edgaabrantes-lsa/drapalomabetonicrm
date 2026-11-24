@@ -144,41 +144,67 @@ export default function Layout({ children, currentPageName }) {
             overflow: "visible",
           }}
         >
-          {/* Logo — visível apenas quando aberto */}
-          {!collapsed && (
+          {/* Logo — visível apenas quando aberto (ou no mobile) */}
+          {(!collapsed || !isLgScreen) ? (
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/409f9cb09_ChatGPT_Image_8_de_mai_de_2026__14_52_21-removebg-preview.png"
               alt="Paloma Betoni"
               style={{ height: 90, objectFit: "contain", width: "100%", maxWidth: 200 }}
             />
+          ) : (
+            <span style={{
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontSize: 15,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: "#C8A96A",
+            }}>
+              PB
+            </span>
           )}
-
-          {/* Botão colapsar — desktop */}
-          <button
-            onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
-            className="hidden lg:flex items-center justify-center rounded-md transition-colors hover:bg-white/5 ml-auto flex-shrink-0"
-            style={{
-              width: 28, height: 28,
-              color: "#FFFFFF",
-              fontSize: 18, fontWeight: 400, lineHeight: 1,
-              position: collapsed ? "static" : "absolute",
-              right: collapsed ? undefined : 12,
-              border: "none", background: "transparent", cursor: "pointer",
-            }}
-            title={collapsed ? "Expandir menu" : "Recolher menu"}
-          >
-            {collapsed ? "›" : "‹"}
-          </button>
 
           {/* Botão fechar — mobile */}
           <button
             onClick={() => setMobileOpen(false)}
             className="lg:hidden flex items-center justify-center rounded-md transition-colors hover:bg-white/5 ml-auto"
-            style={{ width: 28, height: 28, color: "#555555", fontSize: 18, fontWeight: 300, border: "none", background: "transparent", cursor: "pointer" }}
+            style={{ width: 28, height: 28, color: "#555555", fontSize: 18, fontWeight: 300, border: "none", background: "transparent", cursor: "pointer", flexShrink: 0 }}
           >
             ×
           </button>
         </div>
+
+        {/* Botão recolher / expandir — desktop */}
+        <button
+          onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
+          className="hidden lg:flex items-center transition-colors flex-shrink-0"
+          title={collapsed ? "Expandir menu" : "Recolher menu"}
+          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+          style={{
+            width: "100%",
+            padding: collapsed ? "10px 0" : "10px 16px",
+            justifyContent: collapsed ? "center" : "flex-start",
+            gap: 8,
+            background: "transparent",
+            border: "none",
+            borderBottom: "1px solid #1E1E1E",
+            color: "#B0B0B0",
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#FFFFFF";
+            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#B0B0B0";
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
+        >
+          <span style={{ fontSize: 14, lineHeight: 1 }}>{collapsed ? "›" : "‹"}</span>
+          {!collapsed && <span>Recolher menu</span>}
+        </button>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto" style={{ padding: "8px 0" }}>
