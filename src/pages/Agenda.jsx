@@ -31,6 +31,8 @@ const HOUR_HEIGHT = 64;
 const DAY_START = 8;
 const DAY_END = 20;
 
+const CATEGORIAS_TRATAMENTO = ["preenchimento", "toxina", "fios", "bioestimulador", "enzimas", "microagulhamento"];
+
 const timeSlots = Array.from({ length: (DAY_END - DAY_START) * 2 }, (_, i) => {
   const hour = DAY_START + Math.floor(i / 2);
   const mins = (i % 2) * 30;
@@ -38,12 +40,13 @@ const timeSlots = Array.from({ length: (DAY_END - DAY_START) * 2 }, (_, i) => {
 });
 
 // ── Appointment Form ─────────────────────────────────────────
-const AppointmentForm = ({ appointment, patients, procedures, professionals, rooms, bloqueios = [], onSave, onClose }) => {
+const AppointmentForm = ({ appointment, patients, procedures = [], protocols = [], professionals, rooms, bloqueios = [], onSave, onClose }) => {
   const [formData, setFormData] = useState(appointment || {
     patient_id: "", patient_name: "", professional_id: "", professional_name: "",
-    room_id: "", procedure_id: "", procedure_name: "",
+    room_id: "", procedure_id: "", protocol_id: "", procedure_name: "",
     start_time: "", duration_minutes: 60, status: "scheduled", notes: "", price: 0
   });
+  const [tipoSelecao, setTipoSelecao] = useState(appointment?.protocol_id ? "protocolo" : "procedimento");
   const [selectedDate, setSelectedDate] = useState(
     appointment?.start_time ? parseISO(appointment.start_time) : new Date()
   );
@@ -94,17 +97,51 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
           </Select>
         </div>
         <div className="col-span-2">
-          <label style={labelStyle}>Procedimento *</label>
+          <label style={labelStyle}>Procedimento / Protocolo *</label>
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            {[{ id: "procedimento", label: "Procedimentos" }, { id: "protocolo", label: "Protocolos" }].map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  setTipoSelecao(opt.id);
+                  setFormData(prev => ({ ...prev, procedure_id: "", protocol_id: "", procedure_name: "" }));
+                }}
+                style={{
+                  flex: 1, padding: "8px 10px", cursor: "pointer", borderRadius: 4,
+                  fontFamily: "Inter", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
+                  border: `1px solid ${tipoSelecao === opt.id ? T.gold : T.subtle}`,
+                  background: tipoSelecao === opt.id ? T.gold : "transparent",
+                  color: tipoSelecao === opt.id ? "#000" : T.charcoal,
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
           <Select value={
-            formData.procedure_name === "Consulta Online" ? "consulta_online"
+            tipoSelecao === "protocolo" ? (formData.protocol_id || "")
+            : formData.procedure_name === "Consulta Online" ? "consulta_online"
             : formData.procedure_name === "Consulta Presencial" ? "consulta_presencial"
             : formData.procedure_id
           } onValueChange={v => {
+            if (tipoSelecao === "protocolo") {
+              const prot = protocols.find(x => x.id === v);
+              setFormData(prev => ({
+                ...prev,
+                protocol_id: v,
+                procedure_id: "",
+                procedure_name: prot?.nome || "",
+                price: prot?.valor_min || 0,
+              }));
+              return;
+            }
             const proc = procedures.find(x => x.id === v);
             const isConsulta = v === "consulta_online" || v === "consulta_presencial";
             const consultaName = v === "consulta_online" ? "Consulta Online" : "Consulta Presencial";
             setFormData(prev => ({
               ...prev,
+              protocol_id: "",
               procedure_id: isConsulta ? "" : v,
               procedure_name: isConsulta ? consultaName : (proc?.name || ""),
               duration_minutes: isConsulta ? 60 : (proc?.duration_minutes || 60),
@@ -112,15 +149,21 @@ const AppointmentForm = ({ appointment, patients, procedures, professionals, roo
             }));
           }}>
             <SelectTrigger style={{ ...inputStyle, height: 38 }}>
-              <SelectValue placeholder="Selecione o procedimento" />
+              <SelectValue placeholder={tipoSelecao === "protocolo" ? "Selecione o protocolo" : "Selecione o procedimento"} />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="consulta_online">Consulta Online (60min)</SelectItem>
-              <SelectItem value="consulta_presencial">Consulta Presencial (60min)</SelectItem>
-              {procedures.length > 0 && (
-                <div style={{ height: 1, background: T.subtle, margin: "4px 0" }} />
+            <SelectContent className="max-h-[60vh]">
+              {tipoSelecao === "protocolo" ? (
+                protocols.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)
+              ) : (
+                <>
+                  <SelectItem value="consulta_online">Consulta Online (60min)</SelectItem>
+                  <SelectItem value="consulta_presencial">Consulta Presencial (60min)</SelectItem>
+                  {procedures.length > 0 && (
+                    <div style={{ height: 1, background: T.subtle, margin: "4px 0" }} />
+                  )}
+                  {procedures.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.duration_minutes}min)</SelectItem>)}
+                </>
               )}
-              {procedures.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.duration_minutes}min)</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -768,6 +811,7 @@ export default function Agenda() {
   const { data: appointments = [] } = useQuery({ queryKey: ["appointments"], queryFn: () => base44.entities.Appointment.list("-start_time", 500) });
   const { data: patients = [] } = useQuery({ queryKey: ["patients"], queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
   const { data: procedures = [] } = useQuery({ queryKey: ["procedures"], queryFn: () => base44.entities.Procedure.list() });
+  const { data: protocols = [] } = useQuery({ queryKey: ["protocolos-premium-all"], queryFn: () => base44.entities.ProtocoloPremium.list("-created_date", 200) });
   const { data: professionals = [] } = useQuery({ queryKey: ["professionals"], queryFn: () => base44.entities.Professional.list() });
   const { data: rooms = [] } = useQuery({ queryKey: ["rooms"], queryFn: () => base44.entities.Room.list() });
   const { data: bloqueios = [] } = useQuery({ queryKey: ["bloqueios-agenda"], queryFn: () => base44.entities.BloqueioAgenda.list("-data_inicio", 200) });
@@ -794,9 +838,31 @@ export default function Agenda() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["appointments"] }); setSelectedAppointment(null); },
   });
 
-  const handleSave = (data) => {
-    if (editingAppointment) updateMutation.mutate({ id: editingAppointment.id, data });
-    else createMutation.mutate(data);
+  const handleSave = async (data) => {
+    if (editingAppointment) {
+      updateMutation.mutate({ id: editingAppointment.id, data });
+      return;
+    }
+    await createMutation.mutateAsync(data);
+    if (!data.patient_id || !data.procedure_name) return;
+    const origem = data.protocol_id
+      ? protocols.find(p => p.id === data.protocol_id)
+      : procedures.find(p => p.id === data.procedure_id);
+    const categoria = CATEGORIAS_TRATAMENTO.includes(origem?.categoria) ? origem.categoria : "avulso";
+    await base44.entities.PatientTreatment.create({
+      patient_id: data.patient_id,
+      patient_name: data.patient_name,
+      protocolo_id: data.protocol_id || data.procedure_id || "",
+      protocolo_nome: data.procedure_name,
+      categoria,
+      tipo: data.protocol_id ? "protocolo" : "avulso",
+      status: "indicado",
+      data_indicacao: format(parseISO(data.start_time), "yyyy-MM-dd"),
+      valor: data.price || 0,
+      profissional_id: data.professional_id || "",
+      profissional_nome: data.professional_name || "",
+    }).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: ["patient-treatments"] });
   };
 
   const handleClickSlot = (date, hour) => {
@@ -951,7 +1017,7 @@ export default function Agenda() {
           </DialogHeader>
           <AppointmentForm
             appointment={editingAppointment || (prefilledTime ? { start_time: prefilledTime.toISOString() } : null)}
-            patients={patients} procedures={procedures}
+            patients={patients} procedures={procedures} protocols={protocols}
             professionals={professionals} rooms={rooms} bloqueios={bloqueios}
             onSave={handleSave}
             onClose={() => { setIsFormOpen(false); setEditingAppointment(null); setPrefilledTime(null); }}

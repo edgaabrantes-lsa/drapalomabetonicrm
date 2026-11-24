@@ -15,6 +15,7 @@ import DossieSensorFlowTab            from "@/components/dossie/DossieSensorFlow
 import PainelAssinaturaPaciente       from "@/components/assinatura/PainelAssinaturaPaciente";
 import DossieAnamnese                 from "@/components/anamnese/DossieAnamnese";
 import DossieReceitas                 from "@/components/receitas/DossieReceitas";
+import PatientTreatmentPanel          from "@/components/patients/PatientTreatmentPanel";
 import DossieTabBar                   from "@/components/dossie/DossieTabBar";
 
 const ABAS = [
@@ -22,6 +23,7 @@ const ABAS = [
   { id: "prontuario",       label: "Prontuário" },
   { id: "anamnese",         label: "Anamnese" },
   { id: "receitas",         label: "Receitas" },
+  { id: "procedimentos",    label: "Procedimentos" },
   { id: "fotos",            label: "Fotos" },
   { id: "financeiro",       label: "Financeiro" },
   { id: "documentacao",     label: "Documentação" },
@@ -306,6 +308,7 @@ export default function DossiePatient() {
                   {activeTab === "prontuario"    && <DossieProntuario patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "anamnese"      && <DossieAnamnese patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "receitas"      && <DossieReceitas patient={selectedPatient} currentUser={currentUser} />}
+                  {activeTab === "procedimentos" && <PatientTreatmentPanel patientId={selectedPatient.id} patientName={selectedPatient.full_name} />}
                   {activeTab === "fotos"         && <DossieImagensArquivos patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "financeiro"    && <DossieFinanceiroTab patient={selectedPatient} currentUser={currentUser} />}
                   {activeTab === "documentacao"  && <DossieDocumentacaoNew patient={selectedPatient} currentUser={currentUser} />}
