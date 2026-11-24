@@ -2,10 +2,15 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import Mfa from './pages/Mfa';
 import ProtocolosPremium from './pages/ProtocolosPremium';
 import VigilanciaPage from './pages/VigilanciaPage';
 import FullFaceSimulations from './pages/FullFaceSimulations';
@@ -48,11 +53,11 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+const AppRoutes = () => {
+  const { isLoadingPublicSettings } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  // Aguarda o carregamento das configurações públicas do app
+  if (isLoadingPublicSettings) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -60,20 +65,17 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
-  }
-
-  // Render the main app
   return (
     <Routes>
+      {/* Páginas de acesso */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/mfa" element={<Mfa />} />
+
+      {/* Todo o app exige autenticação */}
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <MainPage />
@@ -217,6 +219,7 @@ const AuthenticatedApp = () => {
           <AnamnesePacientes />
         </LayoutWrapper>
       } />
+      </Route>
     </Routes>
   );
 };
@@ -243,7 +246,7 @@ function AppRouter() {
   const location = useLocation();
   const path = location.pathname;
   const isPortal = path === "/portal-paciente" || path === "/minha-jornada" || path === "/jornada-da-beleza-natural" || path === "/sensorflow";
-  return isPortal ? <PortalRoutes /> : <AuthenticatedApp />;
+  return isPortal ? <PortalRoutes /> : <AppRoutes />;
 }
 
 export default App
