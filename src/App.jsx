@@ -40,7 +40,6 @@ function PortalRoutes() {
       <Route path="/portal-paciente" element={<PortalPaciente />} />
       <Route path="/minha-jornada" element={<PortalPaciente />} />
       <Route path="/jornada-da-beleza-natural" element={<PortalPaciente />} />
-      <Route path="/sensorflow" element={<SensorFlowForm />} />
     </Routes>
   );
 }
@@ -228,25 +227,36 @@ const AppRoutes = () => {
 function App() {
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <PermissionsProvider>
-            <AppRouter />
-          </PermissionsProvider>
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClientInstance}>
+      <Router>
+        <AppRouter />
+      </Router>
+      <Toaster />
+    </QueryClientProvider>
   )
 }
 
-// Decide entre o Portal da Paciente (público, por token) e o app administrativo autenticado
+// Sensor Flow não monta os provedores de autenticação e permissões da equipe.
 function AppRouter() {
   const location = useLocation();
-  const path = location.pathname;
-  const isPortal = path === "/portal-paciente" || path === "/minha-jornada" || path === "/jornada-da-beleza-natural" || path === "/sensorflow";
-  return isPortal ? <PortalRoutes /> : <AppRoutes />;
+  const path = location.pathname.replace(/\/+$/, "").toLowerCase();
+
+  if (path === "/sensorflow") {
+    return (
+      <Routes>
+        <Route path="/sensorflow" element={<SensorFlowForm />} />
+      </Routes>
+    );
+  }
+
+  const isPortal = path === "/portal-paciente" || path === "/minha-jornada" || path === "/jornada-da-beleza-natural";
+  return (
+    <AuthProvider>
+      <PermissionsProvider>
+        {isPortal ? <PortalRoutes /> : <AppRoutes />}
+      </PermissionsProvider>
+    </AuthProvider>
+  );
 }
 
 export default App

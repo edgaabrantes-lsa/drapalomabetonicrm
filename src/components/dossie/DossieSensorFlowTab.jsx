@@ -126,7 +126,10 @@ export default function DossieSensorFlowTab({ patient, currentUser }) {
   });
 
   function montarLink(token) {
-    return `${window.location.origin}/sensorflow?t=${token}`;
+    // O convite deve abrir o app publicado, nunca a prévia do editor.
+    const link = new URL("/sensorflow", "https://crm-drapalomabetoni.base44.app");
+    link.searchParams.set("t", token);
+    return link.toString();
   }
 
   function copiarLink() {
