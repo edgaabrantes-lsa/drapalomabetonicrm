@@ -158,12 +158,12 @@ export default function DossieTabBar({ tabs, activeTab, onChange }) {
             <DropdownMenuItem
               key={aba.id}
               onSelect={() => onChange(aba.id)}
+              className="cursor-pointer data-[highlighted]:bg-[#C8A96A] data-[highlighted]:!text-black focus:bg-[#C8A96A] focus:!text-black"
               style={{
                 fontFamily: T.font,
                 fontSize: 13,
                 color: activeTab === aba.id ? T.gold : T.textSecondary,
                 fontWeight: activeTab === aba.id ? 600 : 400,
-                cursor: "pointer",
               }}
             >
               {aba.label}

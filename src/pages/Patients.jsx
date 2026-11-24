@@ -321,53 +321,51 @@ const PatientCard = ({ patient, onStartTreatment, onViewTreatments }) => {
       onMouseEnter={e => e.currentTarget.style.borderColor = "#3A3A3A"}
       onMouseLeave={e => e.currentTarget.style.borderColor = "#2B2B2B"}
     >
-      <div className="lg:hidden" style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #2B2B2B" }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: "#FFFFFF", margin: 0, wordBreak: "break-word", lineHeight: 1.3 }}>
-          {patient.full_name}
-        </p>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <div style={{
-        width: 36, height: 36, borderRadius: 6, flexShrink: 0,
-        backgroundColor: "rgba(200,169,106,0.08)", border: "1px solid rgba(200,169,106,0.2)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 14, fontWeight: 600, color: "#C8A96A",
-      }}>
-        {patient.full_name?.[0]?.toUpperCase() || "?"}
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <p className="hidden lg:block" style={{ fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {patient.full_name}
-          </p>
-          <span style={{
-            fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 4, flexShrink: 0,
-            color: st.color, backgroundColor: st.bg, border: `1px solid ${st.border}`,
-          }}>
-            {st.label}
-          </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 6, flexShrink: 0,
+          backgroundColor: "rgba(200,169,106,0.08)", border: "1px solid rgba(200,169,106,0.2)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 14, fontWeight: 600, color: "#C8A96A",
+        }}>
+          {patient.full_name?.[0]?.toUpperCase() || "?"}
         </div>
-        <p style={{ fontSize: 12, color: "#666666" }}>
-          {patient.phone}{age ? ` · ${age} anos` : ""}
-        </p>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            fontSize: 15, fontWeight: 600, color: "#FFFFFF", margin: 0,
+            lineHeight: 1.3, wordBreak: "break-word",
+          }}>
+            {patient.full_name || "Paciente sem nome"}
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 5 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 4, flexShrink: 0,
+              color: st.color, backgroundColor: st.bg, border: `1px solid ${st.border}`,
+            }}>
+              {st.label}
+            </span>
+            <span style={{ fontSize: 12, color: "#666666" }}>
+              {patient.phone}{age ? ` · ${age} anos` : ""}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 14, paddingTop: 12, borderTop: "1px solid #242424" }}>
         <button onClick={e => { e.stopPropagation(); onStartTreatment(patient); }}
-          style={{ background: "#C8A96A", color: "#000", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 600, padding: "5px 12px", cursor: "pointer" }}>
+          style={{ flex: "1 1 auto", background: "#C8A96A", color: "#000", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 600, padding: "6px 12px", cursor: "pointer" }}>
           Iniciar
         </button>
-        <Link to={`/DossiePatient?patient_id=${patient.id}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
-          <button style={{ background: "transparent", color: "#C8A96A", border: "1px solid rgba(200,169,106,0.3)", borderRadius: 5, fontSize: 12, fontWeight: 500, padding: "5px 12px", cursor: "pointer" }}>
+        <Link to={`/DossiePatient?patient_id=${patient.id}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none", flex: "1 1 auto" }}>
+          <button style={{ width: "100%", background: "transparent", color: "#C8A96A", border: "1px solid rgba(200,169,106,0.3)", borderRadius: 5, fontSize: 12, fontWeight: 500, padding: "6px 12px", cursor: "pointer" }}>
             Dossiê
           </button>
         </Link>
         <button onClick={e => { e.stopPropagation(); onViewTreatments(patient); }}
-          style={{ background: "transparent", color: "#666666", border: "1px solid #2B2B2B", borderRadius: 5, fontSize: 12, padding: "5px 12px", cursor: "pointer" }}>
+          style={{ flex: "1 1 auto", background: "transparent", color: "#666666", border: "1px solid #2B2B2B", borderRadius: 5, fontSize: 12, padding: "6px 12px", cursor: "pointer" }}>
           Histórico
         </button>
-      </div>
       </div>
     </div>
   );
