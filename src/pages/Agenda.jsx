@@ -1044,7 +1044,10 @@ export default function Agenda() {
 
       {/* ── Detail Dialog ─────────────────────────────── */}
       <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
-        <DialogContent className="w-[calc(100vw-16px)] sm:w-full" style={{ maxWidth: 440 }}>
+        <DialogContent
+          className="w-[calc(100vw-16px)] sm:w-full"
+          style={{ maxWidth: 440, maxHeight: "90vh", overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch" }}
+        >
           <DialogHeader>
             <DialogTitle style={{ fontFamily: "Inter", fontSize: 22, fontWeight: 600, color: T.onyx }}>
               Detalhes da Consulta
