@@ -977,6 +977,26 @@ export default function Agenda() {
         ))}
       </div>
 
+      {/* ── Mês de referência do calendário ───────────── */}
+      {viewMode !== "list" && (
+        <div style={{
+          display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap",
+          marginBottom: 8, padding: isMobile ? "0 2px" : "0 4px",
+        }}>
+          <p style={{
+            fontFamily: "Inter", fontSize: isMobile ? 11 : 12, fontWeight: 600,
+            letterSpacing: "0.12em", textTransform: "uppercase", color: T.gold, margin: 0,
+          }}>
+            {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+          </p>
+          {viewMode === "week" && (
+            <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.06em", color: T.charcoal, margin: 0 }}>
+              {format(weekStart, "d MMM", { locale: ptBR })} — {format(weekEnd, "d MMM yyyy", { locale: ptBR })}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Calendar ──────────────────────────────────── */}
       <div style={{ background: T.white, border: `1px solid ${T.subtle}`, borderRadius: 4, overflowX: isMobile ? "hidden" : "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
         {viewMode === "day" && <DayView date={currentDate} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />}
