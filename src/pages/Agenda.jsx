@@ -18,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SemanaMobile from "@/components/agenda/SemanaMobile";
@@ -167,19 +166,17 @@ const AppointmentForm = ({ appointment, patients, procedures = [], protocols = [
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="col-span-2">
           <label style={labelStyle}>Data *</label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button type="button" style={{ ...inputStyle, display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                <CalendarIcon size={14} color={T.charcoal} />
-                {format(selectedDate, "dd/MM/yyyy")}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar mode="single" selected={selectedDate} onSelect={d => d && setSelectedDate(d)} locale={ptBR} />
-            </PopoverContent>
-          </Popover>
+          <div style={{
+            border: `1px solid ${T.border}`, borderRadius: 6, background: T.card,
+            padding: "6px 4px", display: "flex", justifyContent: "center",
+          }}>
+            <Calendar mode="single" selected={selectedDate} onSelect={d => d && setSelectedDate(d)} locale={ptBR} />
+          </div>
+          <p style={{ fontFamily: "Inter", fontSize: 11, color: T.gold, marginTop: 6 }}>
+            Data selecionada: {format(selectedDate, "dd/MM/yyyy")}
+          </p>
         </div>
         <div>
           <label style={labelStyle}>Horário *</label>
