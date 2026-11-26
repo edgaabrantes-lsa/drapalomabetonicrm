@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval,
   addDays, addWeeks, subWeeks, addMonths, subMonths,
   isSameDay, isToday, setHours, setMinutes,
-  startOfMonth, endOfMonth, eachDayOfInterval as eachDay
+  startOfMonth, endOfMonth, startOfDay, endOfDay
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -22,6 +22,12 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useAgendaRealtime from "@/hooks/useAgendaRealtime";
 import SemanaMobile from "@/components/agenda/SemanaMobile";
+import DiaAgendamentosSheet from "@/components/agenda/DiaAgendamentosSheet";
+import { usePermissions } from "@/lib/PermissionsContext";
+import {
+  agendaList, agendaListPeriodo, agendaCreate, agendaUpdate, agendaDelete,
+  bloqueiosList, bloqueioCreate, bloqueioDelete,
+} from "@/lib/agendaApi";
 import BloqueioOverlay from "@/components/agenda/BloqueioOverlay";
 import BloqueiosModal from "@/components/agenda/BloqueiosModal";
 import { T, statusDot } from "@/lib/agendaTokens";
@@ -435,8 +441,21 @@ const WeekView = ({ weekDays, appointments, bloqueios = [], onClickAppointment, 
 };
 
 // ── Month View ────────────────────────────────────────────────
+function nomeCurto(appt, diaAppts) {
+  const nome = (appt.patient_name || "").trim();
+  if (!nome) return "Paciente";
+  const partes = nome.split(/\s+/);
+  const primeiro = partes[0];
+  const repetidos = diaAppts.filter((a) => (a.patient_name || "").trim().split(/\s+/)[0] === primeiro);
+  if (repetidos.length < 2) return primeiro;
+  const inicial = partes[1]?.[0];
+  return inicial ? `${primeiro} ${inicial}.` : primeiro;
+}
+
 const MonthView = ({ currentDate, appointments, bloqueios = [], onClickAppointment, onClickSlot, onPrevMonth, onNextMonth }) => {
   const isMobile = useIsMobile();
+  const [diaAberto, setDiaAberto] = useState(null);
+  const visiveis = isMobile ? 2 : 3;
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -453,7 +472,7 @@ const MonthView = ({ currentDate, appointments, bloqueios = [], onClickAppointme
     borderRadius: "50%",
     background: "#FFFFFF",
     border: `1px solid ${T.subtle}`,
-    display: "flex",
+    display: isMobile ? "none" : "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
@@ -478,9 +497,11 @@ const MonthView = ({ currentDate, appointments, bloqueios = [], onClickAppointme
           </div>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
         {calDays.map(day => {
-          const dayAppts = appointments.filter(a => a.start_time && isSameDay(parseISO(a.start_time), day));
+          const dayAppts = appointments
+            .filter(a => a.start_time && isSameDay(parseISO(a.start_time), day))
+            .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
           const bloqueado = bloqueiosDoDia(bloqueios, day).length > 0;
           const isCurrentMonth = day.getMonth() === currentDate.getMonth();
           return (
@@ -504,28 +525,68 @@ const MonthView = ({ currentDate, appointments, bloqueios = [], onClickAppointme
                   Indisponível
                 </p>
               )}
-              {dayAppts.slice(0, 2).map(appt => {
+              {dayAppts.slice(0, visiveis).map(appt => {
                 const cfg = statusDot[appt.status] || statusDot.scheduled;
                 return (
                   <div key={appt.id} onClick={e => { e.stopPropagation(); onClickAppointment(appt); }}
                     style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      marginBottom: 2, cursor: "pointer",
+                      display: "flex",
+                      flexDirection: isMobile ? "column" : "row",
+                      alignItems: isMobile ? "stretch" : "center",
+                      gap: isMobile ? 1 : 4,
+                      padding: isMobile ? "2px 3px" : "1px 0",
+                      marginBottom: 3,
+                      borderRadius: 3,
+                      minWidth: 0,
+                      background: isMobile ? "rgba(255,255,255,0.045)" : "transparent",
+                      borderLeft: isMobile ? `2px solid ${cfg.dot}` : "none",
+                      cursor: "pointer",
                     }}>
-                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
-                    <span style={{ fontFamily: "Inter", fontSize: 9, color: T.charcoal, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {format(parseISO(appt.start_time), "HH:mm")} {appt.patient_name}
-                    </span>
+                    {isMobile ? (
+                      <>
+                        <span style={{ fontFamily: "Inter", fontSize: 8, fontWeight: 600, color: T.onyx, lineHeight: 1.1 }}>
+                          {format(parseISO(appt.start_time), "HH:mm")}
+                        </span>
+                        <span style={{ fontFamily: "Inter", fontSize: 9, color: T.charcoal, lineHeight: 1.15, overflowWrap: "anywhere" }}>
+                          {nomeCurto(appt, dayAppts)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
+                        <span style={{ fontFamily: "Inter", fontSize: 9, color: T.charcoal, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {format(parseISO(appt.start_time), "HH:mm")} {nomeCurto(appt, dayAppts)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 );
               })}
-              {dayAppts.length > 2 && (
-                <p style={{ fontFamily: "Inter", fontSize: 9, color: T.charcoal }}>+{dayAppts.length - 2}</p>
+              {dayAppts.length > visiveis && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setDiaAberto({ dia: day, itens: dayAppts }); }}
+                  style={{
+                    background: "transparent", border: "none", padding: 0,
+                    fontFamily: "Inter", fontSize: isMobile ? 8 : 9, fontWeight: 500,
+                    color: T.gold, cursor: "pointer", lineHeight: 1.15,
+                    textAlign: "left", overflowWrap: "anywhere",
+                  }}
+                >
+                  +{dayAppts.length - visiveis} agendamentos
+                </button>
               )}
             </div>
           );
         })}
       </div>
+
+      <DiaAgendamentosSheet
+        dia={diaAberto?.dia || null}
+        itens={diaAberto?.itens || []}
+        onClose={() => setDiaAberto(null)}
+        onClickAppointment={onClickAppointment}
+      />
     </div>
   );
 };
@@ -693,7 +754,7 @@ const ListView = ({ appointments, onClickAppointment, onDelete }) => {
 };
 
 // ── Appointment Detail ────────────────────────────────────────
-const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDelete }) => {
+const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDelete, canDelete = false }) => {
   const isMobile = useIsMobile();
   if (!appointment) return null;
   const cfg = statusDot[appointment.status] || statusDot.scheduled;
@@ -724,11 +785,13 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDel
             fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
             color: T.charcoal, padding: "6px 14px", cursor: "pointer",
           }}>Editar</button>
-          <button onClick={() => { if (window.confirm("Tem certeza que deseja excluir este agendamento?")) onDelete(appointment.id); }} style={{
-            background: "none", border: `1px solid #E53935`, borderRadius: 2,
-            fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
-            color: "#E53935", padding: "6px 14px", cursor: "pointer",
-          }}>Excluir</button>
+          {canDelete && (
+            <button onClick={() => { if (window.confirm("Tem certeza que deseja excluir este agendamento?")) onDelete(appointment.id); }} style={{
+              background: "none", border: `1px solid #E53935`, borderRadius: 2,
+              fontFamily: "Inter", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
+              color: "#E53935", padding: "6px 14px", cursor: "pointer",
+            }}>Excluir</button>
+          )}
         </div>
       </div>
 
@@ -794,6 +857,9 @@ const AppointmentDetail = ({ appointment, onClose, onStatusChange, onEdit, onDel
 export default function Agenda() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const { user, hasAction } = usePermissions();
+  const podeExcluir = hasAction("excluir");
+  const [erroTela, setErroTela] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("week");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -809,42 +875,103 @@ export default function Agenda() {
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const { data: appointments = [] } = useQuery({ queryKey: ["appointments"], queryFn: () => base44.entities.Appointment.list("-start_time", 500), refetchInterval: 60000 });
+  // Período consultado — sem limite fixo de registros
+  const periodo = useMemo(() => {
+    if (viewMode === "day") {
+      return { start: startOfDay(currentDate).toISOString(), end: endOfDay(currentDate).toISOString(), maxPaginas: 1 };
+    }
+    if (viewMode === "week") {
+      return { start: weekStart.toISOString(), end: weekEnd.toISOString(), maxPaginas: 1 };
+    }
+    if (viewMode === "month") {
+      const inicio = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 });
+      const fim = endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 });
+      return { start: inicio.toISOString(), end: fim.toISOString(), maxPaginas: 1 };
+    }
+    const referencia = new Date();
+    return {
+      start: startOfMonth(subMonths(referencia, 12)).toISOString(),
+      end: endOfMonth(addMonths(referencia, 12)).toISOString(),
+      maxPaginas: 20,
+    };
+  }, [viewMode, currentDate, weekStart, weekEnd]);
+
+  const {
+    data: appointments = [], isLoading, isError, error, refetch,
+  } = useQuery({
+    queryKey: ["appointments", user?.id, viewMode, periodo.start, periodo.end],
+    queryFn: () => agendaListPeriodo(periodo),
+    enabled: !!user,
+    refetchInterval: 20000,
+  });
+
+  const { data: hojeAppts = [] } = useQuery({
+    queryKey: ["agenda-hoje", user?.id],
+    queryFn: () => agendaList({
+      start: startOfDay(new Date()).toISOString(),
+      end: endOfDay(new Date()).toISOString(),
+      limit: 200,
+    }).then((r) => r.items || []),
+    enabled: !!user,
+    refetchInterval: 20000,
+  });
+
   const { data: patients = [] } = useQuery({ queryKey: ["patients"], queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
   const { data: procedures = [] } = useQuery({ queryKey: ["procedures"], queryFn: () => base44.entities.Procedure.list() });
   const { data: protocols = [] } = useQuery({ queryKey: ["protocolos-premium-all"], queryFn: () => base44.entities.ProtocoloPremium.list("-created_date", 200) });
   const { data: professionals = [] } = useQuery({ queryKey: ["professionals"], queryFn: () => base44.entities.Professional.list() });
   const { data: rooms = [] } = useQuery({ queryKey: ["rooms"], queryFn: () => base44.entities.Room.list() });
-  const { data: bloqueios = [] } = useQuery({ queryKey: ["bloqueios-agenda"], queryFn: () => base44.entities.BloqueioAgenda.list("-data_inicio", 200), refetchInterval: 60000 });
+  const { data: bloqueios = [] } = useQuery({
+    queryKey: ["bloqueios-agenda", user?.id],
+    queryFn: () => bloqueiosList({ start: periodo.start, end: periodo.end }).then((r) => r.items || []),
+    enabled: !!user,
+    refetchInterval: 20000,
+  });
+
+  const recarregarAgenda = () => {
+    queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    queryClient.invalidateQueries({ queryKey: ["agenda-hoje"] });
+  };
 
   const criarBloqueio = useMutation({
-    mutationFn: (data) => base44.entities.BloqueioAgenda.create(data),
+    mutationFn: (data) => bloqueioCreate(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["bloqueios-agenda"] }); setIsBloqueiosOpen(false); },
+    onError: (e) => setErroTela(e.message),
   });
   const removerBloqueio = useMutation({
-    mutationFn: (id) => base44.entities.BloqueioAgenda.delete(id),
+    mutationFn: (id) => bloqueioDelete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bloqueios-agenda"] }),
+    onError: (e) => setErroTela(e.message),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Appointment.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["appointments"] }); setIsFormOpen(false); setEditingAppointment(null); },
+    mutationFn: (data) => agendaCreate(data),
+    onSuccess: () => {
+      recarregarAgenda();
+      setIsFormOpen(false);
+      setEditingAppointment(null);
+      setErroTela("");
+    },
+    onError: (e) => setErroTela(e.message || "Não foi possível salvar o agendamento."),
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Appointment.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["appointments"] }); setIsFormOpen(false); setEditingAppointment(null); setSelectedAppointment(null); },
+    mutationFn: ({ id, data }) => agendaUpdate(id, data),
+    onSuccess: () => {
+      recarregarAgenda();
+      setIsFormOpen(false);
+      setEditingAppointment(null);
+      setSelectedAppointment(null);
+      setErroTela("");
+    },
+    onError: (e) => setErroTela(e.message || "Não foi possível salvar o agendamento."),
   });
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Appointment.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["appointments"] }); setSelectedAppointment(null); },
+    mutationFn: (id) => agendaDelete(id),
+    onSuccess: () => { recarregarAgenda(); setSelectedAppointment(null); },
+    onError: (e) => setErroTela(e.message || "Não foi possível excluir o agendamento."),
   });
 
-  const handleSave = async (data) => {
-    if (editingAppointment) {
-      updateMutation.mutate({ id: editingAppointment.id, data });
-      return;
-    }
-    await createMutation.mutateAsync(data);
+  const registrarTratamentoIndicado = async (data) => {
     if (!data.patient_id || !data.procedure_name) return;
     const origem = data.protocol_id
       ? protocols.find(p => p.id === data.protocol_id)
@@ -866,6 +993,14 @@ export default function Agenda() {
     queryClient.invalidateQueries({ queryKey: ["patient-treatments"] });
   };
 
+  const handleSave = (data) => {
+    if (editingAppointment) {
+      updateMutation.mutate({ id: editingAppointment.id, data });
+      return;
+    }
+    createMutation.mutate(data, { onSuccess: () => registrarTratamentoIndicado(data) });
+  };
+
   const handleClickSlot = (date, hour) => {
     setEditingAppointment(null);
     setPrefilledTime(setHours(date, hour));
@@ -878,7 +1013,7 @@ export default function Agenda() {
     else setCurrentDate(d => dir === 1 ? addMonths(d, 1) : subMonths(d, 1));
   };
 
-  const todayAppts = appointments.filter(a => a.start_time && isToday(parseISO(a.start_time)));
+  const todayAppts = hojeAppts;
   const todayRevenue = todayAppts.reduce((sum, a) => sum + (a.price || 0), 0);
 
   const getViewTitle = () => {
@@ -957,7 +1092,56 @@ export default function Agenda() {
         </div>
       </div>
 
-      {/* ── Mini KPIs ──────────────────────────────────── */}
+      {isError && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+          background: "rgba(229,57,53,0.08)", border: "1px solid rgba(229,57,53,0.35)",
+          borderRadius: 4, padding: "12px 14px", marginBottom: 16,
+        }}>
+          <p style={{ fontFamily: "Inter", fontSize: 12, color: "#E53935", margin: 0, flex: 1, minWidth: 180 }}>
+            {error?.message || "Não foi possível carregar a agenda."}
+          </p>
+          <button
+            onClick={() => refetch()}
+            style={{
+              background: "transparent", border: "1px solid #E53935", borderRadius: 2,
+              color: "#E53935", cursor: "pointer", padding: "6px 14px",
+              fontFamily: "Inter", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
+            }}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {erroTela && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+          background: "rgba(229,57,53,0.08)", border: "1px solid rgba(229,57,53,0.35)",
+          borderRadius: 4, padding: "12px 14px", marginBottom: 16,
+        }}>
+          <p style={{ fontFamily: "Inter", fontSize: 12, color: "#E53935", margin: 0, flex: 1, minWidth: 180 }}>
+            {erroTela}
+          </p>
+          <button
+            onClick={() => setErroTela("")}
+            style={{
+              background: "transparent", border: "1px solid #E53935", borderRadius: 2,
+              color: "#E53935", cursor: "pointer", padding: "6px 14px",
+              fontFamily: "Inter", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
+            }}
+          >
+            Fechar
+          </button>
+        </div>
+      )}
+
+      {isLoading && (
+        <p style={{ fontFamily: "Inter", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: T.charcoal, marginBottom: 12 }}>
+          Carregando agenda...
+        </p>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
         {[
           { label: "Consultas Hoje", value: todayAppts.length },
@@ -1008,7 +1192,7 @@ export default function Agenda() {
           ? <SemanaMobile weekDays={weekDays} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} />
           : <WeekView weekDays={weekDays} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevWeek={() => handleNav(-1)} onNextWeek={() => handleNav(1)} />)}
         {viewMode === "month" && <MonthView currentDate={currentDate} appointments={appointments} bloqueios={bloqueios} onClickAppointment={setSelectedAppointment} onClickSlot={handleClickSlot} onPrevMonth={() => handleNav(-1)} onNextMonth={() => handleNav(1)} />}
-        {viewMode === "list" && <div style={{ padding: isMobile ? "16px 12px" : "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} onDelete={(id) => deleteMutation.mutate(id)} /></div>}
+        {viewMode === "list" && <div style={{ padding: isMobile ? "16px 12px" : "28px 32px" }}><ListView appointments={appointments} onClickAppointment={setSelectedAppointment} onDelete={podeExcluir ? (id) => deleteMutation.mutate(id) : undefined} /></div>}
       </div>
 
       {/* ── FAB: Novo Agendamento ─────────────────────── */}
@@ -1070,6 +1254,7 @@ export default function Agenda() {
               setIsFormOpen(true);
             }}
             onDelete={(id) => deleteMutation.mutate(id)}
+            canDelete={podeExcluir}
           />
         </DialogContent>
       </Dialog>

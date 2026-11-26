@@ -3,8 +3,9 @@ import { base44 } from "@/api/base44Client";
 
 /**
  * Mantém a agenda sincronizada entre todos os logins.
- * Qualquer agendamento ou indisponibilidade criado, editado ou excluído por outra
- * pessoa invalida as consultas e a tela se atualiza sozinha, sem recarregar a página.
+ * A leitura autorizada passa pela função do backend, então os eventos em tempo real
+ * são complementares: qualquer mudança recebida invalida o cache e a tela se atualiza.
+ * A atualização periódica da consulta permanece como contingência.
  */
 export default function useAgendaRealtime(queryClient) {
   useEffect(() => {
@@ -13,7 +14,7 @@ export default function useAgendaRealtime(queryClient) {
     };
 
     const inscricoes = [
-      base44.entities.Appointment.subscribe(aoMudar([["appointments"]])),
+      base44.entities.Appointment.subscribe(aoMudar([["appointments"], ["agenda-hoje"]])),
       base44.entities.BloqueioAgenda.subscribe(aoMudar([["bloqueios-agenda"]])),
     ];
 
