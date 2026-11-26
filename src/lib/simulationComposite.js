@@ -2,7 +2,7 @@
  * Monta e baixa a imagem de simulação com as fotos lado a lado,
  * legendadas "ANTES" (foto enviada) e "DEPOIS" (resultado da IA).
  */
-const GOLD = "#C5A059";
+const GOLD = "#C98A9B";
 const BG = "#0A0A0A";
 const BORDER = "#2B2B2B";
 

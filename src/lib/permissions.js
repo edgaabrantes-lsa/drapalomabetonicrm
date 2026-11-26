@@ -10,7 +10,7 @@
 export const PERFIS = {
   super_admin: {
     label: "Super Admin",
-    color: "#C8A96A",
+    color: "#8E2B44",
     descricao: "Acesso total ao sistema",
   },
   profissional_clinico_premium: {

@@ -9,7 +9,7 @@ export const PIPELINE_STAGES = [
   { id: "interested",    label: "Interessado / Morno",   color: "#8b5cf6" },
   { id: "scheduling",    label: "Agendando / Quente",    color: "#f59e0b" },
   { id: "scheduled",     label: "Agendado / Quente",     color: "#10b981" },
-  { id: "converted",     label: "Convertido",            color: "#c9a55c" },
+  { id: "converted",     label: "Convertido",            color: "#8E2B44" },
   { id: "lost",          label: "Perdido / Inativo",     color: "#ef4444" },
 ];
 

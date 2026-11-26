@@ -560,13 +560,201 @@ svg[class*="lucide"] {
    antigas para a paleta do tema ativo.
 ══════════════════════════════════════════ */
 
-/* Destaque dourado → vinho da marca */
-[style*="rgb(200, 169, 106)"] { color: var(--color-accent) !important; }
-[style*="rgb(212, 188, 136)"] { color: var(--color-accent-hover) !important; }
-[class*="text-[#C8A96A]"] { color: var(--color-accent) !important; }
-[class*="text-[#D4BC88]"] { color: var(--color-accent-hover) !important; }
-[class*="bg-[#C8A96A]"] { background-color: var(--color-brand) !important; color: #FFFFFF !important; }
-[class*="border-[#C8A96A]"] { border-color: var(--color-accent-border) !important; }
+/* ══════════════════════════════════════════
+   VARREDURA DOURADO → BORDÔ
+   Remove todo resquício do dourado antigo e
+   aplica a paleta vinho, com texto branco
+   nos botões e destaques preenchidos.
+══════════════════════════════════════════ */
+
+/* ── 1. Texto e borda dourados (estilo inline) ── */
+[style*="rgb(201, 165, 92)"],
+[style*="rgb(200, 169, 106)"],
+[style*="rgb(197, 160, 89)"],
+[style*="rgb(161, 127, 63)"],
+[style*="rgb(212, 188, 136)"],
+[style*="rgb(217, 187, 130)"],
+[style*="rgb(228, 201, 138)"],
+[style*="rgb(212, 175, 55)"] {
+  color: var(--color-accent) !important;
+  border-color: var(--color-accent-border) !important;
+}
+
+/* ── 2. Preenchimento dourado → bordô com tipografia branca ── */
+[style*="background: rgb(201, 165, 92)"],
+[style*="background-color: rgb(201, 165, 92)"],
+[style*="background: rgb(200, 169, 106)"],
+[style*="background-color: rgb(200, 169, 106)"],
+[style*="background: rgb(197, 160, 89)"],
+[style*="background-color: rgb(197, 160, 89)"],
+[style*="background: rgb(161, 127, 63)"],
+[style*="background-color: rgb(161, 127, 63)"],
+[style*="background: rgb(212, 188, 136)"],
+[style*="background-color: rgb(212, 188, 136)"],
+[style*="background: rgb(217, 187, 130)"],
+[style*="background-color: rgb(217, 187, 130)"],
+[style*="background: rgb(228, 201, 138)"],
+[style*="background-color: rgb(228, 201, 138)"],
+[style*="background: rgb(212, 175, 55)"],
+[style*="background-color: rgb(212, 175, 55)"] {
+  background-color: var(--color-brand) !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-brand) !important;
+}
+
+/* ── 3. Gradientes dourados → gradiente bordô ── */
+[style*="gradient"][style*="201, 165, 92"],
+[style*="gradient"][style*="200, 169, 106"],
+[style*="gradient"][style*="197, 160, 89"],
+[style*="gradient"][style*="161, 127, 63"],
+[style*="gradient"][style*="212, 188, 136"],
+[style*="gradient"][style*="217, 187, 130"],
+[style*="gradient"][style*="228, 201, 138"],
+[style*="gradient"][style*="212, 175, 55"] {
+  background-image: linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-hover) 100%) !important;
+  color: #FFFFFF !important;
+}
+
+/* ── 4. Tons translúcidos dourados (fundos e bordas) ── */
+[style*="background: rgba(201, 165, 92"],
+[style*="background-color: rgba(201, 165, 92"],
+[style*="background: rgba(200, 169, 106"],
+[style*="background-color: rgba(200, 169, 106"],
+[style*="background: rgba(197, 160, 89"],
+[style*="background-color: rgba(197, 160, 89"],
+[style*="background: rgba(161, 127, 63"],
+[style*="background-color: rgba(161, 127, 63"],
+[style*="background: rgba(212, 188, 136"],
+[style*="background-color: rgba(212, 188, 136"],
+[style*="background: rgba(217, 187, 130"],
+[style*="background-color: rgba(217, 187, 130"] {
+  background-color: var(--color-accent-subtle) !important;
+}
+
+[style*="rgba(201, 165, 92"],
+[style*="rgba(200, 169, 106"],
+[style*="rgba(197, 160, 89"],
+[style*="rgba(161, 127, 63"],
+[style*="rgba(212, 188, 136"],
+[style*="rgba(217, 187, 130"] {
+  border-color: var(--color-accent-border) !important;
+}
+
+/* ── 5. Texto dourado em classes utilitárias ── */
+[class~="text-[#c9a55c]" i],
+[class~="text-[#c8a96a]" i],
+[class~="text-[#c5a059]" i],
+[class~="text-[#a17f3f]" i],
+[class~="text-[#d4bc88]" i],
+[class~="text-[#d9bb82]" i],
+[class~="text-[#e4c98a]" i] {
+  color: var(--color-accent) !important;
+}
+
+/* ── 6. Borda dourada em classes utilitárias ── */
+[class~="border-[#c9a55c]" i],
+[class~="border-[#c8a96a]" i],
+[class~="border-[#c5a059]" i],
+[class~="border-[#a17f3f]" i],
+[class~="border-[#d4bc88]" i],
+[class~="border-[#d9bb82]" i],
+[class~="border-[#e4c98a]" i] {
+  border-color: var(--color-accent-border) !important;
+}
+
+/* ── 7. Fundo dourado em classes utilitárias → bordô + texto branco ── */
+[class~="bg-[#c9a55c]" i],
+[class~="bg-[#c8a96a]" i],
+[class~="bg-[#c5a059]" i],
+[class~="bg-[#a17f3f]" i],
+[class~="bg-[#d4bc88]" i],
+[class~="bg-[#d9bb82]" i],
+[class~="bg-[#e4c98a]" i] {
+  background-color: var(--color-brand) !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-brand) !important;
+}
+
+/* ── 8. Fundos dourados translúcidos em classes utilitárias ── */
+[class~="bg-[#c9a55c]/5" i],
+[class~="bg-[#c9a55c]/10" i],
+[class~="bg-[#c9a55c]/15" i],
+[class~="bg-[#c9a55c]/20" i],
+[class~="bg-[#c9a55c]/30" i],
+[class~="bg-[#c5a059]/5" i],
+[class~="bg-[#c5a059]/10" i],
+[class~="bg-[#c5a059]/15" i],
+[class~="bg-[#c5a059]/20" i],
+[class~="bg-[#c5a059]/30" i],
+[class~="bg-[#c8a96a]/10" i],
+[class~="bg-[#c8a96a]/15" i],
+[class~="bg-[#c8a96a]/20" i],
+[class~="bg-[#a17f3f]/10" i],
+[class~="bg-[#a17f3f]/20" i] {
+  background-color: var(--color-accent-subtle) !important;
+}
+
+/* ── 9. Bordas douradas translúcidas em classes utilitárias ── */
+[class~="border-[#c9a55c]/10" i],
+[class~="border-[#c9a55c]/15" i],
+[class~="border-[#c9a55c]/20" i],
+[class~="border-[#c9a55c]/30" i],
+[class~="border-[#c9a55c]/40" i],
+[class~="border-[#c9a55c]/50" i],
+[class~="border-[#c9a55c]/60" i],
+[class~="border-[#c5a059]/20" i],
+[class~="border-[#c5a059]/30" i],
+[class~="border-[#c5a059]/40" i],
+[class~="border-[#c5a059]/50" i],
+[class~="border-[#c5a059]/60" i],
+[class~="border-[#c5a059]/70" i],
+[class~="border-[#c8a96a]/20" i],
+[class~="border-[#c8a96a]/30" i] {
+  border-color: var(--color-accent-border) !important;
+}
+
+/* ── 10. Estados de hover dourados ── */
+[class~="hover:bg-[#c9a55c]" i]:hover,
+[class~="hover:bg-[#c8a96a]" i]:hover,
+[class~="hover:bg-[#c5a059]" i]:hover,
+[class~="hover:bg-[#a17f3f]" i]:hover,
+[class~="hover:bg-[#d4bc88]" i]:hover,
+[class~="hover:bg-[#d9bb82]" i]:hover {
+  background-color: var(--color-brand-hover) !important;
+  color: #FFFFFF !important;
+}
+
+[class~="hover:text-[#c9a55c]" i]:hover,
+[class~="hover:text-[#c8a96a]" i]:hover,
+[class~="hover:text-[#c5a059]" i]:hover,
+[class~="hover:text-[#d9bb82]" i]:hover {
+  color: var(--color-accent-hover) !important;
+}
+
+[class~="hover:border-[#c9a55c]" i]:hover,
+[class~="hover:border-[#c8a96a]" i]:hover,
+[class~="hover:border-[#c5a059]" i]:hover {
+  border-color: var(--color-accent) !important;
+}
+
+[class~="hover:bg-[#c9a55c]/5" i]:hover,
+[class~="hover:bg-[#c9a55c]/10" i]:hover,
+[class~="hover:bg-[#c9a55c]/20" i]:hover,
+[class~="hover:bg-[#c9a55c]/30" i]:hover,
+[class~="hover:bg-[#c5a059]/10" i]:hover {
+  background-color: var(--color-accent-subtle) !important;
+}
+
+[class~="hover:border-[#c9a55c]/30" i]:hover,
+[class~="hover:border-[#c9a55c]/50" i]:hover,
+[class~="hover:border-[#c9a55c]/60" i]:hover,
+[class~="hover:border-[#c5a059]/40" i]:hover,
+[class~="hover:border-[#c5a059]/60" i]:hover,
+[class~="hover:border-[#c5a059]/70" i]:hover {
+  border-color: var(--color-accent) !important;
+}
 
 /* Superfícies escuras → tema claro */
 html.light [style*="rgb(10, 10, 10)"],
@@ -627,21 +815,129 @@ html.dark [style*="rgb(26, 26, 26)"] { background-color: var(--color-card) !impo
 [class*="text-[#8A95AA]"],
 [class*="text-[#4A5568]"] { color: var(--color-text-secondary) !important; }
 
-/* Dourado → vinho */
-[class*="text-[#c9a55c]"],
-[class*="text-[#C5A059]"] { color: var(--color-accent) !important; }
+/* Texto branco em superfícies que ficam claras no modo diurno */
+html.light .text-white:not([class~="bg-[#c9a55c]" i]):not([class~="bg-[#c8a96a]" i]):not([class~="bg-[#c5a059]" i]):not([class~="bg-[#a17f3f]" i]):not([class~="bg-[#d4bc88]" i]):not([class~="bg-[#d9bb82]" i]):not([class~="bg-primary" i]):not([style*="--color-brand"]) {
+  color: var(--color-text-primary) !important;
+}
 
-[class*="bg-[#c9a55c]"],
-[class*="bg-[#C5A059]"],
-[class*="bg-[#a17f3f]"] {
+/* ══════════════════════════════════════════
+   GARANTIA DE LEGIBILIDADE
+   Todo preenchimento da marca (bordô) mantém
+   a tipografia branca, nos dois modos.
+══════════════════════════════════════════ */
+html.light :is(
+  [class~="bg-[#c9a55c]" i], [class~="bg-[#c8a96a]" i], [class~="bg-[#c5a059]" i],
+  [class~="bg-[#a17f3f]" i], [class~="bg-[#d4bc88]" i], [class~="bg-[#d9bb82]" i],
+  [style*="background: rgb(201, 165, 92)"], [style*="background-color: rgb(201, 165, 92)"],
+  [style*="background: rgb(200, 169, 106)"], [style*="background-color: rgb(200, 169, 106)"],
+  [style*="background: rgb(197, 160, 89)"], [style*="background-color: rgb(197, 160, 89)"],
+  [style*="background: rgb(161, 127, 63)"], [style*="background-color: rgb(161, 127, 63)"],
+  [style*="background: rgb(212, 188, 136)"], [style*="background-color: rgb(212, 188, 136)"],
+  [style*="background: rgb(217, 187, 130)"], [style*="background-color: rgb(217, 187, 130)"]
+),
+html.light :is(
+  [class~="bg-[#c9a55c]" i], [class~="bg-[#c8a96a]" i], [class~="bg-[#c5a059]" i],
+  [class~="bg-[#a17f3f]" i], [class~="bg-[#d4bc88]" i], [class~="bg-[#d9bb82]" i],
+  [style*="background: rgb(201, 165, 92)"], [style*="background-color: rgb(201, 165, 92)"],
+  [style*="background: rgb(200, 169, 106)"], [style*="background-color: rgb(200, 169, 106)"],
+  [style*="background: rgb(197, 160, 89)"], [style*="background-color: rgb(197, 160, 89)"],
+  [style*="background: rgb(161, 127, 63)"], [style*="background-color: rgb(161, 127, 63)"],
+  [style*="background: rgb(212, 188, 136)"], [style*="background-color: rgb(212, 188, 136)"],
+  [style*="background: rgb(217, 187, 130)"], [style*="background-color: rgb(217, 187, 130)"]
+) * {
+  color: #FFFFFF !important;
+}
+
+/* ── 11. Foco e item destacado de menu (dropdown) ── */
+html [class~="focus:bg-[#c9a55c]" i]:focus,
+html [class~="focus:bg-[#c8a96a]" i]:focus,
+html [class~="focus:bg-[#c5a059]" i]:focus,
+html [class~="data-[highlighted]:bg-[#c9a55c]" i][data-highlighted],
+html [class~="data-[highlighted]:bg-[#c8a96a]" i][data-highlighted],
+html [class~="data-[highlighted]:bg-[#c5a059]" i][data-highlighted],
+html [class~="data-[highlighted]:bg-[#a17f3f]" i][data-highlighted] {
   background-color: var(--color-brand) !important;
   color: #FFFFFF !important;
 }
 
-[class*="border-[#c9a55c]"],
-[class*="border-[#C5A059]"] { border-color: var(--color-accent-border) !important; }
+html [class~="focus:border-[#c9a55c]" i]:focus,
+html [class~="focus:border-[#c5a059]" i]:focus,
+html [class~="focus:border-[#c8a96a]" i]:focus {
+  border-color: var(--color-accent) !important;
+}
 
-/* Texto branco em superfícies que ficam claras no modo diurno */
-html.light .text-white:not([class*="bg-[#c9a55c]"]):not([class*="bg-[#C5A059]"]):not([class*="bg-[#C8A96A]"]):not([class*="bg-[#a17f3f]"]):not([class*="bg-primary"]):not([class*="bg-[#630B20]"]):not([style*="--color-brand"]) {
-  color: var(--color-text-primary) !important;
+html .group:hover [class~="group-hover:text-[#c9a55c]" i],
+html .group:hover [class~="group-hover:text-[#c5a059]" i],
+html .group:hover [class~="group-hover:text-[#c8a96a]" i] {
+  color: var(--color-accent) !important;
+}
+
+html .group:hover [class~="group-hover:bg-[#c9a55c]/20" i],
+html .group:hover [class~="group-hover:bg-[#c8a96a]/20" i],
+html .group:hover [class~="group-hover:bg-[#c5a059]/20" i] {
+  background-color: var(--color-accent-subtle) !important;
+}
+
+/* ── 12. Ícones SVG com dourado (setas, marcadores) ── */
+[stroke="#C8A96A" i], [stroke="#c9a55c" i], [stroke="#C5A059" i],
+[stroke="#A17F3F" i], [stroke="#D4BC88" i], [stroke="#D9BB82" i] {
+  stroke: var(--color-accent) !important;
+}
+
+[fill="#C8A96A" i], [fill="#c9a55c" i], [fill="#C5A059" i],
+[fill="#A17F3F" i], [fill="#D4BC88" i], [fill="#D9BB82" i] {
+  fill: var(--color-accent) !important;
+}
+
+/* ── 13. Complemento: demais variações de transparência ── */
+[class~="bg-[#c9a55c]/90" i] {
+  background-color: var(--color-brand) !important;
+  color: #FFFFFF !important;
+}
+
+[class~="bg-[#c5a059]/50" i],
+[class~="bg-[#c5a059]/8" i],
+[class~="bg-[#c5a059]/40" i],
+[class~="bg-[#c8a96a]/5" i],
+[class~="bg-[#c8a96a]/30" i],
+[class~="bg-[#d4bc88]/20" i],
+[class~="bg-[#d9bb82]/20" i] {
+  background-color: var(--color-accent-subtle) !important;
+}
+
+[class~="border-[#c8a96a]/50" i],
+[class~="border-[#c8a96a]/10" i],
+[class~="border-[#c8a96a]/15" i],
+[class~="border-[#c8a96a]/40" i],
+[class~="border-[#c5a059]/50" i],
+[class~="border-[#c5a059]/10" i],
+[class~="border-[#c5a059]/15" i],
+[class~="border-[#d4bc88]/40" i],
+[class~="border-[#d9bb82]/40" i] {
+  border-color: var(--color-accent-border) !important;
+}
+
+[class~="hover:bg-[#c5a059]/5" i]:hover,
+[class~="hover:bg-[#c8a96a]/10" i]:hover,
+[class~="hover:bg-[#c8a96a]/15" i]:hover,
+[class~="hover:bg-[#c5a059]/20" i]:hover {
+  background-color: var(--color-accent-subtle) !important;
+}
+
+[class~="hover:border-[#c5a059]/30" i]:hover,
+[class~="hover:border-[#c5a059]/20" i]:hover,
+[class~="hover:border-[#c8a96a]/30" i]:hover {
+  border-color: var(--color-accent) !important;
+}
+
+[class~="text-[#c9a55c]/60" i],
+[class~="text-[#c9a55c]/70" i],
+[class~="text-[#c5a059]/70" i],
+[class~="text-[#c8a96a]/80" i] {
+  color: var(--color-accent) !important;
+}
+
+html .group:hover [class~="group-hover:bg-[#c8a96a]/15" i],
+html .group:hover [class~="group-hover:bg-[#c9a55c]/10" i] {
+  background-color: var(--color-accent-subtle) !important;
 }

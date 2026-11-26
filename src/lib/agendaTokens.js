@@ -5,7 +5,7 @@ export const T = {
   onyx: "#E8EDF5",
   charcoal: "#8A95AA",
   subtle: "#252D3E",
-  gold: "#C5A059",
+  gold: "var(--color-accent)",
 };
 
 export const statusDot = {

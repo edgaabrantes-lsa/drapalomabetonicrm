@@ -53,7 +53,7 @@ export const ROSTO_REFERENCIA_PADRAO = ROSTOS_REFERENCIA[0].id;
 export const acharRostoReferencia = (id) =>
   ROSTOS_REFERENCIA.find((r) => r.id === id) || ROSTOS_REFERENCIA[0];
 
-export const CORES = ["#C8A96A", "#4ADE80", "#38BDF8", "#A78BFA", "#F472B6", "#EF4444", "#FFFFFF"];
+export const CORES = ["#93223F", "#4ADE80", "#38BDF8", "#A78BFA", "#F472B6", "#EF4444", "#FFFFFF"];
 
 export const ESPESSURAS = [2, 3, 4, 6, 8];
 
@@ -102,7 +102,7 @@ export function criarObjeto(tipo, dados = {}) {
   return {
     id: novoId(),
     tipo,
-    cor: "#C8A96A",
+    cor: "#93223F",
     espessura: 4,
     procedimento: "",
     regiao: "",
@@ -121,7 +121,7 @@ export function migrarObjetos(lista = []) {
   if (!Array.isArray(lista)) return [];
   return lista.filter(Boolean).map((o, i) => ({
     tipo: "ponto",
-    cor: "#C8A96A",
+    cor: "#93223F",
     espessura: 4,
     observacao: "",
     procedimento: "",
