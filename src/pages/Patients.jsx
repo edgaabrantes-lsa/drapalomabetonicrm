@@ -339,7 +339,7 @@ const PatientCard = ({ patient, onStartTreatment, onViewTreatments }) => {
             {patient.full_name || "Paciente sem nome"}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 5 }}>
-            <span style={{
+            <span className="patient-status-badge" style={{
               fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 4, flexShrink: 0,
               color: st.color, backgroundColor: st.bg, border: `1px solid ${st.border}`,
             }}>

@@ -941,3 +941,18 @@ html .group:hover [class~="group-hover:bg-[#c8a96a]/15" i],
 html .group:hover [class~="group-hover:bg-[#c9a55c]/10" i] {
   background-color: var(--color-accent-subtle) !important;
 }
+
+/* ══════════════════════════════════════════
+   VERDE LEGÍVEL NO MODO DIURNO
+   O verde claro some sobre superfícies
+   brancas: usa um tom escuro no dia.
+══════════════════════════════════════════ */
+html.light [style*="rgb(74, 222, 128)"] {
+  color: #15803D !important;
+}
+
+/* Selo de status do paciente — preto no modo diurno */
+html.light .patient-status-badge {
+  color: #1A1A1A !important;
+  border-color: #C9CFC9 !important;
+}
