@@ -1,14 +1,17 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { format, startOfMonth, endOfMonth, isToday, parseISO } from "date-fns";
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import { T, S } from "@/lib/designTokens";
+import { fmtBRL } from "@/lib/dreUtils";
+import { agendaList } from "@/lib/agendaApi";
+import { useDashboardFinanceiro } from "@/hooks/useDashboardFinanceiro";
 
 /* ── KPI Card ── */
 const KpiCard = ({ title, value, subtitle, accent = false }) => (
@@ -84,72 +87,33 @@ export default function Dashboard() {
   const monthStart = startOfMonth(today);
   const monthEnd   = endOfMonth(today);
 
-  const { data: appointments = [] } = useQuery({ queryKey: ["appointments"], queryFn: () => base44.entities.Appointment.list("-start_time", 100) });
-  const { data: patients = [] }     = useQuery({ queryKey: ["patients"],     queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
-  const { data: transactions = [] } = useQuery({ queryKey: ["transactions"], queryFn: () => base44.entities.Transaction.list("-created_date", 1000) });
-  const { data: leads = [] }        = useQuery({ queryKey: ["leads"],        queryFn: () => base44.entities.Lead.list("-created_date", 100) });
-  const { data: supplies = [] }     = useQuery({ queryKey: ["supplies"],     queryFn: () => base44.entities.Supply.list() });
+  const { data: todayApts = [] } = useQuery({
+    queryKey: ["dashboard-agenda-hoje"],
+    queryFn: () => agendaList({
+      start: startOfDay(today).toISOString(),
+      end: endOfDay(today).toISOString(),
+      limit: 200,
+    }).then(r => r.items || []),
+    refetchInterval: 60000,
+  });
+  const { data: patients = [] } = useQuery({ queryKey: ["patients"], queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
+  const { data: leads = [] }    = useQuery({ queryKey: ["leads"],    queryFn: () => base44.entities.Lead.list("-created_date", 100) });
+  const { data: supplies = [] } = useQuery({ queryKey: ["supplies"], queryFn: () => base44.entities.Supply.list() });
+  const { hoje, mes, serie, procedimentos, metaValor, metaPct, taxaRecebimento } = useDashboardFinanceiro();
 
-  const todayApts   = appointments.filter(a => { try { return isToday(parseISO(a.start_time)); } catch { return false; } });
-  const income      = transactions.filter(t => t.type === "income"  && t.status === "paid").reduce((s, t) => s + (t.amount || 0), 0);
-  const expenses    = transactions.filter(t => t.type === "expense" && t.status === "paid").reduce((s, t) => s + (t.amount || 0), 0);
-  const profit      = income - expenses;
-  const margin      = income > 0 ? ((profit / income) * 100).toFixed(1) : "0.0";
   const lowStock    = supplies.filter(s => s.current_stock <= (s.minimum_stock || 5));
   const newLeads    = leads.filter(l => { try { const d = parseISO(l.created_date); return d >= monthStart && d <= monthEnd; } catch { return false; } });
-
-  // Receita vs Despesas — últimos 6 meses a partir dos dados reais
-  const revenueData = useMemo(() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const label = d.toLocaleString("pt-BR", { month: "short" });
-      const m = d.getMonth(); const y = d.getFullYear();
-      const rec = transactions
-        .filter(t => t.type === "income" && t.status === "paid" && t.payment_date && new Date(t.payment_date).getMonth() === m && new Date(t.payment_date).getFullYear() === y)
-        .reduce((s, t) => s + (t.amount || 0), 0);
-      const desp = transactions
-        .filter(t => t.type === "expense" && t.status === "paid" && t.payment_date && new Date(t.payment_date).getMonth() === m && new Date(t.payment_date).getFullYear() === y)
-        .reduce((s, t) => s + (t.amount || 0), 0);
-      months.push({ mes: label, receita: rec, despesas: desp });
-    }
-    return months;
-  }, [transactions, today]);
-
-  // Procedimentos — distribuição real por categoria
-  const procData = useMemo(() => {
-    const counts = {};
-    transactions.filter(t => t.type === "income" && t.category).forEach(t => {
-      const k = t.category; counts[k] = (counts[k] || 0) + 1;
-    });
-    const total = Object.values(counts).reduce((s, v) => s + v, 0) || 1;
-    const categoryLabels = { procedure: "Procedimento", protocol: "Protocolo", product: "Produto", other: "Outros" };
-    return Object.entries(counts).slice(0, 5).map(([k, v]) => ({
-      name: categoryLabels[k] || k,
-      value: Math.round((v / total) * 100),
-    }));
-  }, [transactions]);
 
   // Indicadores reais
   const totalLeads = leads.length || 1;
   const convertedLeads = patients.filter(p => p.source !== undefined).length;
   const taxaConversao = Math.min(100, Math.round((convertedLeads / totalLeads) * 100));
-  const paidTransactions = transactions.filter(t => t.status === "paid").length;
-  const totalTransactions = transactions.length || 1;
-  const taxaSucesso = Math.min(100, Math.round((paidTransactions / totalTransactions) * 100));
-  const totalMonthIncome = transactions
-    .filter(t => t.type === "income" && t.status === "paid" && t.payment_date && new Date(t.payment_date) >= monthStart && new Date(t.payment_date) <= monthEnd)
-    .reduce((s, t) => s + (t.amount || 0), 0);
-  const monthTarget = 50000;
-  const metaMensal = Math.min(100, Math.round((totalMonthIncome / monthTarget) * 100));
 
   const indicators = [
     { label: "Taxa de Conversão",  value: taxaConversao },
-    { label: "Taxa de Recebimento", value: taxaSucesso },
-    { label: "Meta Mensal",         value: metaMensal },
+    { label: "Taxa de Recebimento", value: Math.round(taxaRecebimento) },
+    { label: "Meta Mensal",         value: Math.round(metaPct) },
   ];
-
-  const fmt = (n) => `R$ ${n.toLocaleString("pt-BR")}`;
 
   return (
     <div className="w-full min-w-0" style={S.pageWrapper}>
@@ -170,12 +134,28 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── KPIs ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+      {/* ── KPIs financeiros ── */}
+      <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
+        <p style={S.sectionTitle}>Financeiro</p>
+        <p style={S.pageSubtitle}>Pagamentos confirmados (realizado)</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
+        <KpiCard title="Recebido Hoje" value={fmtBRL(hoje.recebido)} subtitle={`${hoje.recebimentos} recebimento(s) hoje`} />
+        <KpiCard title="Lucro Hoje" value={fmtBRL(hoje.lucro)} subtitle={`Margem de ${hoje.margem.toFixed(1)}%`} accent />
+        <KpiCard title="Recebido no Mês" value={fmtBRL(mes.recebido)} subtitle="receita bruta do mês" />
+        <KpiCard title="Despesas do Mês" value={fmtBRL(mes.despesas)} subtitle="custos e despesas pagos" />
+        <KpiCard title="Lucro do Mês" value={fmtBRL(mes.lucro)} subtitle={`Margem de ${mes.margem.toFixed(1)}%`} accent />
+        <KpiCard
+          title="Margem do Mês"
+          value={`${mes.margem.toFixed(1)}%`}
+          subtitle={metaValor > 0 ? `Meta de faturamento: ${fmtBRL(metaValor)}` : "margem líquida do mês"}
+        />
+      </div>
+
+      {/* ── KPIs operacionais ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
         <KpiCard title="Agenda Hoje" value={todayApts.length} subtitle="consultas marcadas" />
         <KpiCard title="Pacientes Ativos" value={patients.filter(p => p.status === "active").length} subtitle="cadastros no sistema" />
-        <KpiCard title="Lucro Líquido" value={fmt(profit)} subtitle={`Receita: ${fmt(income)}`} accent />
-        <KpiCard title="Margem" value={`${margin}%`} subtitle="margem líquida do período" />
         <KpiCard title="Leads do Mês" value={newLeads.length} subtitle="captados este mês" />
       </div>
 
@@ -188,7 +168,7 @@ export default function Dashboard() {
           <p style={{ ...S.pageSubtitle, marginBottom: 16 }}>Últimos 6 meses</p>
           <div className="h-[200px] md:h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+              <AreaChart data={serie} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%"  stopColor={T.gold} stopOpacity={0.15} />
@@ -213,12 +193,12 @@ export default function Dashboard() {
         {/* Procedimentos */}
         <div className="w-full min-w-0" style={S.card}>
           <p style={S.sectionTitle}>Procedimentos</p>
-          <p style={{ ...S.pageSubtitle, marginBottom: 12 }}>Distribuição do período</p>
+          <p style={{ ...S.pageSubtitle, marginBottom: 12 }}>Recebimentos do mês</p>
           <div className="h-[160px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={procData} cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={2} dataKey="value">
-                  {procData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                <Pie data={procedimentos} cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={2} dataKey="value">
+                  {procedimentos.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
                 <Tooltip
                   contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, fontFamily: T.font, fontSize: 12 }}
@@ -227,14 +207,19 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
+          {procedimentos.length === 0 && (
+            <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "12px 0" }}>Sem recebimentos no mês</p>
+          )}
           <div className="mt-3 flex flex-col gap-1.5">
-            {procData.map((item, i) => (
+            {procedimentos.map((item, i) => (
               <div key={item.name} className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i] }} />
                   <span className="text-[12px] text-[#B0B0B0]">{item.name}</span>
                 </div>
-                <span className="text-[12px] font-medium text-white">{item.value}%</span>
+                <span className="text-[12px] font-medium text-white whitespace-nowrap">
+                  {fmtBRL(item.valor)} <span className="text-[#666666]">{item.value}%</span>
+                </span>
               </div>
             ))}
           </div>
