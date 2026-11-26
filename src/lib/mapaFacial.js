@@ -34,6 +34,18 @@ export const ROSTOS_REFERENCIA = [
     url: "https://base44.app/api/apps/699dbefdfbf6a591f90b6e3b/files/mp/public/699dbefdfbf6a591f90b6e3b/6ee99e7ae57396894e1ef0ea2ec5a9de_rosto-referencia-lateral-feminino.webp",
     crop: { x: 0, y: 0, w: 1, h: 1 },
   },
+  {
+    id: "masculino_frontal",
+    label: "Masculino frontal",
+    url: "https://base44.app/api/apps/699dbefdfbf6a591f90b6e3b/files/mp/public/699dbefdfbf6a591f90b6e3b/bf002d628c991524a4cd8d966fdce335_rosto_masculino_frontal.jpg",
+    crop: ROSTO_REFERENCIA_CROP,
+  },
+  {
+    id: "masculino_lateral",
+    label: "Masculino lateral",
+    url: "https://base44.app/api/apps/699dbefdfbf6a591f90b6e3b/files/mp/public/699dbefdfbf6a591f90b6e3b/79d34cea6913c6fadaf01fccc2073346_rosto_masculino_lateral.jpg",
+    crop: { x: 0, y: 0, w: 1, h: 1 },
+  },
 ];
 
 export const ROSTO_REFERENCIA_PADRAO = ROSTOS_REFERENCIA[0].id;
