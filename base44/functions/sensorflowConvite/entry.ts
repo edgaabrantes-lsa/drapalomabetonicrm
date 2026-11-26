@@ -161,6 +161,19 @@ export default async function(req) {
         return Response.json({ error: 'expired' }, { status: 400, headers: CORS });
       }
       if (!body.lgpd_consent) return Response.json({ error: 'lgpd_consent obrigatório' }, { status: 400, headers: CORS });
+      const simplificado = body.form_version === 'sensorflow_simplificado_v1';
+      if (simplificado) {
+        const bebidas = ['Cappuccino', 'Café com leite', 'Café', 'Chá de camomila', 'Chá de erva-doce'];
+        const temperaturas = ['Frio', 'Ambiente', 'Ameno'];
+        if (!Array.isArray(body.beverage_preferences) || body.beverage_preferences.length > 1 ||
+            body.beverage_preferences.some((v) => !bebidas.includes(v)) ||
+            !temperaturas.includes(body.temperature_preference) ||
+            !Array.isArray(body.music_preferences) || body.music_preferences.length > 1 ||
+            body.music_preferences.some((v) => typeof v !== 'string' || v.length > 160) ||
+            [body.music_choice_song, body.music_choice_artist].some((v) => typeof v !== 'string' || v.length > 160)) {
+          return Response.json({ error: 'preferencias_invalidas' }, { status: 400, headers: CORS });
+        }
+      }
 
       let paciente;
       try { paciente = await svc.entities.Patient.get(c.patient_id); } catch { paciente = null; }
@@ -227,18 +240,19 @@ export default async function(req) {
           { label: 'Nome', value: nomePaciente },
           { label: 'Telefone/WhatsApp', value: paciente?.phone || '—' },
           { label: 'E-mail', value: paciente?.email || '—' },
-          { label: 'Períodos de Atendimento', value: fmtArr(perfil.appointment_periods) },
-          { label: 'Preferência Musical', value: fmtArr(perfil.music_preferences) + (perfil.music_other ? ` (${perfil.music_other})` : '') },
-          { label: 'Quer escolher música', value: fmtBool(perfil.wants_music_choice) },
+          { label: 'Bebida', value: fmtArr(perfil.beverage_preferences) + (perfil.beverage_other ? ' (' + perfil.beverage_other + ')' : '') },
+          { label: 'Estilo musical', value: fmtArr(perfil.music_preferences) + (perfil.music_other ? ' (' + perfil.music_other + ')' : '') },
           { label: 'Música escolhida', value: perfil.music_choice_song || '—' },
           { label: 'Cantor/Artista', value: perfil.music_choice_artist || '—' },
-          { label: 'Preferência de Bebidas', value: fmtArr(perfil.beverage_preferences) + (perfil.beverage_other ? ` (${perfil.beverage_other})` : '') },
-          { label: 'Preferência de Alimentos', value: fmtArr(perfil.food_preferences) + (perfil.food_other ? ` (${perfil.food_other})` : '') },
-          { label: 'Restrições Alimentares', value: fmtArr(perfil.dietary_restrictions) + (perfil.dietary_restrictions_detail ? ` (${perfil.dietary_restrictions_detail})` : '') },
-          { label: 'Temperatura', value: perfil.temperature_preference || '—' },
-          { label: 'Gosta de Aromas', value: fmtBool(perfil.likes_aromas) },
-          { label: 'Preferência de Aromas', value: fmtArr(perfil.aroma_preferences) + (perfil.aroma_other ? ` (${perfil.aroma_other})` : '') },
-          { label: 'Estilo de Atendimento', value: perfil.service_style || '—' },
+          { label: 'Temperatura do ar-condicionado', value: perfil.temperature_preference || '—' },
+          ...(!simplificado ? [
+            { label: 'Períodos de Atendimento', value: fmtArr(perfil.appointment_periods) },
+            { label: 'Preferência de Alimentos', value: fmtArr(perfil.food_preferences) + (perfil.food_other ? ' (' + perfil.food_other + ')' : '') },
+            { label: 'Restrições Alimentares', value: fmtArr(perfil.dietary_restrictions) + (perfil.dietary_restrictions_detail ? ' (' + perfil.dietary_restrictions_detail + ')' : '') },
+            { label: 'Gosta de Aromas', value: fmtBool(perfil.likes_aromas) },
+            { label: 'Preferência de Aromas', value: fmtArr(perfil.aroma_preferences) + (perfil.aroma_other ? ' (' + perfil.aroma_other + ')' : '') },
+            { label: 'Estilo de Atendimento', value: perfil.service_style || '—' },
+          ] : []),
           { label: 'Consentimento LGPD', value: fmtBool(perfil.lgpd_consent) },
           { label: 'Dispositivo', value: perfil.dispositivo || '—' },
           { label: 'Navegador', value: (perfil.navegador || '—').substring(0, 80) },
@@ -248,13 +262,14 @@ export default async function(req) {
         const dataHora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
         const subject = `[Sensor Flow] Novo preenchimento — ${nomePaciente}`;
 
+        const escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         const htmlBody = [
           '<div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; background: #f9f9f7; padding: 24px;">',
           '  <div style="background: #ffffff; border: 1px solid #eeeeee; border-radius: 8px; padding: 32px;">',
           '    <h1 style="font-size: 22px; color: #121212; margin: 0 0 8px;">Novo Preenchimento do Sensor Flow</h1>',
           `    <p style="font-size: 13px; color: #757575; margin: 0 0 24px;">Recebido em ${dataHora}</p>`,
           '    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">',
-          ...linhas.map(l => `      <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 10px 0; width: 40%; color: #757575; font-weight: 500; vertical-align: top;">${l.label}</td><td style="padding: 10px 0; color: #121212; vertical-align: top;">${l.value}</td></tr>`),
+          ...linhas.map(l => `      <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 10px 0; width: 40%; color: #757575; font-weight: 500; vertical-align: top;">${escapeHtml(l.label)}</td><td style="padding: 10px 0; color: #121212; vertical-align: top;">${escapeHtml(l.value)}</td></tr>`),
           '    </table>',
           '    <p style="font-size: 11px; color: #999; margin-top: 24px;">Este e-mail foi enviado automaticamente pelo CRM Clínico Dra. Paloma Betoni.</p>',
           '  </div>',
