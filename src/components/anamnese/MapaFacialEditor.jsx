@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  MAPA_W, MAPA_H, ROSTO_REFERENCIA_URL, ROSTO_REFERENCIA_CROP, criarObjeto, acharObjetoProximo,
+  MAPA_W, MAPA_H, ROSTO_REFERENCIA_PADRAO, acharRostoReferencia, criarObjeto, acharObjetoProximo,
   moverObjeto, escalarObjeto, suavizarPontos, bboxNormalizado,
 } from "@/lib/mapaFacial";
 import FundoRosto from "./FundoRosto";
@@ -26,6 +26,7 @@ export default function MapaFacialEditor({
   etapa = "planejado",
   zoom = 1,
   imagemUrl,
+  rostoId = ROSTO_REFERENCIA_PADRAO,
   readOnly = false,
   selecionadoId = null,
   onSelect,
@@ -40,15 +41,16 @@ export default function MapaFacialEditor({
 
   const [rascunho, setRascunho] = useState(null);
   const [ratio, setRatio] = useState({ w: MAPA_W, h: MAPA_H });
-  const [carregando, setCarregando] = useState(Boolean(imagemUrl || ROSTO_REFERENCIA_URL));
+  const [carregando, setCarregando] = useState(true);
   const [dims, setDims] = useState({ w: 0, h: 0 });
   const [viewport, setViewport] = useState(() => ({
     w: typeof window !== "undefined" ? window.innerWidth : 1024,
     h: typeof window !== "undefined" ? window.innerHeight : 800,
   }));
 
-  const fonte = imagemUrl || ROSTO_REFERENCIA_URL || "";
-  const recorteReferencia = !imagemUrl && Boolean(ROSTO_REFERENCIA_CROP);
+  const baseRosto = acharRostoReferencia(rostoId);
+  const fonte = imagemUrl || baseRosto.url || "";
+  const recorteReferencia = !imagemUrl && Boolean(baseRosto.crop);
   const compacto = viewport.w < 768;
   // Área de marcação: generosa no desktop/tablet e enquadrada (cabe na tela) no celular.
   const alturaLimite = compacto
@@ -81,7 +83,7 @@ export default function MapaFacialEditor({
       if (!ativo) return;
       const nw = img.naturalWidth || MAPA_W;
       const nh = img.naturalHeight || MAPA_H;
-      const c = recorteReferencia ? ROSTO_REFERENCIA_CROP : { x: 0, y: 0, w: 1, h: 1 };
+      const c = recorteReferencia ? baseRosto.crop : { x: 0, y: 0, w: 1, h: 1 };
       const cw = Math.max(1, nw * c.w);
       const ch = Math.max(1, nh * c.h);
       const w = 1000;
@@ -95,7 +97,7 @@ export default function MapaFacialEditor({
     };
     img.src = fonte;
     return () => { ativo = false; };
-  }, [fonte]);
+  }, [fonte, baseRosto]);
 
   // Ajusta o desenho ao espaço disponível preservando 100% da proporção.
   useEffect(() => {

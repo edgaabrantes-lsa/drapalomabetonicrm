@@ -17,6 +17,30 @@ export const ROSTO_REFERENCIA_URL =
  */
 export const ROSTO_REFERENCIA_CROP = { x: 0.15, y: 0, w: 0.7, h: 1 };
 
+/**
+ * Rostos de referência para o desenho na anamnese.
+ * A vista lateral é usada para ângulo de mandíbula, mento e malar.
+ */
+export const ROSTOS_REFERENCIA = [
+  {
+    id: "feminino_frontal",
+    label: "Feminino frontal",
+    url: ROSTO_REFERENCIA_URL,
+    crop: ROSTO_REFERENCIA_CROP,
+  },
+  {
+    id: "feminino_lateral",
+    label: "Feminino lateral",
+    url: "https://base44.app/api/apps/699dbefdfbf6a591f90b6e3b/files/mp/public/699dbefdfbf6a591f90b6e3b/6ee99e7ae57396894e1ef0ea2ec5a9de_rosto-referencia-lateral-feminino.webp",
+    crop: { x: 0, y: 0, w: 1, h: 1 },
+  },
+];
+
+export const ROSTO_REFERENCIA_PADRAO = ROSTOS_REFERENCIA[0].id;
+
+export const acharRostoReferencia = (id) =>
+  ROSTOS_REFERENCIA.find((r) => r.id === id) || ROSTOS_REFERENCIA[0];
+
 export const CORES = ["#C8A96A", "#4ADE80", "#38BDF8", "#A78BFA", "#F472B6", "#EF4444", "#FFFFFF"];
 
 export const ESPESSURAS = [2, 3, 4, 6, 8];

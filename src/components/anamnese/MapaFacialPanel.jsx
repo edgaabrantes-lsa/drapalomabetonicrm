@@ -5,6 +5,7 @@ import MapaFacialEditor from "./MapaFacialEditor";
 import MapaToolbar from "./MapaToolbar";
 import MapaObservacaoPopover from "./MapaObservacaoPopover";
 import MapaMarcacoesLista from "./MapaMarcacoesLista";
+import RostoReferenciaSelector from "./RostoReferenciaSelector";
 import { PROCEDIMENTOS_PADRAO, migrarObjetos } from "@/lib/mapaFacial";
 
 /**
@@ -128,6 +129,13 @@ export default function MapaFacialPanel({ valor = {}, onChange, readOnly }) {
         )}
       </div>
 
+      {!readOnly && (
+        <RostoReferenciaSelector
+          valorId={valor.rosto_referencia}
+          onEscolher={(id) => onChange({ ...valor, rosto_referencia: id, imagem_file_uri: "", imagem_url: "" })}
+        />
+      )}
+
       <MapaToolbar
         ferramenta={ferramenta}
         setFerramenta={setFerramenta}
@@ -155,6 +163,7 @@ export default function MapaFacialPanel({ valor = {}, onChange, readOnly }) {
         etapa={etapa}
         zoom={zoom}
         imagemUrl={valor.imagem_url}
+        rostoId={valor.rosto_referencia}
         readOnly={readOnly}
         selecionadoId={selecionadoId}
         onSelect={setSelecionadoId}
