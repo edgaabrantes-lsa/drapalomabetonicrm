@@ -5,62 +5,142 @@
 @tailwind utilities;
 
 /* ══════════════════════════════════════════
-   DESIGN SYSTEM — CORPORATIVO PREMIUM
-   Paloma Betoni Clínica
-   Inspirado em: Apple Business · Stripe · Linear · Salesforce
+   DESIGN SYSTEM — PALOMA BETONI CLÍNICA
+   Identidade vinho · noturno nativo · diurno opcional
 ══════════════════════════════════════════ */
 
 @layer base {
+  /* ── MODO NOTURNO (nativo) ── */
   :root {
-    /* ── Paleta Base ── */
-    --background: 0 0% 4%;           /* #0A0A0A */
-    --foreground: 0 0% 100%;         /* #FFFFFF */
-    --card: 0 0% 10%;                /* #1A1A1A */
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 8%;              /* #141414 */
-    --popover-foreground: 0 0% 100%;
-    --primary: 38 43% 60%;           /* #C8A96A */
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 8%;            /* #141414 */
-    --secondary-foreground: 0 0% 69%; /* #B0B0B0 */
-    --muted: 0 0% 8%;
-    --muted-foreground: 0 0% 69%;    /* #B0B0B0 */
-    --accent: 38 43% 60%;
-    --accent-foreground: 0 0% 4%;
+    --background: 0 0% 7%;            /* #121212 */
+    --foreground: 0 0% 91%;           /* #E8E8E8 */
+    --card: 0 0% 12%;                 /* #1E1E1E */
+    --card-foreground: 0 0% 91%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 91%;
+    --primary: 346 80% 22%;           /* #630B20 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 75%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 66%;
+    --accent: 346 80% 22%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 17%;              /* #2B2B2B */
-    --input: 0 0% 7%;                /* #121212 */
-    --ring: 38 43% 60%;
+    --border: 0 0% 20%;               /* #333333 */
+    --input: 0 0% 15%;
+    --ring: 346 80% 32%;
     --radius: 0.375rem;
 
     /* Charts */
-    --chart-1: 38 43% 60%;
-    --chart-2: 160 55% 45%;
-    --chart-3: 200 65% 55%;
-    --chart-4: 280 55% 60%;
-    --chart-5: 340 65% 58%;
+    --chart-1: 346 55% 40%;
+    --chart-2: 160 45% 42%;
+    --chart-3: 200 55% 50%;
+    --chart-4: 280 45% 58%;
+    --chart-5: 340 60% 55%;
 
     /* Sidebar */
-    --sidebar-background: 0 0% 5%;   /* #0D0D0D */
-    --sidebar-foreground: 0 0% 69%;
-    --sidebar-primary: 38 43% 60%;
-    --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 12%;      /* #1E1E1E */
-    --sidebar-ring: 38 43% 60%;
+    --sidebar-background: 346 80% 22%;
+    --sidebar-foreground: 0 0% 88%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 346 80% 22%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100%;
+    --sidebar-ring: 0 0% 100%;
 
-    /* Tokens customizados */
-    --color-bg-primary:    #0A0A0A;
-    --color-bg-secondary:  #121212;
-    --color-card:          #1A1A1A;
-    --color-border:        #2B2B2B;
-    --color-text-primary:  #FFFFFF;
-    --color-text-secondary:#B0B0B0;
-    --color-gold:          #C8A96A;
-    --color-gold-hover:    #D4BC88;
+    /* Tokens da marca */
+    --color-bg-primary:    #121212;
+    --color-bg-secondary:  #0E0E0E;
+    --color-card:          #1E1E1E;
+    --color-card-hover:    #262626;
+    --color-border:        #333333;
+    --color-border-subtle: #262626;
+    --color-border-strong: #454545;
+    --color-text-primary:  #E8E8E8;
+    --color-text-secondary:#A8A8A8;
+    --color-text-muted:    #7A7A7A;
+
+    --color-brand:         #7A1A33;
+    --color-brand-hover:   #93223F;
+    --color-accent:        #C98A9B;
+    --color-accent-hover:  #DBA3B2;
+    --color-accent-subtle: rgba(122, 26, 51, 0.24);
+    --color-accent-border: rgba(201, 138, 155, 0.34);
+
+    /* Aliases legados */
+    --color-gold:          var(--color-accent);
+    --color-gold-hover:    var(--color-accent-hover);
+
+    --sidebar-bg:          #630B20;
+    --color-glass:         rgba(18, 18, 18, 0.9);
   }
+
+  /* ── MODO DIURNO ── */
+  html.light {
+    --background: 30 38% 95%;         /* #F7F2ED */
+    --foreground: 0 0% 10%;           /* #1A1A1A */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 346 80% 22%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 33 30% 92%;
+    --secondary-foreground: 0 0% 25%;
+    --muted: 33 30% 92%;
+    --muted-foreground: 30 8% 45%;
+    --accent: 346 80% 22%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 32 24% 87%;             /* #E7DDD1 */
+    --input: 0 0% 100%;
+    --ring: 346 80% 22%;
+
+    --chart-1: 346 80% 22%;
+    --chart-2: 160 45% 34%;
+    --chart-3: 200 55% 38%;
+    --chart-4: 280 40% 45%;
+    --chart-5: 340 55% 42%;
+
+    --sidebar-background: 346 80% 22%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 346 80% 22%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100%;
+    --sidebar-ring: 0 0% 100%;
+
+    --color-bg-primary:    #F7F2ED;
+    --color-bg-secondary:  #FFFFFF;
+    --color-card:          #FFFFFF;
+    --color-card-hover:    #FBF7F3;
+    --color-border:        #E7DDD1;
+    --color-border-subtle: #F0E8DE;
+    --color-border-strong: #D8C9B8;
+    --color-text-primary:  #1A1A1A;
+    --color-text-secondary:#5E574F;
+    --color-text-muted:    #8A8078;
+
+    --color-brand:         #630B20;
+    --color-brand-hover:   #7A1A33;
+    --color-accent:        #630B20;
+    --color-accent-hover:  #7A1A33;
+    --color-accent-subtle: rgba(99, 11, 32, 0.06);
+    --color-accent-border: rgba(99, 11, 32, 0.18);
+
+    --color-gold:          var(--color-accent);
+    --color-gold-hover:    var(--color-accent-hover);
+
+    --sidebar-bg:          #630B20;
+    --color-glass:         rgba(247, 242, 237, 0.92);
+  }
+
+  html.dark { color-scheme: dark; }
+  html.light { color-scheme: light; }
 }
 
 /* ──────────────────────────────────────────
@@ -77,7 +157,6 @@
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    color-scheme: dark;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -92,6 +171,7 @@
     line-height: 1.6;
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   #root {
@@ -102,41 +182,41 @@
     max-width: 100%;
   }
 
-  /* ── Tipografia corporativa ── */
+  /* ── Tipografia ── */
   h1 {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 2rem;          /* 32px */
+    font-size: 2rem;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: #FFFFFF;
+    color: var(--color-text-primary);
     line-height: 1.2;
   }
 
   h2 {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 1.25rem;       /* 20px */
+    font-size: 1.25rem;
     font-weight: 500;
     letter-spacing: -0.015em;
-    color: #FFFFFF;
+    color: var(--color-text-primary);
     line-height: 1.3;
   }
 
   h3 {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 1rem;          /* 16px */
+    font-size: 1rem;
     font-weight: 500;
     letter-spacing: -0.01em;
-    color: #FFFFFF;
+    color: var(--color-text-primary);
     line-height: 1.4;
   }
 
   h4, h5, h6 {
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 0.6875rem;     /* 11px */
+    font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #666666;
+    color: var(--color-text-muted);
   }
 
   p {
@@ -147,9 +227,9 @@
 
   label {
     font-family: 'Inter', sans-serif;
-    font-size: 0.8125rem;     /* 13px */
+    font-size: 0.8125rem;
     font-weight: 500;
-    color: #B0B0B0;
+    color: var(--color-text-secondary);
     letter-spacing: 0;
   }
 
@@ -163,36 +243,34 @@
   }
 
   input::placeholder, textarea::placeholder {
-    color: #555555 !important;
+    color: var(--color-text-muted) !important;
   }
 
   input:focus, textarea:focus, select:focus {
     outline: none !important;
-    border-color: var(--color-gold) !important;
-    box-shadow: 0 0 0 2px rgba(200, 169, 106, 0.12) !important;
+    border-color: var(--color-brand) !important;
+    box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
   }
 
   /* ── Scrollbar minimalista ── */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #2B2B2B; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #C8A96A; }
+  ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-brand); }
 
-  /* Remover scrollbar horizontal globalmente */
   body.scrollbar-lock {
     overflow-x: hidden !important;
     width: 100% !important;
     max-width: 100% !important;
   }
 
-  /* Remover scrollbar do Firefox em elementos específicos */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
+    display: none;
   }
 }
 
@@ -200,7 +278,6 @@
    COMPONENTES DO SISTEMA
 ══════════════════════════════════════════ */
 
-/* ── Cards ── */
 .corp-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -210,13 +287,13 @@
 }
 
 .corp-card:hover {
-  border-color: #3A3A3A;
+  border-color: var(--color-border-strong);
 }
 
 /* ── Botão primário ── */
 .corp-btn-primary {
-  background: var(--color-gold);
-  color: #000000;
+  background: var(--color-brand);
+  color: #FFFFFF;
   border: none;
   border-radius: 6px;
   font-family: 'Inter', sans-serif;
@@ -233,7 +310,7 @@
 }
 
 .corp-btn-primary:hover {
-  background: var(--color-gold-hover);
+  background: var(--color-brand-hover);
 }
 
 /* ── Botão ghost ── */
@@ -255,9 +332,9 @@
 }
 
 .corp-btn-ghost:hover {
-  border-color: #3A3A3A;
-  color: #FFFFFF;
-  background: rgba(255,255,255,0.04);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+  background: var(--color-accent-subtle);
 }
 
 /* ── Labels de dados ── */
@@ -266,28 +343,28 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #666666;
+  color: var(--color-text-muted);
 }
 
 .corp-value {
   font-size: 14px;
   font-weight: 500;
-  color: #FFFFFF;
+  color: var(--color-text-primary);
 }
 
 .corp-value-lg {
   font-size: 28px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--color-text-primary);
   letter-spacing: -0.02em;
 }
 
-/* ── Accent dourado ── */
-.corp-gold { color: var(--color-gold); }
+/* ── Accent da marca ── */
+.corp-gold { color: var(--color-accent); }
 .corp-gold-bg {
-  background: rgba(200, 169, 106, 0.1);
-  border: 1px solid rgba(200, 169, 106, 0.25);
-  color: var(--color-gold);
+  background: var(--color-accent-subtle);
+  border: 1px solid var(--color-accent-border);
+  color: var(--color-accent);
 }
 
 /* ── Seção título ── */
@@ -295,13 +372,13 @@
   font-size: 2rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #FFFFFF;
+  color: var(--color-text-primary);
 }
 
 .corp-page-subtitle {
   font-size: 14px;
   font-weight: 400;
-  color: #666666;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
@@ -340,23 +417,23 @@ thead th {
   font-weight: 600 !important;
   letter-spacing: 0.07em !important;
   text-transform: uppercase !important;
-  color: #666666 !important;
+  color: var(--color-text-muted) !important;
   padding: 10px 16px !important;
   border: none !important;
   background: transparent !important;
 }
 
 tbody tr {
-  border-bottom: 1px solid #1E1E1E !important;
+  border-bottom: 1px solid var(--color-border-subtle) !important;
   transition: background 0.1s ease !important;
 }
 
 tbody tr:hover {
-  background-color: rgba(255,255,255,0.025) !important;
+  background-color: var(--color-accent-subtle) !important;
 }
 
 tbody td {
-  color: #B0B0B0 !important;
+  color: var(--color-text-secondary) !important;
   padding: 12px 16px !important;
   border: none !important;
   font-size: 14px !important;
@@ -364,8 +441,8 @@ tbody td {
 
 /* ── Dropdowns/Radix ── */
 [data-radix-popper-content-wrapper] > div {
-  background-color: #1A1A1A !important;
-  border-color: #2B2B2B !important;
+  background-color: var(--color-card) !important;
+  border-color: var(--color-border) !important;
   border-radius: 8px !important;
 }
 
@@ -377,33 +454,31 @@ tbody td {
 
 .corp-animate { animation: corp-fade-up 0.25s ease forwards; }
 
-/* ── Glass effect discreto (apenas menu/topbar/modais) ── */
+/* ── Glass (menu / topbar / modais) ── */
 .glass-sidebar {
-  background: rgba(10, 10, 10, 0.92);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: var(--sidebar-bg);
 }
 
 .glass-topbar {
-  background: rgba(10, 10, 10, 0.88);
+  background: var(--color-glass);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
 }
 
 .glass-modal {
-  background: rgba(18, 18, 18, 0.96);
+  background: var(--color-glass);
   backdrop-filter: saturate(160%) blur(24px);
   -webkit-backdrop-filter: saturate(160%) blur(24px);
 }
 
 /* ── Utilities ── */
-.text-primary-corp  { color: #FFFFFF; }
-.text-secondary-corp { color: #B0B0B0; }
-.text-muted-corp    { color: #666666; }
-.text-gold-corp     { color: #C8A96A; }
-.bg-primary-corp    { background-color: #0A0A0A; }
-.bg-card-corp       { background-color: #1A1A1A; }
-.border-corp        { border-color: #2B2B2B; }
+.text-primary-corp  { color: var(--color-text-primary); }
+.text-secondary-corp { color: var(--color-text-secondary); }
+.text-muted-corp    { color: var(--color-text-muted); }
+.text-gold-corp     { color: var(--color-accent); }
+.bg-primary-corp    { background-color: var(--color-bg-primary); }
+.bg-card-corp       { background-color: var(--color-card); }
+.border-corp        { border-color: var(--color-border); }
 
 /* ── Mobile overflow protection ── */
 .mobile-safe {
@@ -422,13 +497,13 @@ tbody td {
 
 /* ── Linha de destaque lateral esquerda ── */
 .corp-left-accent {
-  border-left: 2px solid var(--color-gold);
+  border-left: 2px solid var(--color-brand);
   padding-left: 12px;
 }
 
 /* ── Focus ring acessível ── */
 .corp-focus-ring:focus-visible {
-  outline: 2px solid var(--color-gold);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
@@ -446,15 +521,15 @@ svg[class*="lucide"] {
   height: 5px;
 }
 .portal-cat-scroll::-webkit-scrollbar-track {
-  background: rgba(255,255,255,0.03);
+  background: var(--color-border-subtle);
   border-radius: 3px;
 }
 .portal-cat-scroll::-webkit-scrollbar-thumb {
-  background: #3A3A3A;
+  background: var(--color-border-strong);
   border-radius: 3px;
 }
 .portal-cat-scroll::-webkit-scrollbar-thumb:hover {
-  background: #C8A96A;
+  background: var(--color-brand);
 }
 
 /* ── Rolagem horizontal da tabela de Lançamentos (DRE) ── */
@@ -462,19 +537,111 @@ svg[class*="lucide"] {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
-  scrollbar-color: #4A4A4A #141414;
+  scrollbar-color: var(--color-border-strong) var(--color-bg-primary);
 }
 .dre-table-scroll::-webkit-scrollbar {
   height: 8px;
 }
 .dre-table-scroll::-webkit-scrollbar-track {
-  background: #141414;
+  background: var(--color-bg-primary);
   border-radius: 4px;
 }
 .dre-table-scroll::-webkit-scrollbar-thumb {
-  background: #4A4A4A;
+  background: var(--color-border-strong);
   border-radius: 4px;
 }
 .dre-table-scroll::-webkit-scrollbar-thumb:hover {
-  background: #C8A96A;
+  background: var(--color-brand);
+}
+
+/* ══════════════════════════════════════════
+   PONTE DE TEMA
+   Converte as cores fixas herdadas de páginas
+   antigas para a paleta do tema ativo.
+══════════════════════════════════════════ */
+
+/* Destaque dourado → vinho da marca */
+[style*="rgb(200, 169, 106)"] { color: var(--color-accent) !important; }
+[style*="rgb(212, 188, 136)"] { color: var(--color-accent-hover) !important; }
+[class*="text-[#C8A96A]"] { color: var(--color-accent) !important; }
+[class*="text-[#D4BC88]"] { color: var(--color-accent-hover) !important; }
+[class*="bg-[#C8A96A]"] { background-color: var(--color-brand) !important; color: #FFFFFF !important; }
+[class*="border-[#C8A96A]"] { border-color: var(--color-accent-border) !important; }
+
+/* Superfícies escuras → tema claro */
+html.light [style*="rgb(10, 10, 10)"],
+html.light [style*="rgb(18, 18, 18)"],
+html.light [style*="rgb(20, 20, 20)"],
+html.light [style*="rgb(14, 14, 14)"] { background-color: var(--color-bg-primary) !important; }
+
+html.light [style*="rgb(26, 26, 26)"],
+html.light [style*="rgb(30, 30, 30)"],
+html.light [style*="rgb(36, 36, 36)"] { background-color: var(--color-card) !important; }
+
+html.light [style*="rgb(43, 43, 43)"] { border-color: var(--color-border) !important; }
+
+html.light [style*="rgb(255, 255, 255)"]:not([style*="--color-brand"]):not([style*="--color-accent"]):not([style*="--sidebar"]) {
+  color: var(--color-text-primary) !important;
+}
+
+/* O menu lateral é sempre vinho: o texto permanece claro nos dois modos */
+html.light aside [style*="rgb(255, 255, 255)"] {
+  color: #FFFFFF !important;
+}
+html.light [style*="rgb(176, 176, 176)"] { color: var(--color-text-secondary) !important; }
+html.light [style*="rgb(138, 138, 138)"] { color: var(--color-text-muted) !important; }
+html.light [style*="rgb(102, 102, 102)"],
+html.light [style*="rgb(85, 85, 85)"],
+html.light [style*="rgb(58, 58, 58)"] { color: var(--color-text-muted) !important; }
+
+/* Superfícies escuras → paleta noturna padronizada */
+html.dark [style*="rgb(10, 10, 10)"],
+html.dark [style*="rgb(13, 13, 13)"] { background-color: var(--color-bg-primary) !important; }
+html.dark [style*="rgb(26, 26, 26)"] { background-color: var(--color-card) !important; }
+
+/* ── Ponte de classes (paleta azul/dourada herdada → vinho) ── */
+
+/* Superfícies de cartão */
+[class*="bg-[#1a1a25]"],
+[class*="bg-[#1A2030]"],
+[class*="bg-[#171D29]"],
+[class*="bg-[#0d0d14]"],
+[class*="bg-[#0F1521]"],
+[class*="bg-[#111620]"],
+[class*="bg-[#0d1017]"],
+[class*="bg-[#1A1A1A]"],
+[class*="bg-[#1E1E1E]"] { background-color: var(--color-card) !important; }
+
+/* Superfícies de página */
+[class*="bg-[#12121a]"],
+[class*="bg-[#121212]"],
+[class*="bg-[#0A0A0A]"] { background-color: var(--color-bg-primary) !important; }
+
+/* Bordas */
+[class*="border-[#1e1e2a]"],
+[class*="border-[#252D3E]"],
+[class*="border-[#2B2B2B]"],
+[class*="border-[#1E1E1E]"] { border-color: var(--color-border) !important; }
+
+/* Textos neutros */
+[class*="text-[#8A95AA]"],
+[class*="text-[#4A5568]"] { color: var(--color-text-secondary) !important; }
+
+/* Dourado → vinho */
+[class*="text-[#c9a55c]"],
+[class*="text-[#C5A059]"] { color: var(--color-accent) !important; }
+
+[class*="bg-[#c9a55c]"],
+[class*="bg-[#C5A059]"],
+[class*="bg-[#a17f3f]"] {
+  background-color: var(--color-brand) !important;
+  color: #FFFFFF !important;
+}
+
+[class*="border-[#c9a55c]"],
+[class*="border-[#C5A059]"] { border-color: var(--color-accent-border) !important; }
+
+/* Texto branco em superfícies que ficam claras no modo diurno */
+html.light .text-white:not([class*="bg-[#c9a55c]"]):not([class*="bg-[#C5A059]"]):not([class*="bg-[#C8A96A]"]):not([class*="bg-[#a17f3f]"]):not([class*="bg-primary"]):not([class*="bg-[#630B20]"]):not([style*="--color-brand"]) {
+  color: var(--color-text-primary) !important;
 }

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import BuscaPacientes from "@/components/layout/BuscaPacientes";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 const navigation = [
   // Clínico
@@ -54,6 +55,8 @@ const SIDEBAR_W_OPEN   = 240;
 const SIDEBAR_W_CLOSED = 60;
 const TOPBAR_H         = 56;
 
+const SIDEBAR_LINE = "rgba(255,255,255,0.12)";
+
 
 export default function Layout({ children, currentPageName }) {
   const [collapsed, setCollapsed]   = useState(false);
@@ -64,8 +67,6 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
-    document.documentElement.classList.add("dark");
-    document.documentElement.style.colorScheme = "dark";
   }, []);
 
   useEffect(() => {
@@ -77,31 +78,33 @@ export default function Layout({ children, currentPageName }) {
   const sidebarWidth = collapsed ? SIDEBAR_W_CLOSED : SIDEBAR_W_OPEN;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#0A0A0A", color: "#FFFFFF", overflowX: "hidden" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-primary)", overflowX: "hidden" }}>
 
       {/* ── Mobile top bar ── */}
       <div
         className="lg:hidden fixed top-0 left-0 right-0 z-50 glass-topbar"
-        style={{ borderBottom: "1px solid #1E1E1E" }}
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <div className="flex items-center justify-between px-4" style={{ height: 52 }}>
           <button
             onClick={() => setMobileOpen(true)}
-            className="flex items-center justify-center rounded-md transition-colors hover:bg-white/5"
-            style={{ color: "#B0B0B0", padding: "6px 10px", fontSize: 13, fontWeight: 500, border: "none", background: "transparent", cursor: "pointer" }}
+            className="flex items-center justify-center rounded-md transition-colors"
+            style={{ color: "var(--color-text-secondary)", padding: "6px 10px", fontSize: 13, fontWeight: 500, border: "none", background: "transparent", cursor: "pointer" }}
           >
             Menu
           </button>
 
-          <img
-            src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
-            alt="Paloma Betoni"
-            style={{ height: 36, objectFit: "contain" }}
-          />
+          <div style={{ backgroundColor: "var(--sidebar-bg)", borderRadius: 6, padding: "2px 10px" }}>
+            <img
+              src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
+              alt="Paloma Betoni"
+              style={{ height: 32, objectFit: "contain", display: "block" }}
+            />
+          </div>
 
-          <Avatar className="h-8 w-8" style={{ border: "1px solid #2B2B2B" }}>
+          <Avatar className="h-8 w-8" style={{ border: "1px solid var(--color-border)" }}>
             <AvatarFallback
-              style={{ backgroundColor: "rgba(200,169,106,0.1)", color: "#C8A96A", fontSize: 12, fontWeight: 600 }}
+              style={{ backgroundColor: "var(--color-accent-subtle)", color: "var(--color-brand)", fontSize: 12, fontWeight: 600 }}
             >
               {user?.full_name?.[0] || "P"}
             </AvatarFallback>
@@ -126,12 +129,13 @@ export default function Layout({ children, currentPageName }) {
       {/* ══ SIDEBAR ══ */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full flex flex-col glass-sidebar transition-[width,transform] duration-200 ease-in-out",
+          "fixed top-0 left-0 z-50 h-full flex flex-col transition-[width,transform] duration-200 ease-in-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
         style={{
           width: mobileOpen ? "min(240px, 85vw)" : (isLgScreen ? sidebarWidth : SIDEBAR_W_OPEN),
-          borderRight: "1px solid #1E1E1E",
+          backgroundColor: "var(--sidebar-bg)",
+          borderRight: "1px solid rgba(255,255,255,0.10)",
         }}
       >
         {/* Logo / Brand */}
@@ -139,12 +143,11 @@ export default function Layout({ children, currentPageName }) {
           className="flex items-center flex-shrink-0 relative"
           style={{
             height: 100,
-            borderBottom: "1px solid #1E1E1E",
+            borderBottom: `1px solid ${SIDEBAR_LINE}`,
             padding: "0 16px",
             overflow: "visible",
           }}
         >
-          {/* Logo — visível apenas quando aberto (ou no mobile) */}
           {(!collapsed || !isLgScreen) ? (
             <img
               src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/409f9cb09_ChatGPT_Image_8_de_mai_de_2026__14_52_21-removebg-preview.png"
@@ -157,7 +160,7 @@ export default function Layout({ children, currentPageName }) {
               fontSize: 15,
               fontWeight: 600,
               letterSpacing: "0.08em",
-              color: "#C8A96A",
+              color: "rgba(255,255,255,0.92)",
             }}>
               PB
             </span>
@@ -166,8 +169,8 @@ export default function Layout({ children, currentPageName }) {
           {/* Botão fechar — mobile */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden flex items-center justify-center rounded-md transition-colors hover:bg-white/5 ml-auto"
-            style={{ width: 28, height: 28, color: "#555555", fontSize: 18, fontWeight: 300, border: "none", background: "transparent", cursor: "pointer", flexShrink: 0 }}
+            className="lg:hidden flex items-center justify-center rounded-md transition-colors"
+            style={{ width: 28, height: 28, color: "rgba(255,255,255,0.6)", fontSize: 18, fontWeight: 300, border: "none", background: "transparent", cursor: "pointer", flexShrink: 0 }}
           >
             ×
           </button>
@@ -186,8 +189,8 @@ export default function Layout({ children, currentPageName }) {
             gap: 8,
             background: "transparent",
             border: "none",
-            borderBottom: "1px solid #1E1E1E",
-            color: "#B0B0B0",
+            borderBottom: `1px solid ${SIDEBAR_LINE}`,
+            color: "rgba(255,255,255,0.7)",
             fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: 12,
             fontWeight: 500,
@@ -195,10 +198,10 @@ export default function Layout({ children, currentPageName }) {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = "#FFFFFF";
-            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.07)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = "#B0B0B0";
+            e.currentTarget.style.color = "rgba(255,255,255,0.7)";
             e.currentTarget.style.backgroundColor = "transparent";
           }}
         >
@@ -224,7 +227,7 @@ export default function Layout({ children, currentPageName }) {
                       fontWeight: 600,
                       letterSpacing: "0.09em",
                       textTransform: "uppercase",
-                      color: "#3A3A3A",
+                      color: "rgba(255,255,255,0.42)",
                       padding: "12px 24px 4px",
                     }}>
                       {group.label}
@@ -245,28 +248,27 @@ export default function Layout({ children, currentPageName }) {
                           gap: collapsed ? 0 : 10,
                           margin: "1px 8px",
                           borderRadius: 6,
-                          backgroundColor: isActive ? "rgba(200,169,106,0.08)" : "transparent",
-                          color: isActive ? "#FFFFFF" : "#666666",
+                          backgroundColor: isActive ? "rgba(255,255,255,0.16)" : "transparent",
+                          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.74)",
                           textDecoration: "none",
-                          borderLeft: isActive ? "2px solid #C8A96A" : "2px solid transparent",
                         }}
                         onMouseEnter={(e) => {
                           if (!isActive) {
-                            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
-                            e.currentTarget.style.color = "#B0B0B0";
+                            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)";
+                            e.currentTarget.style.color = "#FFFFFF";
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (!isActive) {
                             e.currentTarget.style.backgroundColor = "transparent";
-                            e.currentTarget.style.color = "#666666";
+                            e.currentTarget.style.color = "rgba(255,255,255,0.74)";
                           }
                         }}
                       >
                         {!collapsed && (
                           <span style={{
                             fontSize: 13,
-                            fontWeight: isActive ? 500 : 400,
+                            fontWeight: isActive ? 600 : 400,
                             letterSpacing: 0,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
@@ -278,7 +280,7 @@ export default function Layout({ children, currentPageName }) {
                         {collapsed && (
                           <span
                             className="absolute left-full ml-2 px-2 py-1 text-xs rounded-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50"
-                            style={{ backgroundColor: "#1A1A1A", border: "1px solid #2B2B2B", color: "#FFFFFF", fontSize: 12 }}
+                            style={{ backgroundColor: "#4A0A18", border: "1px solid rgba(255,255,255,0.2)", color: "#FFFFFF", fontSize: 12 }}
                           >
                             {item.name}
                           </span>
@@ -292,12 +294,17 @@ export default function Layout({ children, currentPageName }) {
           })()}
         </nav>
 
+        {/* Alternador de tema — modo diurno / noturno */}
+        <div style={{ borderTop: `1px solid ${SIDEBAR_LINE}`, flexShrink: 0 }}>
+          <ThemeToggle compact={collapsed && isLgScreen} />
+        </div>
+
         {/* User section */}
-        <div style={{ borderTop: "1px solid #1E1E1E", padding: 8, flexShrink: 0 }}>
+        <div style={{ borderTop: `1px solid ${SIDEBAR_LINE}`, padding: 8, flexShrink: 0 }}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="w-full flex items-center rounded-md transition-colors hover:bg-white/4"
+                className="w-full flex items-center rounded-md transition-colors"
                 style={{
                   padding: collapsed ? "8px 0" : "8px 10px",
                   justifyContent: collapsed ? "center" : "flex-start",
@@ -306,15 +313,17 @@ export default function Layout({ children, currentPageName }) {
                   border: "none",
                   background: "transparent",
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
               >
                 <Avatar
                   className="flex-shrink-0"
-                  style={{ width: 28, height: 28, border: "1px solid #2B2B2B" }}
+                  style={{ width: 28, height: 28, border: "1px solid rgba(255,255,255,0.3)" }}
                 >
                   <AvatarFallback
                     style={{
-                      backgroundColor: "rgba(200,169,106,0.08)",
-                      color: "#C8A96A",
+                      backgroundColor: "rgba(255,255,255,0.16)",
+                      color: "#FFFFFF",
                       fontSize: 11,
                       fontWeight: 600,
                     }}
@@ -327,7 +336,7 @@ export default function Layout({ children, currentPageName }) {
                     <p style={{ fontSize: 13, fontWeight: 500, color: "#FFFFFF", truncate: true }}>
                       {user?.full_name || "Dra. Paloma"}
                     </p>
-                    <p style={{ fontSize: 11, color: "#555555", letterSpacing: "0.04em" }}>
+                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", letterSpacing: "0.04em" }}>
                       {user?.role === "admin" ? "Administrador" : (user?.role || "Usuário")}
                     </p>
                   </div>
@@ -338,24 +347,24 @@ export default function Layout({ children, currentPageName }) {
               align="end"
               className="w-48"
               style={{
-                backgroundColor: "#1A1A1A",
-                borderColor: "#2B2B2B",
+                backgroundColor: "var(--color-card)",
+                borderColor: "var(--color-border)",
                 borderRadius: 8,
               }}
             >
               <DropdownMenuItem
                 className="cursor-pointer"
-                style={{ color: "#B0B0B0", fontSize: 13 }}
+                style={{ color: "var(--color-text-secondary)", fontSize: 13 }}
               >
                 Meu Perfil
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                style={{ color: "#B0B0B0", fontSize: 13 }}
+                style={{ color: "var(--color-text-secondary)", fontSize: 13 }}
               >
                 Configurações
               </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ backgroundColor: "#2B2B2B" }} />
+              <DropdownMenuSeparator style={{ backgroundColor: "var(--color-border)" }} />
               <DropdownMenuItem
                 onClick={() => base44.auth.logout()}
                 className="cursor-pointer"
@@ -387,7 +396,7 @@ export default function Layout({ children, currentPageName }) {
           className="hidden lg:flex items-center justify-between sticky top-0 z-40 glass-topbar"
           style={{
             height: TOPBAR_H,
-            borderBottom: "1px solid #1E1E1E",
+            borderBottom: "1px solid var(--color-border)",
             padding: "0 32px",
           }}
         >
@@ -396,13 +405,13 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Right side */}
           <div className="flex items-center" style={{ gap: 16 }}>
-            <div style={{ width: 1, height: 20, backgroundColor: "#1E1E1E" }} />
+            <div style={{ width: 1, height: 20, backgroundColor: "var(--color-border)" }} />
 
             <div className="text-right">
-              <p style={{ fontSize: 11, color: "#555555", letterSpacing: "0.07em", textTransform: "uppercase" }}>
+              <p style={{ fontSize: 11, color: "var(--color-text-muted)", letterSpacing: "0.07em", textTransform: "uppercase" }}>
                 Bem-vinda
               </p>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "#FFFFFF" }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>
                 {user?.full_name || "Dra. Paloma Betoni"}
               </p>
             </div>
@@ -413,7 +422,7 @@ export default function Layout({ children, currentPageName }) {
         <div
           className="min-h-[calc(100vh-56px)] w-full overflow-x-auto overflow-y-auto"
           style={{
-            backgroundColor: "#0A0A0A",
+            backgroundColor: "var(--color-bg-primary)",
             padding: "max(16px, 2vw)",
           }}
         >

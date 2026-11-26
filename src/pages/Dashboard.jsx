@@ -179,8 +179,8 @@ export default function Dashboard() {
                 <AreaChart data={serie} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={T.gold} stopOpacity={0.15} />
-                      <stop offset="95%" stopColor={T.gold} stopOpacity={0} />
+                      <stop offset="5%"  stopColor={T.chartAccent} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={T.chartAccent} stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gD" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor={T.textMuted} stopOpacity={0.1} />
@@ -191,7 +191,7 @@ export default function Dashboard() {
                   <XAxis dataKey="mes" tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} tickFormatter={v => `${v/1000}k`} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="receita" name="Receita"  stroke={T.gold}      strokeWidth={1.5} fill="url(#gR)" />
+                  <Area type="monotone" dataKey="receita" name="Receita"  stroke={T.chartAccent} strokeWidth={1.5} fill="url(#gR)" />
                   <Area type="monotone" dataKey="despesas" name="Despesas" stroke={T.textMuted} strokeWidth={1}   fill="url(#gD)" />
                 </AreaChart>
               </ResponsiveContainer>

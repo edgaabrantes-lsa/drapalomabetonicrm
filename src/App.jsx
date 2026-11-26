@@ -25,6 +25,7 @@ import DREClinica from './pages/DREClinica.jsx';
 import MesclarPacientes from './pages/MesclarPacientes.jsx';
 import AuditoriaDuplicidades from './pages/AuditoriaDuplicidades.jsx';
 import { PermissionsProvider } from '@/lib/PermissionsContext';
+import { ThemeProvider } from '@/lib/theme';
 import PortalPaciente from './pages/PortalPaciente.jsx';
 import PortalAdmin from './pages/PortalAdmin.jsx';
 import PlanosAssinatura from './pages/PlanosAssinatura.jsx';
@@ -231,10 +232,12 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClientInstance}>
-      <Router>
-        <AppRouter />
-      </Router>
-      <Toaster />
+      <ThemeProvider>
+        <Router>
+          <AppRouter />
+        </Router>
+        <Toaster />
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

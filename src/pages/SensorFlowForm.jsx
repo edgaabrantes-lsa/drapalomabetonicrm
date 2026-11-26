@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useTheme } from "@/lib/theme";
 
 /* ── Configuração do formulário Sensor Flow ── */
 const PASSOS = [
@@ -14,16 +15,17 @@ const PASSOS = [
 ];
 
 const T = {
-  bg: "#0A0A0A",
-  bg2: "#121212",
-  card: "#1A1A1A",
-  border: "#2B2B2B",
-  text: "#FFFFFF",
-  textMuted: "#8A8A8A",
-  gold: "#C8A96A",
-  goldHover: "#D4BC88",
-  goldSubtle: "rgba(200,169,106,0.08)",
-  goldBorder: "rgba(200,169,106,0.2)",
+  bg: "var(--color-bg-primary)",
+  bg2: "var(--color-card)",
+  card: "var(--color-card)",
+  border: "var(--color-border)",
+  text: "var(--color-text-primary)",
+  textMuted: "var(--color-text-muted)",
+  brand: "var(--color-brand)",
+  brandHover: "var(--color-brand-hover)",
+  accent: "var(--color-accent)",
+  accentSubtle: "var(--color-accent-subtle)",
+  accentBorder: "var(--color-accent-border)",
   font: "'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
 };
 
@@ -318,24 +320,39 @@ function Campo({ campo, form, toggleMulti, setSingle, toggleBool }) {
 }
 
 function Shell({ children }) {
+  const { theme, toggleTheme } = useTheme();
   return (
-    <div style={{ backgroundColor: T.bg, minHeight: "100vh", fontFamily: T.font, color: T.text, padding: "max(20px, 4vw)" }}>
-      <div style={{ maxWidth: 560, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
+    <div style={{ backgroundColor: T.bg, minHeight: "100vh", fontFamily: T.font, color: T.text }}>
+      {/* Faixa da marca */}
+      <div style={{ backgroundColor: "var(--sidebar-bg)", padding: "18px max(20px, 4vw)" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 56 }}>
           <img
             src="https://media.base44.com/images/public/699dbefdfbf6a591f90b6e3b/87c946eb1_ChatGPT_Image_8_de_mai_de_2026__14_52_26-removebg-preview.png"
             alt="Paloma Betoni"
-            style={{ height: 80, objectFit: "contain", margin: "0 auto" }}
+            style={{ height: 64, objectFit: "contain" }}
           />
+          <button
+            type="button"
+            onClick={toggleTheme}
+            style={styles.themeBtn}
+            aria-label="Alternar modo diurno e noturno"
+          >
+            {theme === "light" ? "☀ Diurno" : "☾ Noturno"}
+          </button>
         </div>
-        {children}
+      </div>
+
+      <div style={{ padding: "max(20px, 4vw)" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto" }}>
+          {children}
+        </div>
       </div>
     </div>
   );
 }
 
 const styles = {
-  brand: { fontFamily: T.font, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: T.gold, margin: 0 },
+  brand: { fontFamily: T.font, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: T.accent, margin: 0 },
   h1: { fontFamily: T.font, fontSize: 26, fontWeight: 600, color: T.text, margin: "6px 0 4px", letterSpacing: "-0.02em" },
   h2: { fontFamily: T.font, fontSize: 17, fontWeight: 600, color: T.text, margin: "0 0 16px", letterSpacing: "-0.01em" },
   muted: { fontFamily: T.font, fontSize: 14, color: T.textMuted, lineHeight: 1.6, margin: 0 },
@@ -354,29 +371,35 @@ const styles = {
     padding: "9px 16px", cursor: "pointer", transition: "all 0.15s",
   },
   optionActive: {
-    fontFamily: T.font, fontSize: 13, fontWeight: 600, color: "#000",
-    backgroundColor: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999,
+    fontFamily: T.font, fontSize: 13, fontWeight: 600, color: "#FFFFFF",
+    backgroundColor: T.brand, border: `1px solid ${T.brand}`, borderRadius: 999,
     padding: "9px 16px", cursor: "pointer",
   },
-  progressWrap: { height: 6, backgroundColor: T.bg2, borderRadius: 999, overflow: "hidden", border: `1px solid ${T.border}` },
-  progressBar: { height: "100%", backgroundColor: T.gold, borderRadius: 999, transition: "width 0.3s" },
+  progressWrap: { height: 6, backgroundColor: T.border, borderRadius: 999, overflow: "hidden" },
+  progressBar: { height: "100%", backgroundColor: T.brand, borderRadius: 999, transition: "width 0.3s" },
   consentWrap: { display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", marginTop: 8 },
-  checkbox: { width: 20, height: 20, marginTop: 2, accentColor: T.gold, flexShrink: 0 },
+  checkbox: { width: 20, height: 20, marginTop: 2, accentColor: T.brand, flexShrink: 0 },
   consentText: { fontFamily: T.font, fontSize: 13, color: T.textMuted, lineHeight: 1.6 },
   nav: { display: "flex", justifyContent: "space-between", gap: 12, marginTop: 8 },
   btnPrimary: {
-    backgroundColor: T.gold, color: "#000", border: "none", borderRadius: 8,
-    fontFamily: T.font, fontSize: 14, fontWeight: 600, padding: "12px 24px", cursor: "pointer",
+    backgroundColor: T.brand, color: "#FFFFFF", border: "none", borderRadius: 999,
+    fontFamily: T.font, fontSize: 14, fontWeight: 600, padding: "12px 28px", cursor: "pointer",
     marginLeft: "auto",
   },
   btnGhost: {
-    backgroundColor: "transparent", color: T.textMuted, border: `1px solid ${T.border}`, borderRadius: 8,
-    fontFamily: T.font, fontSize: 14, fontWeight: 500, padding: "12px 20px", cursor: "pointer",
+    backgroundColor: "transparent", color: T.textMuted, border: `1px solid ${T.border}`, borderRadius: 999,
+    fontFamily: T.font, fontSize: 14, fontWeight: 500, padding: "12px 22px", cursor: "pointer",
   },
   successIcon: {
-    width: 64, height: 64, borderRadius: "50%", backgroundColor: T.goldSubtle,
-    border: `1px solid ${T.goldBorder}`, color: T.gold, fontSize: 32, fontWeight: 700,
+    width: 64, height: 64, borderRadius: "50%", backgroundColor: T.accentSubtle,
+    border: `1px solid ${T.accentBorder}`, color: T.accent, fontSize: 32, fontWeight: 700,
     display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px",
   },
   erro: { color: "#EF4444", fontSize: 13, fontFamily: T.font, marginTop: 12, textAlign: "center" },
+  themeBtn: {
+    position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
+    backgroundColor: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.3)",
+    color: "rgba(255,255,255,1)", borderRadius: 999, fontFamily: T.font, fontSize: 11, fontWeight: 500,
+    padding: "6px 12px", cursor: "pointer", letterSpacing: "0.04em", whiteSpace: "nowrap",
+  },
 };

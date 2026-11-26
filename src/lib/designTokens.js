@@ -7,26 +7,32 @@
  */
 
 export const T = {
-  // Fundos
-  bgPrimary:   "#0A0A0A",
-  bgSecondary: "#121212",
-  card:        "#1A1A1A",
-  cardHover:   "#1E1E1E",
+  // Fundos (seguem o tema diurno/noturno)
+  bgPrimary:   "var(--color-bg-primary)",
+  bgSecondary: "var(--color-bg-secondary)",
+  card:        "var(--color-card)",
+  cardHover:   "var(--color-card-hover)",
 
   // Bordas
-  border:      "#2B2B2B",
-  borderLight: "#1E1E1E",
+  border:      "var(--color-border)",
+  borderLight: "var(--color-border-subtle)",
 
   // Texto
-  textPrimary:   "#FFFFFF",
-  textSecondary: "#B0B0B0",
-  textMuted:     "#666666",
+  textPrimary:   "var(--color-text-primary)",
+  textSecondary: "var(--color-text-secondary)",
+  textMuted:     "var(--color-text-muted)",
 
-  // Destaque
-  gold:        "#C8A96A",
-  goldHover:   "#D4BC88",
-  goldSubtle:  "rgba(200,169,106,0.08)",
-  goldBorder:  "rgba(200,169,106,0.2)",
+  // Destaque (vinho da marca)
+  gold:        "var(--color-accent)",
+  goldHover:   "var(--color-accent-hover)",
+  goldSubtle:  "var(--color-accent-subtle)",
+  goldBorder:  "var(--color-accent-border)",
+
+  // Marca
+  brand:       "var(--color-brand)",
+  brandHover:  "var(--color-brand-hover)",
+  onBrand:     "#FFFFFF",
+  chartAccent: "#8E2B44",
 
   // Semântico
   danger:      "#EF4444",
@@ -128,8 +134,8 @@ export const S = {
   },
 
   btnPrimary: {
-    background: T.gold,
-    color: "#000000",
+    background: T.brand,
+    color: "#FFFFFF",
     border: "none",
     borderRadius: 6,
     fontFamily: T.font,
