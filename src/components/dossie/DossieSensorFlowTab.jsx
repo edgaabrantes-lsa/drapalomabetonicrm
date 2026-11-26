@@ -46,17 +46,12 @@ function PerfilResumo({ perfil }) {
       </button>
       {open && (
         <div style={{ padding: "0 18px 18px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-          <Bloco title="Horários"><TagList items={perfil.appointment_periods} /></Bloco>
-          <Bloco title="Bebidas"><TagList items={perfil.beverage_preferences} /></Bloco>
-          <Bloco title="Alimentação"><TagList items={perfil.food_preferences} /></Bloco>
-          <Bloco title="Restrições"><TagList items={perfil.dietary_restrictions} /></Bloco>
-          <Bloco title="Ambiente"><TagList items={perfil.environment_preferences} /></Bloco>
-          <Bloco title="Aromas">
-            <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>Aprecia: {perfil.likes_aromas ? "Sim" : "Não"}</p>
-            {perfil.likes_aromas && <div style={{ marginTop: 6 }}><TagList items={perfil.aroma_preferences} /></div>}
-          </Bloco>
-          <Bloco title="Temperatura"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.temperature_preference || "—"}</p></Bloco>
-          <Bloco title="Atendimento"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.service_style || "—"}</p></Bloco>
+          <Bloco title="Bebida"><TagList items={[...(perfil.beverage_preferences || []), ...(perfil.beverage_other ? [perfil.beverage_other] : [])]} /></Bloco>
+          <Bloco title="Estilo musical"><TagList items={[...(perfil.music_preferences || []).filter(v => v !== "Outro"), ...(perfil.music_other ? [perfil.music_other] : [])]} /></Bloco>
+          <Bloco title="Música"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.music_choice_song || "—"}</p></Bloco>
+          <Bloco title="Cantor, cantora ou banda"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.music_choice_artist || "—"}</p></Bloco>
+          <Bloco title="Temperatura do ar-condicionado"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.temperature_preference || "—"}</p></Bloco>
+          {!!(perfil.dietary_restrictions?.length || perfil.dietary_restrictions_detail) && <Bloco title="Restrições registradas anteriormente"><TagList items={[...(perfil.dietary_restrictions || []), ...(perfil.dietary_restrictions_detail ? [perfil.dietary_restrictions_detail] : [])]} /></Bloco>
         </div>
       )}
       {perfil.hospitality_summary && open && (
