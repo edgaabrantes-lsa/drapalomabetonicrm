@@ -3,42 +3,14 @@ import { base44 } from "@/api/base44Client";
 
 /* ── Configuração do formulário Sensor Flow ── */
 const PASSOS = [
-  {
-    titulo: "Horários & Experiência Musical",
-    campos: [
-      { key: "appointment_periods", label: "Qual é o seu horário preferido para atendimento?", tipo: "single", opcoes: ["Manhã", "Tarde", "Noite"] },
-      { key: "music_preferences", label: "Que estilo musical você gosta de ouvir?", tipo: "multi", opcoes: ["Jazz", "Música clássica", "Instrumental", "Lounge", "MPB", "Bossa nova", "Pop nacional", "Pop internacional", "Country", "Sertanejo", "Forró", "Forró brega", "Forró pé de serra", "Piseiro", "Música gospel cristã", "Rock", "R&B", "Soul", "Eletrônica leve", "Outro"] },
-      { key: "music_other", label: "Qual estilo musical você prefere?", tipo: "text", cond: (f) => (f.music_preferences || []).includes("Outro") },
-      { key: "wants_music_choice", label: "Você deseja escolher uma música e um cantor para ouvir durante o atendimento?", tipo: "bool" },
-      { key: "music_choice_song", label: "Qual música você gostaria de ouvir?", tipo: "text", cond: (f) => f.wants_music_choice === true },
-      { key: "music_choice_artist", label: "Qual cantor, cantora ou banda você prefere?", tipo: "text", cond: (f) => f.wants_music_choice === true },
-    ],
-  },
-  {
-    titulo: "Bebidas & Alimentação",
-    campos: [
-      { key: "beverage_preferences", label: "Quais bebidas você prefere?", tipo: "multi", opcoes: ["Café", "Chá", "Água com gás", "Água sem gás", "Suco", "Refrigerante normal", "Refrigerante zero", "Vinho", "Champanhe", "Prosecco", "Nenhuma bebida", "Outra"] },
-      { key: "beverage_other", label: "Qual bebida você prefere?", tipo: "text", cond: (f) => (f.beverage_preferences || []).includes("Outra") },
-      { key: "food_preferences", label: "Quais alimentos você prefere?", tipo: "multi", opcoes: ["Frutas", "Chocolate", "Castanhas", "Croissant", "Pão de queijo", "Bolo de baunilha", "Bolo de chocolate", "Bolo de cenoura", "Bolo de laranja", "Nenhum alimento", "Outro"] },
-      { key: "food_other", label: "Qual alimento você prefere?", tipo: "text", cond: (f) => (f.food_preferences || []).includes("Outro") },
-      { key: "dietary_restrictions", label: "Você possui alguma restrição alimentar ou condição que exija cuidados especiais?", tipo: "multi", opcoes: ["Vegetariano", "Vegano", "Sem glúten", "Intolerância à lactose", "Diabetes", "Hipertensão", "Alergias alimentares", "Outras alergias ou intolerâncias", "Não possuo restrições"] },
-      { key: "dietary_restrictions_detail", label: "Informe quais alergias, intolerâncias ou restrições você possui.", tipo: "text", cond: (f) => { const a = f.dietary_restrictions || []; return a.includes("Alergias alimentares") || a.includes("Outras alergias ou intolerâncias"); } },
-    ],
-  },
-  {
-    titulo: "Ambiente, Aromas & Atendimento",
-    campos: [
-      { key: "temperature_preference", label: "Qual temperatura você prefere no ambiente?", tipo: "single", opcoes: ["Fresco", "Frio", "Aquecido"] },
-      { key: "likes_aromas", label: "Você aprecia aromas durante o atendimento?", tipo: "bool" },
-      { key: "aroma_preferences", label: "Quais aromas você prefere?", tipo: "multi", opcoes: ["Lavanda", "Baunilha", "Capim-limão", "Bambu", "Chá branco", "Algodão", "Flor de cerejeira", "Alecrim", "Eucalipto", "Outro"], cond: (f) => f.likes_aromas === true },
-      { key: "aroma_other", label: "Qual aroma você prefere?", tipo: "text", cond: (f) => f.likes_aromas === true && (f.aroma_preferences || []).includes("Outro") },
-      { key: "service_style", label: "Qual estilo de atendimento você prefere?", tipo: "single", opcoes: ["Atendimento mais discreto e reservado", "Atendimento mais próximo e acolhedor", "Conversa leve durante o atendimento", "Silêncio e foco no procedimento"] },
-    ],
-  },
-  {
-    titulo: "Consentimento & Envio",
-    campos: [],
-  },
+  { titulo: "Suas preferências", campos: [
+    { key: "beverage_preferences", label: "Qual bebida você gostaria de tomar?", tipo: "singleArray", opcional: true, opcoes: ["Cappuccino", "Café com leite", "Café", "Chá de camomila", "Chá de erva-doce"] },
+    { key: "music_style", label: "Qual estilo musical você gosta ou gostaria de ouvir?", tipo: "text", placeholder: "Ex.: MPB, jazz, música clássica" },
+    { key: "music_choice_song", label: "Tem alguma música de que gosta muito? (opcional)", tipo: "text", placeholder: "Nome da música" },
+    { key: "music_choice_artist", label: "Cantor, cantora ou banda (opcional)", tipo: "text", placeholder: "Nome do artista" },
+    { key: "temperature_preference", label: "Qual temperatura do ar-condicionado você prefere?", tipo: "single", opcoes: ["Frio", "Ambiente", "Ameno"] },
+  ]},
+  { titulo: "Consentimento & Envio", campos: [] },
 ];
 
 const T = {
@@ -62,25 +34,7 @@ export default function SensorFlowForm() {
   const [conviteId, setConviteId] = useState(null);
   const [passo, setPasso] = useState(0);
   const [form, setForm] = useState({
-    appointment_periods: "",
-    music_preferences: [],
-    music_other: "",
-    wants_music_choice: false,
-    music_choice_song: "",
-    music_choice_artist: "",
-    beverage_preferences: [],
-    beverage_other: "",
-    food_preferences: [],
-    food_other: "",
-    dietary_restrictions: [],
-    dietary_restrictions_detail: "",
-    environment_preferences: [],
-    temperature_preference: "",
-    likes_aromas: false,
-    aroma_preferences: [],
-    aroma_other: "",
-    service_style: "",
-    lgpd_consent: false,
+    beverage_preferences: [], music_style: "", music_choice_song: "", music_choice_artist: "", temperature_preference: "", lgpd_consent: false,
   });
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
@@ -127,7 +81,7 @@ export default function SensorFlowForm() {
 
   function campoPreenchido(campo) {
     if (campo.cond && !campo.cond(form)) return true;
-    if (campo.tipo === "text") return true; // campos de texto são opcionais
+    if (campo.opcional || campo.tipo === "text") return true; // preferências opcionais
     const v = form[campo.key];
     if (campo.tipo === "multi") return Array.isArray(v) && v.length > 0;
     if (campo.tipo === "single") return !!v;
@@ -159,8 +113,15 @@ export default function SensorFlowForm() {
       await base44.functions.invoke("sensorflowConvite", {
         action: "submeter",
         token,
-        ...form,
-        url_origem: window.location.href,
+        form_version: "sensorflow_simplificado_v1",
+        beverage_preferences: form.beverage_preferences,
+        music_preferences: form.music_style.trim() ? [form.music_style.trim()] : [],
+        wants_music_choice: !!(form.music_choice_song.trim() || form.music_choice_artist.trim()),
+        music_choice_song: form.music_choice_song.trim(),
+        music_choice_artist: form.music_choice_artist.trim(),
+        temperature_preference: form.temperature_preference,
+        lgpd_consent: form.lgpd_consent,
+        url_origem: window.location.origin + window.location.pathname,
         dispositivo,
         navegador: navigator.userAgent.slice(0, 120),
       });
@@ -230,7 +191,10 @@ export default function SensorFlowForm() {
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <p style={styles.brand}>PALOMA BETONI · CLÍNICA</p>
         <h1 style={styles.h1}>Sensor Flow</h1>
-        {primeiroNome && <p style={styles.muted}>Olá, {primeiroNome}. Vamos personalizar a sua experiência.</p>}
+        {passo === 0 && <div style={{ marginTop: 16 }}>
+          <h2 style={styles.h2}>{primeiroNome ? primeiroNome + ", seja bem-vindo(a) ao nosso padrão de atendimento." : "Seja bem-vindo(a) ao nosso padrão de atendimento."}</h2>
+          <p style={styles.muted}>Queremos conhecer você um pouco melhor para receber e cuidar de você da maneira que merece.</p>
+        </div>}
       </div>
 
       {/* Barra de progresso */}
@@ -302,6 +266,8 @@ function Campo({ campo, form, toggleMulti, setSingle, toggleBool }) {
           value={v || ""}
           onChange={(e) => setSingle(campo.key, e.target.value)}
           placeholder={campo.placeholder || ""}
+          maxLength={160}
+          aria-label={campo.label}
           style={styles.textInput}
         />
       </div>
@@ -317,6 +283,13 @@ function Campo({ campo, form, toggleMulti, setSingle, toggleBool }) {
         </div>
       </div>
     );
+  }
+  if (campo.tipo === "singleArray") {
+    return <div style={{ marginBottom: 20 }}>
+      <p style={styles.label}>{campo.label}</p>
+      <div style={styles.optionWrap}>{campo.opcoes.map(op => <button key={op} type="button" aria-pressed={(v || []).includes(op)} onClick={() => setSingle(campo.key, (v || []).includes(op) ? [] : [op])} style={(v || []).includes(op) ? styles.optionActive : styles.option}>{op}</button>)}</div>
+      <p style={{ ...styles.muted, fontSize: 12, marginTop: 8 }}>Se não quiser bebida, deixe sem seleção.</p>
+    </div>;
   }
   if (campo.tipo === "single") {
     return (
