@@ -55,26 +55,24 @@ function baixarPDFPerfilSensorial(patient, perfil) {
   const fmtBool = (v) => v ? "Sim" : "Não";
 
   const secoes = [
-    { titulo: "Horários Preferidos", items: [["Períodos", fmtArr(perfil.appointment_periods)]] },
+    { titulo: "Preferências de Bebidas", items: [["Bebidas", fmtArr([...(perfil.beverage_preferences || []), ...(perfil.beverage_other ? [perfil.beverage_other] : [])])]] },
     { titulo: "Preferências Musicais", items: [
-      ["Estilos", fmtArr(perfil.music_preferences) + (perfil.music_other ? ` (${perfil.music_other})` : "")],
-      ["Quer escolher música", fmtBool(perfil.wants_music_choice)],
+      ["Estilos", fmtArr([...(perfil.music_preferences || []).filter(v => v !== "Outro"), ...(perfil.music_other ? [perfil.music_other] : [])])],
       ["Música escolhida", perfil.music_choice_song || "—"],
       ["Cantor/Artista", perfil.music_choice_artist || "—"],
     ]},
-    { titulo: "Preferências de Bebidas", items: [["Bebidas", fmtArr(perfil.beverage_preferences) + (perfil.beverage_other ? ` (${perfil.beverage_other})` : "")]] },
-    { titulo: "Preferências Alimentares", items: [
-      ["Alimentos", fmtArr(perfil.food_preferences) + (perfil.food_other ? ` (${perfil.food_other})` : "")],
-      ["Restrições", fmtArr(perfil.dietary_restrictions) + (perfil.dietary_restrictions_detail ? ` (${perfil.dietary_restrictions_detail})` : "")],
-    ]},
-    { titulo: "Ambiente & Aromas", items: [
+    { titulo: "Temperatura do ar-condicionado", items: [["Temperatura", perfil.temperature_preference || "—"]] },
+    ...(perfil.appointment_periods?.length ? [{ titulo: "Horários anteriores", items: [["Períodos", fmtArr(perfil.appointment_periods)]] }] : []),
+    ...(perfil.food_preferences?.length || perfil.food_other || perfil.dietary_restrictions?.length || perfil.dietary_restrictions_detail ? [{ titulo: "Preferências alimentares anteriores", items: [
+      ["Alimentos", fmtArr([...(perfil.food_preferences || []), ...(perfil.food_other ? [perfil.food_other] : [])])],
+      ["Restrições", fmtArr([...(perfil.dietary_restrictions || []), ...(perfil.dietary_restrictions_detail ? [perfil.dietary_restrictions_detail] : [])])],
+    ]}] : []),
+    ...(perfil.environment_preferences?.length || perfil.likes_aromas || perfil.aroma_preferences?.length || perfil.aroma_other ? [{ titulo: "Ambiente e aromas anteriores", items: [
       ["Ambiente", fmtArr(perfil.environment_preferences)],
-      ["Temperatura", perfil.temperature_preference || "—"],
-      ["Aprecia aromas", fmtBool(perfil.likes_aromas)],
-      ["Aromas preferidos", fmtArr(perfil.aroma_preferences) + (perfil.aroma_other ? ` (${perfil.aroma_other})` : "")],
-    ]},
-    { titulo: "Estilo de Atendimento", items: [["Preferência", perfil.service_style || "—"]] },
-    { titulo: "Resumo de Hospitalidade (IA)", items: [["Resumo", perfil.hospitality_summary || "—"]] },
+      ["Aromas", fmtArr([...(perfil.aroma_preferences || []), ...(perfil.aroma_other ? [perfil.aroma_other] : [])])],
+    ]}] : []),
+    ...(perfil.service_style ? [{ titulo: "Estilo de atendimento anterior", items: [["Preferência", perfil.service_style]] }] : []),
+    ...(perfil.hospitality_summary ? [{ titulo: "Resumo de Hospitalidade (IA)", items: [["Resumo", perfil.hospitality_summary]] }] : []),
     { titulo: "LGPD & Origem", items: [
       ["Consentimento LGPD", fmtBool(perfil.lgpd_consent)],
       ["Data do consentimento", perfil.lgpd_consent_date ? new Date(perfil.lgpd_consent_date).toLocaleString("pt-BR") : "—"],
@@ -449,50 +447,32 @@ export default function DossiePerfilSensorial({ patient }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
 
-        <Section icon={Clock} title="Horários Preferidos">
-          <TagList items={perfil.appointment_periods} />
-        </Section>
-
         <Section icon={Coffee} title="Preferências de Bebidas">
-          <TagList items={perfil.beverage_preferences} />
+          <TagList items={[...(perfil.beverage_preferences || []), ...(perfil.beverage_other ? [perfil.beverage_other] : [])]} />
         </Section>
-
-        <Section icon={Leaf} title="Preferências Alimentares">
-          <TagList items={perfil.food_preferences} />
-          {perfil.dietary_restrictions?.length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <p style={{ ...S.label, fontSize: 11, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
-                <AlertTriangle style={{ width: 11, height: 11 }} /> Restrições
-              </p>
-              <TagList items={perfil.dietary_restrictions} />
-            </div>
-          )}
+        <Section icon={MessageCircle} title="Preferências musicais">
+          <TagList items={[...(perfil.music_preferences || []).filter(v => v !== "Outro"), ...(perfil.music_other ? [perfil.music_other] : [])]} />
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            <Field label="Música" value={perfil.music_choice_song} />
+            <Field label="Cantor, cantora ou banda" value={perfil.music_choice_artist} />
+          </div>
         </Section>
-
-        <Section icon={Wind} title="Preferências de Ambiente">
-          <TagList items={perfil.environment_preferences} />
+        <Section icon={Thermometer} title="Temperatura do ar-condicionado">
+          <p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.temperature_preference || "—"}</p>
         </Section>
-
-        <Section icon={Thermometer} title="Temperatura">
-          <p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>
-            {perfil.temperature_preference || "—"}
-          </p>
-        </Section>
-
-        <Section icon={Sparkles} title="Aromas">
-          <p style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>
-            Aprecia aromas: <span style={{ color: perfil.likes_aromas ? T.gold : T.textMuted, fontWeight: 600 }}>
-              {perfil.likes_aromas ? "Sim" : "Não"}
-            </span>
-          </p>
-          {perfil.likes_aromas && <TagList items={perfil.aroma_preferences} />}
-        </Section>
-
-        <Section icon={MessageCircle} title="Estilo de Atendimento">
-          <p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>
-            {perfil.service_style || "—"}
-          </p>
-        </Section>
+        {!!perfil.appointment_periods?.length && <Section icon={Clock} title="Horários anteriores"><TagList items={perfil.appointment_periods} /></Section>}
+        {!!(perfil.food_preferences?.length || perfil.food_other || perfil.dietary_restrictions?.length || perfil.dietary_restrictions_detail) && <Section icon={Leaf} title="Preferências alimentares anteriores">
+          <TagList items={[...(perfil.food_preferences || []), ...(perfil.food_other ? [perfil.food_other] : [])]} />
+          {!!(perfil.dietary_restrictions?.length || perfil.dietary_restrictions_detail) && <div style={{ marginTop: 10 }}>
+            <p style={{ ...S.label, fontSize: 11, marginBottom: 6 }}>Restrições registradas anteriormente</p>
+            <TagList items={[...(perfil.dietary_restrictions || []), ...(perfil.dietary_restrictions_detail ? [perfil.dietary_restrictions_detail] : [])]} />
+          </div>}
+        </Section>}
+        {!!perfil.environment_preferences?.length && <Section icon={Wind} title="Preferências de ambiente anteriores"><TagList items={perfil.environment_preferences} /></Section>}
+        {!!(perfil.likes_aromas || perfil.aroma_preferences?.length || perfil.aroma_other) && <Section icon={Sparkles} title="Aromas anteriores">
+          <TagList items={[...(perfil.aroma_preferences || []), ...(perfil.aroma_other ? [perfil.aroma_other] : [])]} />
+        </Section>}
+        {!!perfil.service_style && <Section icon={MessageCircle} title="Estilo de atendimento anterior"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.service_style}</p></Section>}
 
       </div>
 
