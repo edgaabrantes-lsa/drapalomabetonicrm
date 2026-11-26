@@ -4,6 +4,7 @@ import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, subMonths, pars
 import { ptBR } from "date-fns/locale";
 import { base44 } from "@/api/base44Client";
 import { calcularDRE } from "@/lib/dreUtils";
+import { usePermissions } from "@/lib/PermissionsContext";
 
 const dia = (d) => format(d, "yyyy-MM-dd");
 const DOSSIE_PAGO = ["pago_integral", "pago_parcial", "entrada_paga", "conferido"];
@@ -18,22 +19,28 @@ const periodoDe = (start, end) => ({
 /** Números financeiros do dashboard — mesma base usada pelo módulo DRE. */
 export function useDashboardFinanceiro() {
   const agora = new Date();
+  const { hasAction } = usePermissions();
+  const permitido = hasAction("ver_financeiro");
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: () => base44.entities.Transaction.list("-created_date", 2000),
+    enabled: permitido,
   });
   const { data: dossieFinanceiro = [] } = useQuery({
     queryKey: ["dossie-financeiro-dre"],
     queryFn: () => base44.entities.DossieFinanceiro.list("-created_date", 2000),
+    enabled: permitido,
   });
   const { data: lancamentos = [] } = useQuery({
     queryKey: ["dreLancamentos"],
     queryFn: () => base44.entities.DRELancamento.list("-created_date", 2000),
+    enabled: permitido,
   });
   const { data: config } = useQuery({
     queryKey: ["configuracao-financeira"],
     queryFn: async () => (await base44.entities.ConfiguracaoFinanceira.list())[0] || null,
+    enabled: permitido,
   });
 
   return useMemo(() => {

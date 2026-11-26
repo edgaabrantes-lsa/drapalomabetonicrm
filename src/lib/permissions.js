@@ -55,6 +55,7 @@ export const MENU_PERMISSIONS = {
     "Governanca", "VigilanciaPage", "ClinicSettingsPage", "Settings",
     "UsuariosPermissoes", "GitHubMonitor", "DREClinica", "MesclarPacientes",
     "AuditoriaDuplicidades", "PortalAdmin",
+    "GestaoFinanceira", "AnalyticsAgenda", "SearchConsoleAgenda",
   ],
   gestor: [
     "Dashboard", "Patients", "AnamnesePacientes", "DossiePatient", "Agenda", "MedicalRecords",
@@ -63,13 +64,12 @@ export const MENU_PERMISSIONS = {
     "UsuariosPermissoes",
   ],
   recepcao: [
-    "Dashboard", "Patients", "DossiePatient", "Agenda", "Governanca", "CRM", "Chat",
+    "Dashboard", "Patients", "DossiePatient", "Agenda", "CRM", "Chat",
   ],
   profissional_clinico_premium: [
     "Patients", "AnamnesePacientes", "DossiePatient", "Agenda", "MedicalRecords",
     "FacialAnalysis", "BeforeAfterIA", "Protocols", "ProtocolosPremium",
     "PlanosAssinatura",
-    "CRM", "Chat",
   ],
   profissional: [
     "Dashboard", "Patients", "AnamnesePacientes", "DossiePatient", "Agenda", "MedicalRecords",

@@ -28,6 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CurrencyInput from "@/components/ui/CurrencyInput";
+import AcessoRestrito from "@/components/AcessoRestrito";
+import { usePermissions } from "@/lib/PermissionsContext";
 import FinancialDREReport from "@/components/financial/FinancialDREReport";
 import {
   AreaChart,
@@ -242,6 +244,13 @@ const TransactionForm = ({ transaction, patients, onSave, onClose }) => {
 };
 
 export default function Financial() {
+  const { hasAction, loading } = usePermissions();
+  if (loading) return null;
+  if (!hasAction("ver_financeiro")) return <AcessoRestrito />;
+  return <FinancialContent />;
+}
+
+function FinancialContent() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
   const [isFormOpen, setIsFormOpen] = useState(false);

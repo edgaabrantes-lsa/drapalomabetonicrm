@@ -12,6 +12,7 @@ import { T, S } from "@/lib/designTokens";
 import { fmtBRL } from "@/lib/dreUtils";
 import { agendaList } from "@/lib/agendaApi";
 import { useDashboardFinanceiro } from "@/hooks/useDashboardFinanceiro";
+import { usePermissions } from "@/lib/PermissionsContext";
 
 /* ── KPI Card ── */
 const KpiCard = ({ title, value, subtitle, accent = false }) => (
@@ -99,6 +100,8 @@ export default function Dashboard() {
   const { data: patients = [] } = useQuery({ queryKey: ["patients"], queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
   const { data: leads = [] }    = useQuery({ queryKey: ["leads"],    queryFn: () => base44.entities.Lead.list("-created_date", 100) });
   const { data: supplies = [] } = useQuery({ queryKey: ["supplies"], queryFn: () => base44.entities.Supply.list() });
+  const { hasAction } = usePermissions();
+  const podeVerFinanceiro = hasAction("ver_financeiro");
   const { hoje, mes, serie, procedimentos, metaValor, metaPct, taxaRecebimento } = useDashboardFinanceiro();
 
   const lowStock    = supplies.filter(s => s.current_stock <= (s.minimum_stock || 5));
@@ -134,23 +137,27 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── KPIs financeiros ── */}
-      <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
-        <p style={S.sectionTitle}>Financeiro</p>
-        <p style={S.pageSubtitle}>Pagamentos confirmados (realizado)</p>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
-        <KpiCard title="Recebido Hoje" value={fmtBRL(hoje.recebido)} subtitle={`${hoje.recebimentos} recebimento(s) hoje`} />
-        <KpiCard title="Lucro Hoje" value={fmtBRL(hoje.lucro)} subtitle={`Margem de ${hoje.margem.toFixed(1)}%`} accent />
-        <KpiCard title="Recebido no Mês" value={fmtBRL(mes.recebido)} subtitle="receita bruta do mês" />
-        <KpiCard title="Despesas do Mês" value={fmtBRL(mes.despesas)} subtitle="custos e despesas pagos" />
-        <KpiCard title="Lucro do Mês" value={fmtBRL(mes.lucro)} subtitle={`Margem de ${mes.margem.toFixed(1)}%`} accent />
-        <KpiCard
-          title="Margem do Mês"
-          value={`${mes.margem.toFixed(1)}%`}
-          subtitle={metaValor > 0 ? `Meta de faturamento: ${fmtBRL(metaValor)}` : "margem líquida do mês"}
-        />
-      </div>
+      {/* ── KPIs financeiros (apenas perfis com acesso financeiro) ── */}
+      {podeVerFinanceiro && (
+        <>
+          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
+            <p style={S.sectionTitle}>Financeiro</p>
+            <p style={S.pageSubtitle}>Pagamentos confirmados (realizado)</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
+            <KpiCard title="Recebido Hoje" value={fmtBRL(hoje.recebido)} subtitle={`${hoje.recebimentos} recebimento(s) hoje`} />
+            <KpiCard title="Lucro Hoje" value={fmtBRL(hoje.lucro)} subtitle={`Margem de ${hoje.margem.toFixed(1)}%`} accent />
+            <KpiCard title="Recebido no Mês" value={fmtBRL(mes.recebido)} subtitle="receita bruta do mês" />
+            <KpiCard title="Despesas do Mês" value={fmtBRL(mes.despesas)} subtitle="custos e despesas pagos" />
+            <KpiCard title="Lucro do Mês" value={fmtBRL(mes.lucro)} subtitle={`Margem de ${mes.margem.toFixed(1)}%`} accent />
+            <KpiCard
+              title="Margem do Mês"
+              value={`${mes.margem.toFixed(1)}%`}
+              subtitle={metaValor > 0 ? `Meta de faturamento: ${fmtBRL(metaValor)}` : "margem líquida do mês"}
+            />
+          </div>
+        </>
+      )}
 
       {/* ── KPIs operacionais ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
@@ -160,71 +167,73 @@ export default function Dashboard() {
       </div>
 
       {/* ── Gráficos ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
+      {podeVerFinanceiro && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 mb-6">
 
-        {/* Receita vs Despesas */}
-        <div className="lg:col-span-2" style={S.card}>
-          <p style={S.sectionTitle}>Receita vs Despesas</p>
-          <p style={{ ...S.pageSubtitle, marginBottom: 16 }}>Últimos 6 meses</p>
-          <div className="h-[200px] md:h-[240px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={serie} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={T.gold} stopOpacity={0.15} />
-                    <stop offset="95%" stopColor={T.gold} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gD" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={T.textMuted} stopOpacity={0.1} />
-                    <stop offset="95%" stopColor={T.textMuted} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="2 4" stroke={T.borderLight} vertical={false} />
-                <XAxis dataKey="mes" tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} tickFormatter={v => `${v/1000}k`} />
-                <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="receita" name="Receita"  stroke={T.gold}      strokeWidth={1.5} fill="url(#gR)" />
-                <Area type="monotone" dataKey="despesas" name="Despesas" stroke={T.textMuted} strokeWidth={1}   fill="url(#gD)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Receita vs Despesas */}
+          <div className="lg:col-span-2" style={S.card}>
+            <p style={S.sectionTitle}>Receita vs Despesas</p>
+            <p style={{ ...S.pageSubtitle, marginBottom: 16 }}>Últimos 6 meses</p>
+            <div className="h-[200px] md:h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={serie} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={T.gold} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={T.gold} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gD" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={T.textMuted} stopOpacity={0.1} />
+                      <stop offset="95%" stopColor={T.textMuted} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="2 4" stroke={T.borderLight} vertical={false} />
+                  <XAxis dataKey="mes" tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontFamily: T.font, fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} tickFormatter={v => `${v/1000}k`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="receita" name="Receita"  stroke={T.gold}      strokeWidth={1.5} fill="url(#gR)" />
+                  <Area type="monotone" dataKey="despesas" name="Despesas" stroke={T.textMuted} strokeWidth={1}   fill="url(#gD)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
 
-        {/* Procedimentos */}
-        <div className="w-full min-w-0" style={S.card}>
-          <p style={S.sectionTitle}>Procedimentos</p>
-          <p style={{ ...S.pageSubtitle, marginBottom: 12 }}>Recebimentos do mês</p>
-          <div className="h-[160px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={procedimentos} cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={2} dataKey="value">
-                  {procedimentos.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, fontFamily: T.font, fontSize: 12 }}
-                  formatter={v => [`${v}%`]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          {procedimentos.length === 0 && (
-            <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "12px 0" }}>Sem recebimentos no mês</p>
-          )}
-          <div className="mt-3 flex flex-col gap-1.5">
-            {procedimentos.map((item, i) => (
-              <div key={item.name} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i] }} />
-                  <span className="text-[12px] text-[#B0B0B0]">{item.name}</span>
+          {/* Procedimentos */}
+          <div className="w-full min-w-0" style={S.card}>
+            <p style={S.sectionTitle}>Procedimentos</p>
+            <p style={{ ...S.pageSubtitle, marginBottom: 12 }}>Recebimentos do mês</p>
+            <div className="h-[160px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={procedimentos} cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={2} dataKey="value">
+                    {procedimentos.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, fontFamily: T.font, fontSize: 12 }}
+                    formatter={v => [`${v}%`]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            {procedimentos.length === 0 && (
+              <p style={{ ...S.pageSubtitle, textAlign: "center", padding: "12px 0" }}>Sem recebimentos no mês</p>
+            )}
+            <div className="mt-3 flex flex-col gap-1.5">
+              {procedimentos.map((item, i) => (
+                <div key={item.name} className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i] }} />
+                    <span className="text-[12px] text-[#B0B0B0]">{item.name}</span>
+                  </div>
+                  <span className="text-[12px] font-medium text-white whitespace-nowrap">
+                    {fmtBRL(item.valor)} <span className="text-[#666666]">{item.value}%</span>
+                  </span>
                 </div>
-                <span className="text-[12px] font-medium text-white whitespace-nowrap">
-                  {fmtBRL(item.valor)} <span className="text-[#666666]">{item.value}%</span>
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Linha inferior ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-6">
@@ -287,25 +296,27 @@ export default function Dashboard() {
       </div>
 
       {/* ── Indicadores ── */}
-      <div className="w-full min-w-0" style={S.card}>
-        <p style={{ ...S.sectionTitle, marginBottom: 20 }}>Indicadores de Performance</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {indicators.map(item => (
-            <div key={item.label} className="w-full min-w-0">
-              <div className="flex justify-between mb-2.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#666666]">{item.label}</span>
-                <span className="text-[13px] font-medium text-white">{item.value}%</span>
+      {podeVerFinanceiro && (
+        <div className="w-full min-w-0" style={S.card}>
+          <p style={{ ...S.sectionTitle, marginBottom: 20 }}>Indicadores de Performance</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {indicators.map(item => (
+              <div key={item.label} className="w-full min-w-0">
+                <div className="flex justify-between mb-2.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-[#666666]">{item.label}</span>
+                  <span className="text-[13px] font-medium text-white">{item.value}%</span>
+                </div>
+                <div className="h-0.5 bg-[#1E1E1E] rounded-full">
+                  <div className="h-0.5 rounded-full transition-all duration-500" style={{
+                    width: `${item.value}%`,
+                    backgroundColor: item.value >= 90 ? T.success : T.gold,
+                  }} />
+                </div>
               </div>
-              <div className="h-0.5 bg-[#1E1E1E] rounded-full">
-                <div className="h-0.5 rounded-full transition-all duration-500" style={{
-                  width: `${item.value}%`,
-                  backgroundColor: item.value >= 90 ? T.success : T.gold,
-                }} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

@@ -6,6 +6,8 @@ import FinFluxoCaixa from "@/components/financeiro/FinFluxoCaixa";
 import FinSimulador from "@/components/financeiro/FinSimulador";
 import FinCalculadoraMeta from "@/components/financeiro/FinCalculadoraMeta";
 import FinConfiguracoes from "@/components/financeiro/FinConfiguracoes";
+import AcessoRestrito from "@/components/AcessoRestrito";
+import { usePermissions } from "@/lib/PermissionsContext";
 
 const tabs = [
   { id: "dashboard", label: "Dashboard" },
@@ -18,6 +20,13 @@ const tabs = [
 ];
 
 export default function GestaoFinanceira() {
+  const { hasAction, loading } = usePermissions();
+  if (loading) return null;
+  if (!hasAction("ver_financeiro")) return <AcessoRestrito />;
+  return <GestaoFinanceiraContent />;
+}
+
+function GestaoFinanceiraContent() {
   const [tab, setTab] = useState("dashboard");
 
   return (

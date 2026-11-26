@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'r
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import HomeGate from '@/components/HomeGate';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -77,7 +78,9 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
+          <HomeGate>
+            <MainPage />
+          </HomeGate>
         </LayoutWrapper>
       } />
       {Object.entries(Pages).map(([path, Page]) => (
