@@ -51,7 +51,7 @@ function PerfilResumo({ perfil }) {
           <Bloco title="Música"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.music_choice_song || "—"}</p></Bloco>
           <Bloco title="Cantor, cantora ou banda"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.music_choice_artist || "—"}</p></Bloco>
           <Bloco title="Temperatura do ar-condicionado"><p style={{ color: T.textPrimary, fontSize: 13, margin: 0 }}>{perfil.temperature_preference || "—"}</p></Bloco>
-          {!!(perfil.dietary_restrictions?.length || perfil.dietary_restrictions_detail) && <Bloco title="Restrições registradas anteriormente"><TagList items={[...(perfil.dietary_restrictions || []), ...(perfil.dietary_restrictions_detail ? [perfil.dietary_restrictions_detail] : [])]} /></Bloco>
+          {!!(perfil.dietary_restrictions?.length || perfil.dietary_restrictions_detail) && <Bloco title="Restrições registradas anteriormente"><TagList items={[...(perfil.dietary_restrictions || []), ...(perfil.dietary_restrictions_detail ? [perfil.dietary_restrictions_detail] : [])]} /></Bloco>}
         </div>
       )}
       {perfil.hospitality_summary && open && (
