@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import useAgendaRealtime from "@/hooks/useAgendaRealtime";
 import SemanaMobile from "@/components/agenda/SemanaMobile";
 import BloqueioOverlay from "@/components/agenda/BloqueioOverlay";
 import BloqueiosModal from "@/components/agenda/BloqueiosModal";
@@ -801,17 +802,20 @@ export default function Agenda() {
   const [prefilledTime, setPrefilledTime] = useState(null);
   const [isBloqueiosOpen, setIsBloqueiosOpen] = useState(false);
 
+  // Sincronização ao vivo entre todos os logins (Edgard, Dra. Paloma, Amanda...)
+  useAgendaRealtime(queryClient);
+
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const { data: appointments = [] } = useQuery({ queryKey: ["appointments"], queryFn: () => base44.entities.Appointment.list("-start_time", 500) });
+  const { data: appointments = [] } = useQuery({ queryKey: ["appointments"], queryFn: () => base44.entities.Appointment.list("-start_time", 500), refetchInterval: 60000 });
   const { data: patients = [] } = useQuery({ queryKey: ["patients"], queryFn: () => base44.entities.Patient.list("-created_date", 1000) });
   const { data: procedures = [] } = useQuery({ queryKey: ["procedures"], queryFn: () => base44.entities.Procedure.list() });
   const { data: protocols = [] } = useQuery({ queryKey: ["protocolos-premium-all"], queryFn: () => base44.entities.ProtocoloPremium.list("-created_date", 200) });
   const { data: professionals = [] } = useQuery({ queryKey: ["professionals"], queryFn: () => base44.entities.Professional.list() });
   const { data: rooms = [] } = useQuery({ queryKey: ["rooms"], queryFn: () => base44.entities.Room.list() });
-  const { data: bloqueios = [] } = useQuery({ queryKey: ["bloqueios-agenda"], queryFn: () => base44.entities.BloqueioAgenda.list("-data_inicio", 200) });
+  const { data: bloqueios = [] } = useQuery({ queryKey: ["bloqueios-agenda"], queryFn: () => base44.entities.BloqueioAgenda.list("-data_inicio", 200), refetchInterval: 60000 });
 
   const criarBloqueio = useMutation({
     mutationFn: (data) => base44.entities.BloqueioAgenda.create(data),
